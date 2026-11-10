@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 cd "$ROOT"
 export MVC24E_CODE_ROOT=$ROOT
-source lib/combined-operational-public-v240-composition.sh
+source lib/combined-operational-public-composition.sh
 
 P=0
 pass(){ P=$((P+1)); printf 'PASS: %s\n' "$1"; }
@@ -67,7 +67,7 @@ mvc24pubr_reconcile_published_wg_absent_to_openvpn_hold &&
 
 # 5. Public coordinator falls back only after exact dual-active reobservation
 # fails, then completes through the existing OpenVPN stop/finalization path.
-source lib/combined-operational-public-v240-disconnect.sh
+source lib/combined-operational-public-disconnect.sh
 LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }

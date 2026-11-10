@@ -21,7 +21,7 @@ else
   fail 'runtime-visible namespace contains no legacy UBS paths/tables outside installer migration guard'
 fi
 
-rg -q '/run/mvc-public-session' "$ROOT/source/lib/combined-operational-public-v240-composition.sh" &&
+rg -q '/run/mvc-public-session' "$ROOT/source/lib/combined-operational-public-composition.sh" &&
   rg -q '/run/mvc-wireguard' "$ROOT/source/lib/combined-operational-d4-wireguard-parallel-live.sh" &&
   pass 'production session roots use mvc namespace' || fail 'production session roots use mvc namespace'
 
@@ -34,7 +34,7 @@ rg -q '/run/ubs-v240-controller' "$ROOT/source/tools/install-mvc.sh" &&
   rg -q '/run/mvc-controller' "$ROOT/source/tools/install-mvc.sh" &&
   pass 'installer refuses both legacy and MVC runtime roots during migration' || fail 'installer refuses both legacy and MVC runtime roots during migration'
 
-if rg -q 'mvc24pub' "$ROOT/source/lib/combined-operational-public-v240-connect.sh" &&
+if rg -q 'mvc24pub' "$ROOT/source/lib/combined-operational-public-connect.sh" &&
    ! rg -n --glob '*.sh' '^(function[[:space:]]+)?ubs24[A-Za-z0-9_]+[[:space:]]*\(\)' "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
   pass 'lowercase internal function namespace migrated to mvc24'
 else

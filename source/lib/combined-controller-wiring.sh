@@ -10,7 +10,7 @@
 [[ -n "${MVC24E_CODE_ROOT:-}" && -d "$MVC24E_CODE_ROOT/lib" ]] || return 1
 
 for mvc24e_module in \
-    combined-operational-public-v240-composition \
+    combined-operational-public-composition \
     combined-controller-entry; do
     [[ -f "$MVC24E_CODE_ROOT/lib/$mvc24e_module.sh" &&
        ! -L "$MVC24E_CODE_ROOT/lib/$mvc24e_module.sh" ]] || return 1

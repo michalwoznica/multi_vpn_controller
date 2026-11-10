@@ -32,25 +32,6 @@ old_refs=$(rg -l 'vpn-v240-preclone-quarantine-offline\.nft|check-v240-live-save
   "$ROOT/source/build" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/nftables" || true)
 [[ -z $old_refs ]] && pass 'production/build source has no retired support filenames' || { printf '%s\n' "$old_refs" >&2; fail 'production/build source has no retired support filenames'; }
 
-mapfile -t legacy_module_names < <(cd "$ROOT/source" && find lib -maxdepth 1 -type f -name '*v240*' -printf '%p\n' | sort)
-expected=(
-  lib/combined-operational-public-v240-composition.sh
-  lib/combined-operational-public-v240-connect.sh
-  lib/combined-operational-public-v240-disconnect.sh
-  lib/combined-operational-public-v240-openvpn-early-reconcile.sh
-  lib/combined-operational-public-v240-readonly.sh
-  lib/combined-operational-public-v240-reconcile.sh
-  lib/combined-operational-wireguard-protected-v240.sh
-  lib/combined-operational-wireguard-split-v240.sh
-)
-if [[ ${#legacy_module_names[@]} -eq ${#expected[@]} ]] && diff -u <(printf '%s\n' "${expected[@]}") <(printf '%s\n' "${legacy_module_names[@]}") >/dev/null; then
-  pass 'R6C runtime-module filename set remains frozen at exactly eight files'
-else
-  printf '%s\n' 'Observed legacy module filenames:' >&2
-  printf '%s\n' "${legacy_module_names[@]}" >&2
-  fail 'R6C runtime-module filename set remains frozen at exactly eight files'
-fi
-
 if rg -q '/usr/local/sbin/ubs-vpn|/root/ubs-v240-|/run/ubs-v240-' "$ROOT/source/tools/install-mvc.sh"; then
   pass 'legacy installed UBS compatibility remains in installer'
 else

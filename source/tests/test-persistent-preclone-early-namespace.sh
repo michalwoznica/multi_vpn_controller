@@ -25,8 +25,8 @@ fixed_new=(
 missing=0
 for sig in "${fixed_new[@]}"; do
   count=$(rg -F "$sig" \
-    "$ROOT/source/lib/combined-operational-public-v240-connect.sh" \
-    "$ROOT/source/lib/combined-operational-public-v240-openvpn-early-reconcile.sh" | wc -l)
+    "$ROOT/source/lib/combined-operational-public-connect.sh" \
+    "$ROOT/source/lib/combined-operational-public-openvpn-early-reconcile.sh" | wc -l)
   (( count >= 2 )) || { printf 'missing producer/validator pair: %s count=%s\n' "$sig" "$count" >&2; missing=1; }
 done
 if (( missing == 0 )); then pass 'fixed R5B producer/validator magics use MVC namespace'; else fail 'fixed R5B producer/validator magics use MVC namespace'; fi
@@ -40,7 +40,7 @@ fi
 
 # The generic early-intent producer/validator emits two additional persistent
 # schemas that a literal-only inventory cannot enumerate: stop and clone-delete.
-source "$ROOT/source/lib/combined-operational-public-v240-openvpn-early-reconcile.sh"
+source "$ROOT/source/lib/combined-operational-public-openvpn-early-reconcile.sh"
 TEST_RUNTIME=$TMP/runtime
 mkdir -m 700 "$TEST_RUNTIME"
 printf 'plan\n' > "$TEST_RUNTIME/early-plan"

@@ -8,7 +8,7 @@ fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
 
 C19=$ROOT/source/lib/combined-operational-c19-protected-openvpn-stop.sh
 C23T=$ROOT/source/lib/combined-operational-c23t-session-finalize.sh
-DISC=$ROOT/source/lib/combined-operational-public-v240-disconnect.sh
+DISC=$ROOT/source/lib/combined-operational-public-disconnect.sh
 
 # C19 has two authenticated variants: normal stop and truthful already-absent stop.
 if [[ $(rg -F 'mvc-c19-openvpn-stop-v1' "$C19" | wc -l) -ge 3 ]] &&

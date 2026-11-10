@@ -62,7 +62,7 @@ else
 fi
 
 info=$($ROOT/dist/mvc --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R6B_SUPPORT_RESOURCE_FILENAMES' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R6C_RUNTIME_MODULE_FILENAMES' <<<"$info" &&
    grep -Fxq 'emergency_recovery=/root/mvc-emergency-rollback' <<<"$info" &&
    grep -Fxq 'dual_recovery=/root/mvc-dual-recovery' <<<"$info"; then
     ok 'generated provenance exposes MVC checkpoint and recovery paths'

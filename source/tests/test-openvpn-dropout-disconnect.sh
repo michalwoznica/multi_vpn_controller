@@ -4,7 +4,7 @@ umask 077
 export LC_ALL=C
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export MVC24E_CODE_ROOT=$PWD
-source lib/combined-operational-public-v240-composition.sh
+source lib/combined-operational-public-composition.sh
 P=0
 pass(){ P=$((P+1)); printf 'PASS: %s\n' "$1"; }
 fail(){ printf 'FAIL: %s\n' "$1" >&2; exit 1; }
@@ -102,7 +102,7 @@ rm -f "$B"; rm -rf /run/mvc-disconnect /run/mvc-public-session /run/mvc-controll
 # 5. Public coordinator ordering for exact dropout path, including normal final
 # same-boot-ready state. All lifecycle stages below are substituted only to
 # prove orchestration; primitive behavior is covered above.
-source lib/combined-operational-public-v240-disconnect.sh
+source lib/combined-operational-public-disconnect.sh
 LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset; mvc24gc19_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }

@@ -6,8 +6,8 @@ P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
 fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
 
-CONN=$ROOT/source/lib/combined-operational-public-v240-connect.sh
-DISC=$ROOT/source/lib/combined-operational-public-v240-disconnect.sh
+CONN=$ROOT/source/lib/combined-operational-public-connect.sh
+DISC=$ROOT/source/lib/combined-operational-public-disconnect.sh
 
 # Central ownership records move as one trust domain: producer and every current
 # live/completed-session consumer must agree on the same schema magic.
@@ -35,7 +35,7 @@ fi
 # Exercise the real transaction parser with the new schema and prove exact old
 # magic is rejected. The prepared state avoids any dependency on live tunnel journals.
 export MVC24E_CODE_ROOT=$ROOT/source
-source "$ROOT/source/lib/combined-operational-public-v240-composition.sh"
+source "$ROOT/source/lib/combined-operational-public-composition.sh"
 T=$(mktemp -d /tmp/mvc-r5e.XXXXXXXX)
 trap 'rm -rf -- "$T"' EXIT
 TEST_RUNTIME=$T/public

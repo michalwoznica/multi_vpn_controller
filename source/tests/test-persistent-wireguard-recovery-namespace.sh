@@ -7,9 +7,9 @@ pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
 fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
 
 D4=$ROOT/source/lib/combined-operational-d4-wireguard-parallel-live.sh
-DISC=$ROOT/source/lib/combined-operational-public-v240-disconnect.sh
+DISC=$ROOT/source/lib/combined-operational-public-disconnect.sh
 REC=$ROOT/source/tools/recover-mvc-dual-local.sh
-PROT=$ROOT/source/lib/combined-operational-wireguard-protected-v240.sh
+PROT=$ROOT/source/lib/combined-operational-wireguard-protected.sh
 MAN=$ROOT/source/build/monolith-runtime.manifest
 
 # The D4 ownership record must move as one trust domain: writer, normal disconnect,

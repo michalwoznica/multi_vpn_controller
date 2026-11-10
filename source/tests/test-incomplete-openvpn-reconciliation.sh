@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export MVC24E_CODE_ROOT=$PWD
-source lib/combined-operational-public-v240-composition.sh
+source lib/combined-operational-public-composition.sh
 
 P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; ((++P)); }
@@ -88,7 +88,7 @@ mvc24pube_reconcile_incomplete_start_locked && pass post-release-resume-succeeds
 
 # Restore the production early-reconciler definitions after the coordinator
 # substitutions above, then verify intent-before-mutation ordering at each leaf.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 
 # C11 -> C1 handback publishes/validates its intent before nft commit.
 LOG=(); handback_done=$T/handback-done
@@ -105,7 +105,7 @@ mvc24pube_ensure_c1_guard && pass handback-intent-before-nft-succeeds || fail ha
 
 # NM stop intent precedes the single down request; host state, not nmcli exit,
 # decides completion.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); stop_intent2=$T/stop2
 mvc24pube_stop_intent_path(){ printf '%s\n' "$stop_intent2"; }
 mvc24pube_publish_simple_intent(){ LOG+=(publish-stop); : > "$2"; return 0; }
@@ -119,7 +119,7 @@ mvc24pube_stop_clone_if_needed && pass stop-intent-before-nm-down-succeeds || fa
 
 # Clone-delete intent precedes exact UUID deletion and post-state absence is
 # authoritative even if the delete command's reply is lost.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); del_intent=$T/delete-intent; clone_absent_calls=0
 mvc24pube_converged_no_vpn_topology(){ LOG+=(converged); return 0; }
 mvc24gc23t_clone_absent(){ ((++clone_absent_calls)); (( clone_absent_calls >= 2 )); }
@@ -136,7 +136,7 @@ mvc24pube_delete_clone_if_needed && pass clone-delete-intent-before-delete-succe
 
 # Guard release: intent is published before nft deletion and the post-witness
 # decides success.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); rel_intent=$T/release2-intent; rel_batch=$T/release2.nft
 mvc24pube_release_intent_path(){ printf '%s\n' "$rel_intent"; }
 mvc24pube_release_batch_path(){ printf '%s\n' "$rel_batch"; }
@@ -154,7 +154,7 @@ mvc24pube_release_guard && pass release-intent-before-nft-delete-succeeds || fai
 
 # Runtime retirement publishes durable intent before closing the B2 descriptor
 # and before any owned journal directory is moved.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); retire_intent=$T/retire-intent
 mvc24pube_release_intent_valid(){ LOG+=(release-valid); return 0; }
 mvc24gc23t_release_post_witness(){ LOG+=(release-post); return 0; }
@@ -173,7 +173,7 @@ mvc24pube_retire_runtime_roots && pass retire-intent-before-runtime-move-succeed
 # The archive continuation itself is observation-driven and moves the public
 # transaction runtime last. Simulate an interruption after the other fixed
 # roots were already moved: continuation must still finish without B2/C7.
-source lib/combined-operational-public-v240-openvpn-early-reconcile.sh
+source lib/combined-operational-public-openvpn-early-reconcile.sh
 AR=$T/archive-resume; mkdir -p "$AR/runtime" "$AR/archive/44444444-4444-4444-8444-444444444444" "$AR/archive/44444444-4444-4444-8444-444444444444/controller" "$AR/archive/44444444-4444-4444-8444-444444444444/activation"
 chmod 700 "$AR/runtime" "$AR/archive" "$AR/archive/44444444-4444-4444-8444-444444444444" "$AR/archive/44444444-4444-4444-8444-444444444444/controller" "$AR/archive/44444444-4444-4444-8444-444444444444/activation"
 : > "$AR/runtime/transaction"; chmod 400 "$AR/runtime/transaction"
@@ -193,7 +193,7 @@ mvc24pube_retire_archive_continue && pass retire-resume-after-controller-move-su
 [[ ! -e $AR/runtime && -d $AR/archive/44444444-4444-4444-8444-444444444444/public-session ]] && pass retire-public-runtime-moved-last || fail retire-public-runtime-moved-last
 
 # Restore complete production composition after leaf overrides.
-source lib/combined-operational-public-v240-composition.sh
+source lib/combined-operational-public-composition.sh
 
 # CONNECT: a C7-authenticated start failure must self-clean; pre-C7 must not
 # invent ownership.

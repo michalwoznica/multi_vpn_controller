@@ -28,6 +28,7 @@ TESTS=(
   test-persistent-public-session-namespace.sh
   test-dead-combined-state-removal.sh
   test-support-resource-filenames.sh
+  test-runtime-module-filenames.sh
 )
 
 passed=0

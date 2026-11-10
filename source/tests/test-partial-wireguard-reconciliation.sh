@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 export MVC24E_CODE_ROOT=$PWD
-source lib/combined-operational-public-v240-composition.sh
+source lib/combined-operational-public-composition.sh
 
 P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; ((++P)); }

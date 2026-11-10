@@ -7,7 +7,7 @@ umask 077
 export LC_ALL=C
 
 MVC24_BUILD_VERSION='2.4.1'
-MVC24_BUILD_CHECKPOINT='MVC_R6B_SUPPORT_RESOURCE_FILENAMES'
+MVC24_BUILD_CHECKPOINT='MVC_R6C_RUNTIME_MODULE_FILENAMES'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
@@ -333,7 +333,7 @@ mvc24_build_emit_module() {
         source/lib/combined-dbus-gdbus-settings.sh|\
         source/lib/combined-operational-host-guard-transaction.sh|\
         source/lib/combined-operational-c3-held-lifecycle.sh|\
-        source/lib/combined-operational-wireguard-protected-v240.sh)
+        source/lib/combined-operational-wireguard-protected.sh)
             expected_replacements=1 ;;
     esac
     while IFS= read -r line || [[ -n $line ]]; do
@@ -350,7 +350,7 @@ mvc24_build_emit_module() {
                 line='    policy=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 replacement_count=$((replacement_count + 1))
                 ;;
-            'source/lib/combined-operational-wireguard-protected-v240.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
+            'source/lib/combined-operational-wireguard-protected.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
                 line='    base=$(mvc24mon_runtime_asset_dir) || return 1'
                 replacement_count=$((replacement_count + 1))
                 ;;
@@ -375,7 +375,7 @@ done
 cat >> "$mvc24_tmp" <<'BASH_MONOLITH_GLUE'
 # ============================================================================
 # >>> BEGIN MONOLITH COMPOSITION GLUE
-# Derived from loader-only combined-operational-public-v240-composition.sh.
+# Derived from loader-only combined-operational-public-composition.sh.
 # This section intentionally contains runtime glue only; no project-tree source.
 # ============================================================================
 mvc24pub_session_runtime_root() { printf '%s\n' /run/mvc-public-session; }

@@ -69,7 +69,7 @@ while IFS='|' read -r kind order sha rel detail; do
             'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1')
                 line='    policy=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 ;;
-            'source/lib/combined-operational-wireguard-protected-v240.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
+            'source/lib/combined-operational-wireguard-protected.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
                 line='    base=$(mvc24mon_runtime_asset_dir) || return 1'
                 ;;
         esac
@@ -114,7 +114,7 @@ mkdir -m 700 "$TMP/modular-functions" "$TMP/generated-functions"
 ROOT="$ROOT" LIST="$COMPARE" OUT="$TMP/modular-functions" bash -c '
     set -e
     export MVC24E_CODE_ROOT="$ROOT/source"
-    source "$ROOT/source/lib/combined-operational-public-v240-composition.sh"
+    source "$ROOT/source/lib/combined-operational-public-composition.sh"
     source "$ROOT/source/lib/combined-controller-entry.sh"
     while IFS= read -r fn; do
         declare -F "$fn" >/dev/null || exit 3
@@ -150,8 +150,8 @@ mvc24ga2_guard_witness|combined-operational-ovpn-guarded-prepare.sh
 mvc24ga2_source_witness|combined-operational-ovpn-guarded-prepare.sh
 mvc24ga_live_guard_witness|combined-operational-ovpn-guarded-prepare.sh
 mvc24ga_nm_source_witness|combined-operational-ovpn-guarded-prepare.sh
-mvc24ga_postclone_identity_hook|combined-operational-public-v240-connect.sh
-mvc24ga_preclone_intent_hook|combined-operational-public-v240-connect.sh
+mvc24ga_postclone_identity_hook|combined-operational-public-connect.sh
+mvc24ga_preclone_intent_hook|combined-operational-public-connect.sh
 mvc24gc13_admission_witness|combined-operational-openvpn-composition.sh
 mvc24gc17_admission_witness|combined-operational-openvpn-composition.sh
 mvc24gc19_admission_witness|combined-operational-openvpn-composition.sh
@@ -160,9 +160,9 @@ mvc24gc3_admission_witness|combined-operational-openvpn-composition.sh
 mvc24gc5_admission_witness|combined-operational-openvpn-composition.sh
 mvc24gc7_admission_witness|combined-operational-openvpn-composition.sh
 mvc24gc9_admission_witness|combined-operational-openvpn-composition.sh
-mvc24gco_enabled|combined-operational-public-v240-disconnect.sh
-mvc24gd4_authority_witness|combined-operational-public-v240-disconnect.sh
-mvc24gd4_post_openvpn_cleanup_witness|combined-operational-public-v240-disconnect.sh
+mvc24gco_enabled|combined-operational-public-disconnect.sh
+mvc24gd4_authority_witness|combined-operational-public-disconnect.sh
+mvc24gd4_post_openvpn_cleanup_witness|combined-operational-public-disconnect.sh
 OWNERS
 owner_ok=0
 owner_total=0
