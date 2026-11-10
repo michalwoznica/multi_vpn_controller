@@ -8,7 +8,6 @@ fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
 
 CONN=$ROOT/source/lib/combined-operational-public-v240-connect.sh
 DISC=$ROOT/source/lib/combined-operational-public-v240-disconnect.sh
-DORMANT='ubs-vpn-state-v4-draft'
 
 # Central ownership records move as one trust domain: producer and every current
 # live/completed-session consumer must agree on the same schema magic.
@@ -81,22 +80,15 @@ else
   fail 'real transaction parser rejects retired UBS public transaction magic'
 fi
 
-# R5E intentionally leaves only the dormant combined-state draft legacy magic.
+# R6A removes the final dormant legacy persistent magic.
 remaining=$(cd "$ROOT" && rg -o --no-filename \
   'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u)
-if [[ $remaining == "$DORMANT" ]]; then
-  pass 'only dormant combined-state legacy magic remains in production source'
+  source/lib source/tools source/build source/nftables | sort -u || true)
+if [[ -z $remaining ]]; then
+  pass 'no retired persistent UBS magic remains in production source'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'only dormant combined-state legacy magic remains in production source'
-fi
-
-# The dormant API is deliberately outside R5E and remains byte-visible for later cleanup.
-if [[ $(rg -F "$DORMANT" "$ROOT/source/lib/dual-session.sh" | wc -l) -eq 2 ]]; then
-  pass 'dormant combined-state draft remains frozen for later dead-code cleanup'
-else
-  fail 'dormant combined-state draft remains frozen for later dead-code cleanup'
+  fail 'no retired persistent UBS magic remains in production source'
 fi
 
 printf 'RESULT: MVC-R5E public-session record namespace %d/%d checks passed\n' "$P" "$((P+F))"

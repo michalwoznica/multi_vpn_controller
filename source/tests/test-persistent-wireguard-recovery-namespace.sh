@@ -55,12 +55,12 @@ fi
 # Only dormant combined-state magic remains frozen after R5E.
 remaining=$(cd "$ROOT" && rg -o --no-filename \
   'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u)
-if [[ $remaining == 'ubs-vpn-state-v4-draft' ]]; then
-  pass 'only dormant combined-state legacy magic remains frozen'
+  source/lib source/tools source/build source/nftables | sort -u || true)
+if [[ -z $remaining ]]; then
+  pass 'no retired persistent UBS magic remains in production source'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'only dormant combined-state legacy magic remains frozen'
+  fail 'no retired persistent UBS magic remains in production source'
 fi
 
 # The exact current D4 parser path must reject retired magic. Use the normal

@@ -2,7 +2,7 @@
 # Authoritative ordered input contract for the deterministic release builder.
 # Format: KIND|ORDER_OR_NAME|SHA256|PATH|DETAIL
 # MODULE order is security/runtime significant; later Bash definitions intentionally override earlier ones.
-MODULE|001|e2ab73ff4ef86c314e13114c6df9d0e01df66d361eff5fe28313ab98631f21c7|source/lib/dual-session.sh|ordered-runtime-module
+MODULE|001|3eb3a854dc6fc0cc61b901dbbebeb1afea3f885acc25a5a1bf3f20960eace07a|source/lib/dual-session.sh|ordered-runtime-module
 MODULE|002|34d2c6a948bfc0d6503086b345597fa6ff8ebf89b21ed25089de79ec0ad72225|source/lib/wireguard-peers.sh|ordered-runtime-module
 MODULE|003|d84dc04bcc66531b3e444a03f307a858719007757bd7d7d0721493c0f3ce3fbc|source/lib/combined-routing-guard.sh|ordered-runtime-module
 MODULE|004|7d3c65f9d31b3fa966920004dda1651ac07e845add891852e807bf2a318d02fc|source/lib/combined-dbus-gdbus-portable.sh|ordered-runtime-module
