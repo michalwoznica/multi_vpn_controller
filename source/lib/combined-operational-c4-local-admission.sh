@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Gate C4: private operator-reviewed local-root entry for C3 preparation ONLY.
+# No OpenVPN activation, no automatic cleanup, no guard release or DNS change.
+# Source AFTER C3. Admission is bound to local confirmation, exact source UUID,
+# root scope, no existing runtime, no active VPN and installed manual recovery.
+# The C3 entry itself remains unimported by the public vpn controller.
+
+ubs24gc4_reset() {
+    UBS24GC4_OPERATION=none
+    UBS24GC4_APPROVAL=none
+    UBS24GC4_ATTEMPTED=no
+    UBS24GC4_IFACE=
+    UBS24GC4_NM_OWNER=
+    UBS24GC4_PREFLIGHT_STAGE=idle
+}
+
+ubs24gc4_recovery_installed() {
+    (( $# == 0 )) || return 1
+    local installed=/root/ubs-v240-emergency-rollback
+    local source=${UBS24GC4_SOURCE_ROOT:-}/tools/recover-v240-host-guard-local.sh
+    [[ ${UBS24GC4_SOURCE_ROOT:-} == /* && -f $source && ! -L $source &&
+       -f $installed && ! -L $installed && -x $installed ]] || return 1
+    [[ $(stat -c '%u:%a:%h' -- "$installed" 2>/dev/null) == '0:700:1' ]] || return 1
+    cmp -s -- "$source" "$installed"
+}
+
+ubs24gc4_dependencies() {
+    (( $# == 0 )) || return 1
+    local bin
+    for bin in nft jq ip nmcli gdbus flock wg pgrep sha256sum awk cmp stat sleep; do
+        command -v "$bin" >/dev/null 2>&1 || return 1
+    done
+}
+
+# Read-only early eligibility check BEFORE B2 can block connectivity.
+# This is a convenience rejection, never a substitute for the guarded A3/C2
+# exact readbacks or a claim that NM already holds reusable credentials.
+ubs24gc4_source_preview() {
+    (( $# == 1 )) || return 1
+    local probe=${UBS24GC4_SOURCE_ROOT:-}/tools/check-v240-live-saved-ovpn-readonly.sh
+    [[ ${UBS24GC4_SOURCE_ROOT:-} == /* && -f $probe && ! -L $probe && -x $probe ]] || return 1
+    "$probe" --preview-derivative "$1" >/dev/null 2>&1
+}
+
+ubs24gc4_preflight() {
+    (( $# == 1 )) || return 1
+    local source_uuid=$1 underlay nm_owner
+    UBS24GC4_PREFLIGHT_STAGE=attempt-state
+    [[ ${UBS24GC4_ATTEMPTED:-no} == no ]] || return 1
+    UBS24GC4_PREFLIGHT_STAGE=source-uuid
+    ubs24ga_uuid_valid "$source_uuid" || return 1
+    UBS24GC4_PREFLIGHT_STAGE=local-root-scope
+    ubs24gb4_scope || return 1
+    UBS24GC4_PREFLIGHT_STAGE=no-active-vpn
+    ubs24gb4_no_active_vpn || return 1
+    UBS24GC4_PREFLIGHT_STAGE=recovery-script-identity
+    ubs24gc4_recovery_installed || return 1
+    UBS24GC4_PREFLIGHT_STAGE=controller-runtime-absent
+    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    UBS24GC4_PREFLIGHT_STAGE=required-command-inventory
+    ubs24gc4_dependencies || return 1
+    UBS24GC4_PREFLIGHT_STAGE=saved-openvpn-derivative-preview
+    ubs24gc4_source_preview "$source_uuid" || return 1
+    UBS24GC4_PREFLIGHT_STAGE=single-underlay
+    underlay=$(ubs24gb4_underlay) || return 1
+    UBS24GC4_PREFLIGHT_STAGE=networkmanager-owner
+    ubs24op_session_nm_identity || return 1
+    nm_owner=${UBS24OP_SESSION_NM_IDENTITY:-}
+    UBS24GC4_PREFLIGHT_STAGE=networkmanager-owner-root
+    [[ $nm_owner == *'|0' && -n $underlay ]] || return 1
+    UBS24GC4_IFACE=$underlay
+    UBS24GC4_NM_OWNER=$nm_owner
+    UBS24GC4_PREFLIGHT_STAGE=ready
+}
+
+ubs24gc4_confirm() {
+    (( $# == 0 )) || return 1
+    [[ -t 0 && -t 1 && -r /dev/tty && -w /dev/tty &&
+       -z ${SSH_CONNECTION:-} && -z ${SSH_TTY:-} ]] || return 1
+    printf '%s\n' '' \
+      'This will change your REAL HOST nftables firewall and NetworkManager.' \
+      'The host will enter deny-all quarantine, then permit only one pinned OpenVPN endpoint.' \
+      'NO VPN WILL BE ACTIVATED. Internet access will remain blocked for ordinary applications.' \
+      'On failure or uncertain commit, the kill switch stays in place; no automatic rollback.' \
+      'You must have a separate working local-root recovery terminal, not SSH.' \
+      'Emergency rollback DISABLES the kill switch and is a manual decision.' \
+      'Type exactly: PREPARE UBS V240 GUARDED OPENVPN' > /dev/tty
+    printf '> ' > /dev/tty
+    local response=
+    IFS= read -r response < /dev/tty || return 1
+    [[ $response == 'PREPARE UBS V240 GUARDED OPENVPN' ]]
+}
+
+# Override C3 DENY ONLY from this private driver after explicit confirmation.
+# Approval is consumed before any B2 write. Neither Bash environment values
+# nor raw endpoint arguments can establish permission on their own.
+ubs24gc3_admission_witness() {
+    (( $# == 0 )) || return 1
+    [[ ${UBS24GC4_OPERATION:-none} == prepare &&
+       ${UBS24GC4_APPROVAL:-none} == approved-once &&
+       ${UBS24GC4_ATTEMPTED:-no} == yes &&
+       -n ${UBS24GC4_IFACE:-} && -n ${UBS24GC4_NM_OWNER:-} ]] || return 1
+    UBS24GC4_APPROVAL=consumed
+    ubs24gb4_scope && ubs24gb4_no_active_vpn &&
+      ubs24gc4_recovery_installed || return 1
+    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    local current_iface
+    current_iface=$(ubs24gb4_underlay) || return 1
+    [[ $current_iface == "$UBS24GC4_IFACE" ]] || return 1
+    ubs24op_session_nm_identity || return 1
+    [[ ${UBS24OP_SESSION_NM_IDENTITY:-} == "$UBS24GC4_NM_OWNER" ]]
+}
+
+ubs24gc4_prepare_once() {
+    (( $# == 1 )) || return 1
+    [[ ${UBS24GC4_ATTEMPTED:-no} == no ]] || return 1
+    # Read-only preflight first; consume the one-shot attempt even on failure.
+    if ! ubs24gc4_preflight "$1"; then
+        UBS24GC4_ATTEMPTED=yes
+        return 1
+    fi
+    UBS24GC4_ATTEMPTED=yes
+    UBS24GC4_OPERATION=prepare
+    UBS24GC4_APPROVAL=none
+    ubs24gc4_confirm || return 1
+    UBS24GC4_APPROVAL=approved-once
+    # The typed GDBus settings reader has a legacy boolean API prerequisite.
+    # It is NOT permission: C2 reattests the actual exclusive B2 lock, kernel
+    # quarantine and NM identity before every A3 readback and C1 transition.
+    # Scope it to this one-shot process and never export it to the environment.
+    UBS24S_LOCK_HELD=1
+    local result=1
+    if ubs24gc3_execute_once "$1" "$UBS24GC4_IFACE"; then result=0; fi
+    UBS24S_LOCK_HELD=0
+    UBS24GC4_APPROVAL=consumed
+    (( result == 0 ))
+}
+
+ubs24gc4_status_readonly() {
+    (( $# == 0 )) || return 1
+    ubs24gb2_root_scope && ubs24gc3_reconcile_readonly
+}
+
+# C4 preparation is NOT OpenVPN activation, VPN-session recovery or disarm.
+ubs24gc4_authorize_activation() { return 1; }
+ubs24gc4_authorize_cleanup() { return 1; }
+ubs24gc4_authorize_disarm() { return 1; }
+ubs24gc4_authorize_secret_export() { return 1; }
+ubs24gc4_authorize_recovery() { return 1; }

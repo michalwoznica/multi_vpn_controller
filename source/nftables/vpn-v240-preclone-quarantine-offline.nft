@@ -1,0 +1,16 @@
+#!/usr/bin/nft -f
+# UBS VPN Controller v2.4.0 — F14, QUARANTINE CONTRACT ONLY.
+# NOT a production installer. Do not execute on a host: it intentionally drops
+# ALL local IP OUTPUT, all IP FORWARD, and all Linux bridge FORWARD traffic.
+# No exemptions for DNS, loopback IP, existing connections or VPN endpoints.
+# These rules do NOT cover direct NIC ownership in a separate network namespace,
+# macvlan/ipvlan external egress, hardware/offloaded bypass, TC/XDP, or other
+# non-netfilter paths. Unsupported until independently inventoried and confined.
+# An eventual production installer must add BOTH tables in one nft transaction,
+# under its authenticated fixed-root lock, with an independently verified
+# pre/post kernel witness. F14 does not provide that installer or authority.
+add table inet vpn_v240_preclone_quarantine
+add chain inet vpn_v240_preclone_quarantine output_deny { type filter hook output priority -310; policy drop; }
+add chain inet vpn_v240_preclone_quarantine forward_deny { type filter hook forward priority -310; policy drop; }
+add table bridge vpn_v240_preclone_bridge
+add chain bridge vpn_v240_preclone_bridge forward_deny { type filter hook forward priority -310; policy drop; }

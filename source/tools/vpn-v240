@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# UBS VPN Controller 2.4.1 — final public combined-mode release.
+# v2.4.1 retains the same public command surface with C24A dropout reconciliation.
+# Keep v2.3.0 as rollback/reference unless the operator deliberately retires it.
+set -euo pipefail
+umask 077
+export LC_ALL=C
+UBS24E_CODE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P) || exit 1
+readonly UBS24E_CODE_ROOT
+# shellcheck source=../lib/combined-controller-wiring.sh
+source "$UBS24E_CODE_ROOT/lib/combined-controller-wiring.sh" || exit 1
+ubs24e_dispatch "$@"
