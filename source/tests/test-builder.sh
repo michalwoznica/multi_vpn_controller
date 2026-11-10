@@ -36,7 +36,7 @@ if $A --help | grep -Fq 'public identity release candidate'; then ok 'current ge
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=MVC_R6A_DEAD_COMBINED_STATE_REMOVAL" <<< "$info" &&
+if grep -Fxq "checkpoint=MVC_R6B_SUPPORT_RESOURCE_FILENAMES" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'
@@ -58,7 +58,7 @@ if cmp -s -- "$TMP/resources/gvariant-settings-to-json.awk" "$ROOT/source/lib/co
 else
     bad 'embedded GVariant AWK resource is byte-identical'
 fi
-if cmp -s -- "$TMP/resources/preclone-quarantine.nft" "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft"; then
+if cmp -s -- "$TMP/resources/preclone-quarantine.nft" "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft"; then
     ok 'embedded B4 nft resource is byte-identical'
 else
     bad 'embedded B4 nft resource is byte-identical'

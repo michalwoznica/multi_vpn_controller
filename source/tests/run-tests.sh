@@ -27,6 +27,7 @@ TESTS=(
   test-persistent-disconnect-finalization-namespace.sh
   test-persistent-public-session-namespace.sh
   test-dead-combined-state-removal.sh
+  test-support-resource-filenames.sh
 )
 
 passed=0

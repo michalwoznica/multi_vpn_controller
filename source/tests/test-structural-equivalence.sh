@@ -63,10 +63,10 @@ while IFS='|' read -r kind order sha rel detail; do
             'source/lib/combined-dbus-gdbus-settings.sh|    decoder=${BASH_SOURCE[0]%/*}/combined-gvariant-settings-to-json.awk')
                 line='    decoder=$(mvc24mon_runtime_asset_path gvariant-awk) || return 1'
                 ;;
-            'source/lib/combined-operational-host-guard-transaction.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
+            'source/lib/combined-operational-host-guard-transaction.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1')
                 line='    base=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 ;;
-            'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
+            'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1')
                 line='    policy=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 ;;
             'source/lib/combined-operational-wireguard-protected-v240.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
@@ -204,7 +204,7 @@ if [[ $($TMP/isolated/mvc version) == 'Multi VPN Controller 2.4.1' ]] &&
    "$TMP/isolated/mvc" --help | grep -Fq 'WireGuard-only split' &&
    "$TMP/isolated/mvc" --monolith-resource-selftest "$TMP/isolated/resources" >/dev/null &&
    cmp -s -- "$TMP/isolated/resources/gvariant-settings-to-json.awk" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&
-   cmp -s -- "$TMP/isolated/resources/preclone-quarantine.nft" "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft"; then
+   cmp -s -- "$TMP/isolated/resources/preclone-quarantine.nft" "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft"; then
     ok 'isolated monolith needs no sibling lib/tools/nftables tree for metadata/help/embedded resources'
 else
     bad 'isolated monolith needs no sibling lib/tools/nftables tree for metadata/help/embedded resources'

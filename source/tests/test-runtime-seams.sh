@@ -7,7 +7,7 @@ export LC_ALL=C
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
-PROBE=$ROOT/source/tools/check-v240-live-saved-ovpn-readonly.sh
+PROBE=$ROOT/source/tools/check-mvc-live-saved-ovpn-readonly.sh
 PASS=0
 FAIL=0
 ok(){ printf 'PASS: %s\n' "$1"; PASS=$((PASS+1)); }
@@ -48,7 +48,7 @@ mvc24mon_runtime_assets_prepare
 awk_asset=$(mvc24mon_runtime_asset_path gvariant-awk)
 nft_asset=$(mvc24mon_runtime_asset_path b4-bootstrap-nft)
 if cmp -s -- "$awk_asset" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&
-   cmp -s -- "$nft_asset" "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft"; then
+   cmp -s -- "$nft_asset" "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft"; then
     ok 'runtime embedded assets are byte-identical to audited sources'
 else
     bad 'runtime embedded assets are byte-identical to audited sources'

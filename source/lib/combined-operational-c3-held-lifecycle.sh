@@ -56,7 +56,7 @@ mvc24gc3_execute_once() {
     MVC24GC3_STAGE=refused-preflight
     MVC24GC3_AUTHORITY=none
     local source_uuid=$1 iface=$2 policy
-    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1
+    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1
     mvc24gc3_admission_witness && mvc24gb4_scope &&
         mvc24gb4_no_active_vpn && mvc24ga_uuid_valid "$source_uuid" &&
         mvc24gb1_valid_ifname "$iface" || return 1

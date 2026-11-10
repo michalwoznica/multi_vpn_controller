@@ -102,7 +102,7 @@ mvc24gb2_records_valid() {
 mvc24gb2_batch_valid() {
     (( $# == 2 )) || return 1
     local iface=$1 batch=$2 base line expected
-    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1
+    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1
     [[ -n $base && -f $base && ! -L $base && -f $batch && ! -L $batch ]] || return 1
     [[ $(sha256sum "$base" | cut -d' ' -f1) == \
        b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03 ]] || return 1

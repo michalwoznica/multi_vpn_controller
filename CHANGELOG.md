@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2.4.1
+- Rename the non-module nftables runtime resource and read-only OpenVPN helper to MVC-native filenames without changing their content or runtime behavior.
+
 - Remove the unused draft combined-state serializer/parser and its retired legacy record magic; active dual-session parsing helpers remain unchanged.
 
 - Migrate the central public transaction and active ownership markers to version-independent `mvc-...-v1` magic, keeping the dormant combined-state draft deferred.

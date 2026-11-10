@@ -78,7 +78,7 @@ fi
 legacy_install_hits=$(cd "$ROOT" && rg -n --glob '!source/tests/test-nonpersistent-literal-cleanup.sh' \
   '/usr/local/sbin/ubs-vpn|/root/ubs-v240-(emergency-rollback|dual-recovery)' source || :)
 if [[ -n $legacy_install_hits ]] &&
-   ! grep -vE '^source/(tools/install-mvc\.sh|tests/test-installer\.sh|tests/test-public-identity\.sh):' <<<"$legacy_install_hits" | grep -q .; then
+   ! grep -vE '^source/(tools/install-mvc\.sh|tests/test-installer\.sh|tests/test-public-identity\.sh|tests/test-support-resource-filenames\.sh):' <<<"$legacy_install_hits" | grep -q .; then
   pass 'legacy installed names remain only in migration compatibility/tests'
 else
   printf '%s\n' "$legacy_install_hits" >&2

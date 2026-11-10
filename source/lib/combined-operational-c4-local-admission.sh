@@ -37,7 +37,7 @@ mvc24gc4_dependencies() {
 # exact readbacks or a claim that NM already holds reusable credentials.
 mvc24gc4_source_preview() {
     (( $# == 1 )) || return 1
-    local probe=${MVC24GC4_SOURCE_ROOT:-}/tools/check-v240-live-saved-ovpn-readonly.sh
+    local probe=${MVC24GC4_SOURCE_ROOT:-}/tools/check-mvc-live-saved-ovpn-readonly.sh
     [[ ${MVC24GC4_SOURCE_ROOT:-} == /* && -f $probe && ! -L $probe && -x $probe ]] || return 1
     "$probe" --preview-derivative "$1" >/dev/null 2>&1
 }

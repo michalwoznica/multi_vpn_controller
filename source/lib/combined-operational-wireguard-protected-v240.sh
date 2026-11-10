@@ -17,7 +17,7 @@ mvc24gwg_reset() {
 mvc24gwg_policy_file() {
     local base
     base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1
-    printf '%s\n' "$base/vpn-v240-preclone-quarantine-offline.nft"
+    printf '%s\n' "$base/mvc-preclone-quarantine-offline.nft"
 }
 
 mvc24gwg_parameters() {

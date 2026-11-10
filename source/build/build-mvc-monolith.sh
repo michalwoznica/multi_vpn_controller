@@ -7,7 +7,7 @@ umask 077
 export LC_ALL=C
 
 MVC24_BUILD_VERSION='2.4.1'
-MVC24_BUILD_CHECKPOINT='MVC_R6A_DEAD_COMBINED_STATE_REMOVAL'
+MVC24_BUILD_CHECKPOINT='MVC_R6B_SUPPORT_RESOURCE_FILENAMES'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
@@ -143,9 +143,9 @@ done < "$mvc24_manifest"
    ${MVC24_BUILD_KIND_COUNT[EXCLUDE]:-0} == 2 ]] || mvc24_build_die 'manifest role counts changed'
 [[ ${MVC24_BUILD_ASSET_PATH[gvariant-awk]:-} == source/lib/combined-gvariant-settings-to-json.awk ]] || \
     mvc24_build_die 'gvariant asset path changed'
-[[ ${MVC24_BUILD_ASSET_PATH[b4-bootstrap-nft]:-} == source/nftables/vpn-v240-preclone-quarantine-offline.nft ]] || \
+[[ ${MVC24_BUILD_ASSET_PATH[b4-bootstrap-nft]:-} == source/nftables/mvc-preclone-quarantine-offline.nft ]] || \
     mvc24_build_die 'B4 nft asset path changed'
-[[ ${MVC24_BUILD_INTEGRATE_PATH[openvpn-source-preview]:-} == source/tools/check-v240-live-saved-ovpn-readonly.sh ]] || \
+[[ ${MVC24_BUILD_INTEGRATE_PATH[openvpn-source-preview]:-} == source/tools/check-mvc-live-saved-ovpn-readonly.sh ]] || \
     mvc24_build_die 'OpenVPN preview integration path changed'
 [[ ${MVC24_BUILD_INTEGRATE_PATH[verify]:-} == source/tools/verify-mvc-state-readonly.sh ]] || \
     mvc24_build_die 'read-only verifier integration path changed'
@@ -258,7 +258,7 @@ mvc24mon_runtime_assets_cleanup() {
     local dir=${MVC24_MONOLITH_ASSET_DIR:-}
     [[ -n $dir ]] || return 0
     if [[ -d $dir && ! -L $dir && $dir == /dev/shm/mvc-monolith-assets.* ]]; then
-        rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/vpn-v240-preclone-quarantine-offline.nft" 2>/dev/null || :
+        rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/mvc-preclone-quarantine-offline.nft" 2>/dev/null || :
         rmdir -- "$dir" 2>/dev/null || :
     fi
     MVC24_MONOLITH_ASSET_DIR=''
@@ -272,15 +272,15 @@ mvc24mon_runtime_assets_prepare() {
         dir=$MVC24_MONOLITH_ASSET_DIR
         [[ -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir" 2>/dev/null) == "$EUID:700:2" ]] || return 1
         [[ -f $dir/gvariant-settings-to-json.awk && ! -L $dir/gvariant-settings-to-json.awk &&
-           -f $dir/vpn-v240-preclone-quarantine-offline.nft && ! -L $dir/vpn-v240-preclone-quarantine-offline.nft ]] || return 1
+           -f $dir/mvc-preclone-quarantine-offline.nft && ! -L $dir/mvc-preclone-quarantine-offline.nft ]] || return 1
         return 0
     fi
     [[ -d /dev/shm && ! -L /dev/shm && $(stat -f -c %T /dev/shm 2>/dev/null) == tmpfs ]] || return 1
     dir=$(umask 077; mktemp -d /dev/shm/mvc-monolith-assets.XXXXXXXX) || return 1
     chmod 700 -- "$dir" || { rmdir -- "$dir" 2>/dev/null || :; return 1; }
     if ! mvc24mon_materialize_resource gvariant-awk "$dir/gvariant-settings-to-json.awk" ||
-       ! mvc24mon_materialize_resource b4-bootstrap-nft "$dir/vpn-v240-preclone-quarantine-offline.nft"; then
-        rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/vpn-v240-preclone-quarantine-offline.nft" 2>/dev/null || :
+       ! mvc24mon_materialize_resource b4-bootstrap-nft "$dir/mvc-preclone-quarantine-offline.nft"; then
+        rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/mvc-preclone-quarantine-offline.nft" 2>/dev/null || :
         rmdir -- "$dir" 2>/dev/null || :
         return 1
     fi
@@ -301,7 +301,7 @@ mvc24mon_runtime_asset_path() {
     dir=$(mvc24mon_runtime_asset_dir) || return 1
     case $1 in
         gvariant-awk) path=$dir/gvariant-settings-to-json.awk ;;
-        b4-bootstrap-nft) path=$dir/vpn-v240-preclone-quarantine-offline.nft ;;
+        b4-bootstrap-nft) path=$dir/mvc-preclone-quarantine-offline.nft ;;
         *) return 1 ;;
     esac
     expected=$(mvc24mon_resource_sha256 "$1") || return 1
@@ -342,11 +342,11 @@ mvc24_build_emit_module() {
                 line='    decoder=$(mvc24mon_runtime_asset_path gvariant-awk) || return 1'
                 replacement_count=$((replacement_count + 1))
                 ;;
-            'source/lib/combined-operational-host-guard-transaction.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
+            'source/lib/combined-operational-host-guard-transaction.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1')
                 line='    base=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 replacement_count=$((replacement_count + 1))
                 ;;
-            'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
+            'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1')
                 line='    policy=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 replacement_count=$((replacement_count + 1))
                 ;;

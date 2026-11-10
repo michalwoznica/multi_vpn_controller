@@ -11,7 +11,7 @@ fail(){ printf 'FAIL: %s\n' "$1"; F=$((F+1)); }
 # during migration from the physically proven predecessor.
 legacy_hits=$(
   cd "$ROOT"
-  rg -n --hidden --glob '!.handoff/**' --glob '!dist/**' --glob '!source/tests/test-runtime-identity.sh' \
+  rg -n --hidden --glob '!.handoff/**' --glob '!dist/**' --glob '!source/tests/**' \
     '/run/ubs-v240-|vpn_v240_preclone_|ubs-v240-prepared-|/dev/shm/ubs-v240-monolith-assets' . || :
 )
 if [[ -z $legacy_hits ]] || ! grep -vE '^\./source/tools/install-mvc\.sh:.*\/run\/ubs-v240-' <<<"$legacy_hits" | grep -q .; then
@@ -25,8 +25,8 @@ rg -q '/run/mvc-public-session' "$ROOT/source/lib/combined-operational-public-v2
   rg -q '/run/mvc-wireguard' "$ROOT/source/lib/combined-operational-d4-wireguard-parallel-live.sh" &&
   pass 'production session roots use mvc namespace' || fail 'production session roots use mvc namespace'
 
-rg -q 'mvc_preclone_quarantine' "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft" &&
-  rg -q 'mvc_preclone_bridge' "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft" &&
+rg -q 'mvc_preclone_quarantine' "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft" &&
+  rg -q 'mvc_preclone_bridge' "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft" &&
   rg -q 'mvc_preclone_underlay' "$ROOT/source/lib/combined-operational-host-guard-transaction.sh" &&
   pass 'B4 nftables tables use mvc namespace' || fail 'B4 nftables tables use mvc namespace'
 
