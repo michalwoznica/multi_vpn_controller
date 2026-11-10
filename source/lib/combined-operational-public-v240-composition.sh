@@ -53,8 +53,8 @@ MANIFEST
 # Fixed production runtime root for the public same-boot lifecycle. Production
 # code never reads an inherited environment variable for this path. Tests may
 # override this function in their own process after sourcing the composition.
-ubs24pub_session_runtime_root() { printf '%s\n' /run/ubs-v240-public-session; }
-ubs24pub_wireguard_runtime_root() { printf '%s\n' /run/ubs-v240-wireguard; }
+ubs24pub_session_runtime_root() { printf '%s\n' /run/mvc-public-session; }
+ubs24pub_wireguard_runtime_root() { printf '%s\n' /run/mvc-wireguard; }
 
 ubs24pub_source_module() {
     (( $# == 1 )) || return 1
@@ -134,6 +134,6 @@ ubs24pub_process_initialize() {
     UBS24GC4_SOURCE_ROOT=$UBS24E_CODE_ROOT
 
     [[ ${UBS24GD4_TEMP_NAME:-} == vpnks-wg &&
-       ${UBS24GD4_RUNTIME:-} == /run/ubs-v240-wireguard &&
+       ${UBS24GD4_RUNTIME:-} == /run/mvc-wireguard &&
        ${UBS24PUBC_STAGE:-} == idle && ${UBS24PUBD_STAGE:-} == idle ]]
 }

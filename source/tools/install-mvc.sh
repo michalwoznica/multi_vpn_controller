@@ -90,7 +90,7 @@ ubs24i_package_verify() {
     builder_sha=$(ubs24i_hash "$builder")
     emergency_sha=$(ubs24i_hash "$emergency_src")
     dual_sha=$(ubs24i_hash "$dual_src")
-    [[ $(ubs24i_info_value "$info" checkpoint) == MVC_R1_PUBLIC_IDENTITY ]] || ubs24i_die 'controller checkpoint mismatch'
+    [[ $(ubs24i_info_value "$info" checkpoint) == MVC_R2_RUNTIME_IDENTITY ]] || ubs24i_die 'controller checkpoint mismatch'
     [[ $(ubs24i_info_value "$info" authority) == audited-dispatch-mvc-v241-candidate-physical-pending ]] || ubs24i_die 'controller authority provenance mismatch'
     [[ $(ubs24i_info_value "$info" manifest_sha256) == "$manifest_sha" ]] || ubs24i_die 'controller/manifest provenance mismatch'
     [[ $(ubs24i_info_value "$info" builder_sha256) == "$builder_sha" ]] || ubs24i_die 'controller/builder provenance mismatch'
@@ -168,8 +168,14 @@ ubs24i_retire_legacy_if_present() {
 
 ubs24i_assert_quiescent() {
     local rel p active
-    # Legacy internal runtime roots intentionally remain unchanged in MVC-R1.
+    # Refuse maintenance if either MVC-R2 runtime state or recognized pre-MVC
+    # 2.4.x runtime state is present.  The latter matters during upgrades from
+    # the physically proven predecessor.
     for rel in \
+        /run/mvc-controller /run/mvc-activation \
+        /run/mvc-output-transition /run/mvc-disconnect \
+        /run/mvc-completion /run/mvc-wireguard \
+        /run/mvc-public-session \
         /run/ubs-v240-controller /run/ubs-v240-activation \
         /run/ubs-v240-output-transition /run/ubs-v240-disconnect \
         /run/ubs-v240-completion /run/ubs-v240-wireguard \
@@ -207,7 +213,7 @@ ubs24i_verify_installed() {
     ubs24i_verify_one "$dual_dst" 700 "$dual_sha" 'dual recovery tool'
     [[ $($controller_dst version) == 'Multi VPN Controller 2.4.1' ]] || ubs24i_die 'installed controller version mismatch'
     info=$($controller_dst --monolith-build-info) || ubs24i_die 'installed controller provenance unreadable'
-    [[ $(ubs24i_info_value "$info" checkpoint) == MVC_R1_PUBLIC_IDENTITY ]] || ubs24i_die 'installed controller checkpoint mismatch'
+    [[ $(ubs24i_info_value "$info" checkpoint) == MVC_R2_RUNTIME_IDENTITY ]] || ubs24i_die 'installed controller checkpoint mismatch'
     [[ $(ubs24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || ubs24i_die 'installed emergency recovery identity mismatch'
     [[ $(ubs24i_info_value "$info" dual_recovery_sha256) == "$dual_sha" ]] || ubs24i_die 'installed dual recovery identity mismatch'
 }

@@ -29,7 +29,7 @@ verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_R1_PUBLIC_IDENTITY' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_R2_RUNTIME_IDENTITY' <<<"$verbose" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
@@ -145,16 +145,16 @@ case_name=${VERIFY_CASE:?}
 if [[ ${1-} == list && ${2-} == tables ]]; then
     echo 'table inet laptop_base'
     if [[ $case_name == combined ]]; then
-        echo 'table inet vpn_v240_preclone_quarantine'
-        echo 'table bridge vpn_v240_preclone_bridge'
-        echo 'table netdev vpn_v240_preclone_underlay'
+        echo 'table inet mvc_preclone_quarantine'
+        echo 'table bridge mvc_preclone_bridge'
+        echo 'table netdev mvc_preclone_underlay'
     fi
     exit 0
 fi
 if [[ ${1-} == list && ${2-} == table ]]; then
     [[ $case_name == combined ]] || exit 1
     case "${3-}:${4-}" in
-        inet:vpn_v240_preclone_quarantine|bridge:vpn_v240_preclone_bridge|netdev:vpn_v240_preclone_underlay) exit 0 ;;
+        inet:mvc_preclone_quarantine|bridge:mvc_preclone_bridge|netdev:mvc_preclone_underlay) exit 0 ;;
         *) exit 1 ;;
     esac
 fi

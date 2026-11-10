@@ -42,7 +42,7 @@ ubs24gc9_execute_once() {
     [[ ${UBS24GC3_ATTEMPTED:-no} == no &&
        ${UBS24GC5_ATTEMPTED:-no} == no &&
        ${UBS24GC7_ATTEMPTED:-no} == no &&
-       ! -e /run/ubs-v240-activation && ! -L /run/ubs-v240-activation ]] || return 1
+       ! -e /run/mvc-activation && ! -L /run/mvc-activation ]] || return 1
 
     # C3 invokes A3, and A3's typed GDBus GetSettings reader requires the
     # legacy UBS24S_LOCK_HELD indicator. Bind it for C3 as well as C8/C14/C7,

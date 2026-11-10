@@ -56,7 +56,7 @@ ubs24gc4_preflight() {
     UBS24GC4_PREFLIGHT_STAGE=recovery-script-identity
     ubs24gc4_recovery_installed || return 1
     UBS24GC4_PREFLIGHT_STAGE=controller-runtime-absent
-    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     UBS24GC4_PREFLIGHT_STAGE=required-command-inventory
     ubs24gc4_dependencies || return 1
     UBS24GC4_PREFLIGHT_STAGE=saved-openvpn-derivative-preview
@@ -103,7 +103,7 @@ ubs24gc3_admission_witness() {
     UBS24GC4_APPROVAL=consumed
     ubs24gb4_scope && ubs24gb4_no_active_vpn &&
       ubs24gc4_recovery_installed || return 1
-    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     local current_iface
     current_iface=$(ubs24gb4_underlay) || return 1
     [[ $current_iface == "$UBS24GC4_IFACE" ]] || return 1

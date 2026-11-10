@@ -21,9 +21,9 @@ ubs24op_qg_preflight_snapshot() {
     jq -e '
         def owned($v):
             (($v.family == "inet" and
-                (($v.table // $v.name // "") == "vpn_v240_preclone_quarantine")) or
+                (($v.table // $v.name // "") == "mvc_preclone_quarantine")) or
              ($v.family == "bridge" and
-                (($v.table // $v.name // "") == "vpn_v240_preclone_bridge")));
+                (($v.table // $v.name // "") == "mvc_preclone_bridge")));
         type == "object" and (.nftables | type) == "array" and
         all(.nftables[]; type == "object" and ((keys | length) == 1) and
             ((keys[0]) as $k | ["metainfo","table","chain","rule","set","element",
@@ -45,9 +45,9 @@ ubs24op_qg_postshape_snapshot() {
     jq -e '
         def owned($v):
             (($v.family == "inet" and
-                (($v.table // $v.name // "") == "vpn_v240_preclone_quarantine")) or
+                (($v.table // $v.name // "") == "mvc_preclone_quarantine")) or
              ($v.family == "bridge" and
-                (($v.table // $v.name // "") == "vpn_v240_preclone_bridge")));
+                (($v.table // $v.name // "") == "mvc_preclone_bridge")));
         def matches($f;$t;$n;$h):
             (.family == $f and .table == $t and .name == $n and
              .type == "filter" and .hook == $h and .prio == -310 and
@@ -59,16 +59,16 @@ ubs24op_qg_postshape_snapshot() {
                  "ct timeout","ct expectation","synproxy"] | index($k) != null)) and
         ([.nftables[] | .table? | select(. != null and owned(.))] | length) == 2 and
         ([.nftables[] | .table? | select(. != null and .family == "inet" and
-            .name == "vpn_v240_preclone_quarantine")] | length) == 1 and
+            .name == "mvc_preclone_quarantine")] | length) == 1 and
         ([.nftables[] | .table? | select(. != null and .family == "bridge" and
-            .name == "vpn_v240_preclone_bridge")] | length) == 1 and
+            .name == "mvc_preclone_bridge")] | length) == 1 and
         ([.nftables[] | .chain? | select(. != null and owned(.))] | length) == 3 and
         ([.nftables[] | .chain? | select(. != null and
-            matches("inet";"vpn_v240_preclone_quarantine";"output_deny";"output"))] | length) == 1 and
+            matches("inet";"mvc_preclone_quarantine";"output_deny";"output"))] | length) == 1 and
         ([.nftables[] | .chain? | select(. != null and
-            matches("inet";"vpn_v240_preclone_quarantine";"forward_deny";"forward"))] | length) == 1 and
+            matches("inet";"mvc_preclone_quarantine";"forward_deny";"forward"))] | length) == 1 and
         ([.nftables[] | .chain? | select(. != null and
-            matches("bridge";"vpn_v240_preclone_bridge";"forward_deny";"forward"))] | length) == 1 and
+            matches("bridge";"mvc_preclone_bridge";"forward_deny";"forward"))] | length) == 1 and
         ([.nftables[] | to_entries[] | select(.key != "table" and .key != "chain" and
             .key != "metainfo") | .value | select(type == "object" and owned(.))] | length) == 0 and
         ([.nftables[] | .flowtable? | select(. != null)] | length) == 0

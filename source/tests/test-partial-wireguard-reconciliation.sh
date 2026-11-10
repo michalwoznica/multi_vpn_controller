@@ -10,7 +10,7 @@ fail(){ printf 'FAIL: %s\n' "$1"; ((++F)); }
 
 # The shared reconciler is production-loaded but grants no authority itself.
 declare -F ubs24pubr_reconcile_partial_d4_to_openvpn_hold >/dev/null && pass reconciler-loaded || fail reconciler-loaded
-[[ $(ubs24pub_wireguard_runtime_root) == /run/ubs-v240-wireguard ]] && pass fixed-production-d4-runtime-root || fail fixed-production-d4-runtime-root
+[[ $(ubs24pub_wireguard_runtime_root) == /run/mvc-wireguard ]] && pass fixed-production-d4-runtime-root || fail fixed-production-d4-runtime-root
 
 # Exercise the real reconciliation coordinator while substituting only its
 # independently-tested inventory/mutation leaves. This verifies normalization
@@ -94,10 +94,10 @@ ubs24pubd_disconnect_once && pass fresh-disconnect-partial-d4-succeeds || fail f
 
 
 
-# Physically proven core remains frozen.
-[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == 7d1b7a3fdb5cdf79a521c7f408107bcee01014c3b41dfe8683236d740a9510a7 ]] && pass frozen-d4-source-unchanged || fail frozen-d4-source-unchanged
-[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == b48ea8023298263d6c376847f459b9ea26e36e691e7850d0a22d0ec82df5bb26 ]] && pass frozen-gco-source-unchanged || fail frozen-gco-source-unchanged
-[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == 71b0a5e3828cf8c0a1f49bfd2ffbfc0c50c260360e207d4038634be060056d3e ]] && pass frozen-c19-source-unchanged || fail frozen-c19-source-unchanged
+# R2-pinned core identities after the runtime-visible namespace migration.
+[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == b87f3a33c982da9e72b0d65bf250927f00a57c4503b4c912bb03919023abdd01 ]] && pass r2-d4-source-identity || fail r2-d4-source-identity
+[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == bda0da209e12355df4cf644f6a6ee6433a9f45f5e4bbb35e8b7087cbc67d57c9 ]] && pass r2-gco-source-identity || fail r2-gco-source-identity
+[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == 97b8c5d87cdfbf198eadd75bd2c6025fbeac7642c094972101bce0379cebcb8b ]] && pass r2-c19-source-identity || fail r2-c19-source-identity
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
 (( F == 0 ))

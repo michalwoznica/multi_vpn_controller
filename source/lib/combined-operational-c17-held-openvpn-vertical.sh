@@ -40,8 +40,8 @@ ubs24gc17_execute_once() {
     # before the cold-start sequence begins.
     [[ ${UBS24GC9_ATTEMPTED:-no} == no &&
        ${UBS24GC13_ATTEMPTED:-no} == no &&
-       ! -e /run/ubs-v240-activation && ! -L /run/ubs-v240-activation &&
-       ! -e /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition ]] || return 1
+       ! -e /run/mvc-activation && ! -L /run/mvc-activation &&
+       ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition ]] || return 1
 
     # The same held B2 flock and process context span all three operations.
     # No controller crash or failed stage triggers a retry or firewall release.

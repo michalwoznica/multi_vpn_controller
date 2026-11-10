@@ -30,9 +30,9 @@ owned_tables() {
       then error("malformed nft list-tables JSON")
       else
         [.nftables[] | .table? | select(type == "object") |
-           select((.family == "inet" and .name == "vpn_v240_preclone_quarantine") or
-                  (.family == "bridge" and .name == "vpn_v240_preclone_bridge") or
-                  (.family == "netdev" and .name == "vpn_v240_preclone_underlay")) |
+           select((.family == "inet" and .name == "mvc_preclone_quarantine") or
+                  (.family == "bridge" and .name == "mvc_preclone_bridge") or
+                  (.family == "netdev" and .name == "mvc_preclone_underlay")) |
            "\(.family):\(.name)"] | unique | join("\n")
       end
     ' <<< "$json"
@@ -73,17 +73,17 @@ again=$(owned_tables) || exit 1
     exit 1
 }
 
-batch=$(mktemp /run/ubs-v240-emergency-delete.XXXXXXXX.nft) || exit 1
+batch=$(mktemp /run/mvc-emergency-delete.XXXXXXXX.nft) || exit 1
 trap 'rm -f -- "$batch"' EXIT
 chmod 600 -- "$batch"
 while IFS= read -r table; do
     case "$table" in
-        inet:vpn_v240_preclone_quarantine)
-            echo 'delete table inet vpn_v240_preclone_quarantine' >> "$batch" ;;
-        bridge:vpn_v240_preclone_bridge)
-            echo 'delete table bridge vpn_v240_preclone_bridge' >> "$batch" ;;
-        netdev:vpn_v240_preclone_underlay)
-            echo 'delete table netdev vpn_v240_preclone_underlay' >> "$batch" ;;
+        inet:mvc_preclone_quarantine)
+            echo 'delete table inet mvc_preclone_quarantine' >> "$batch" ;;
+        bridge:mvc_preclone_bridge)
+            echo 'delete table bridge mvc_preclone_bridge' >> "$batch" ;;
+        netdev:mvc_preclone_underlay)
+            echo 'delete table netdev mvc_preclone_underlay' >> "$batch" ;;
         *) echo 'ERROR: unexpected table identifier' >&2; exit 1 ;;
     esac
 done <<< "$before"

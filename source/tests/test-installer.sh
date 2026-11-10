@@ -27,7 +27,7 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R1_PUBLIC_IDENTITY' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R2_RUNTIME_IDENTITY' <<<"$info" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$info"; then
     ok 'v2.4.1 provenance records candidate with physical proof pending'
 else
@@ -181,7 +181,7 @@ fi
 
 # A managed runtime root must block both update/removal and leave installed
 # identities untouched.
-mkdir "$FAKE/run/ubs-v240-controller"
+mkdir "$FAKE/run/mvc-controller"
 before=$(sha256sum -- "$C_DST" "$E_DST" "$D_DST")
 set +e
 PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/active-update.out" 2>&1
@@ -195,7 +195,7 @@ if (( update_rc != 0 && uninstall_rc != 0 )) && [[ $before == "$after" ]] && gre
 else
     bad 'package maintenance refuses managed live state without changing installed files'
 fi
-rmdir "$FAKE/run/ubs-v240-controller"
+rmdir "$FAKE/run/mvc-controller"
 
 # Unsafe pre-existing symlink target must never be followed/replaced.
 FAKE2=$TMP/fakeroot-symlink

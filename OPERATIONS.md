@@ -35,7 +35,7 @@ Use `preflight` with the same arguments before a connection when you want a read
 sudo mvc disconnect
 ```
 
-Disconnect authenticates exact same-boot ownership from MVC runtime records before mutation.
+Disconnect authenticates exact same-boot ownership from MVC runtime records under `/run/mvc-*` before mutation.
 
 In 2.4.1, a published combined session can also be reconciled when one tunnel has already disappeared. The intended operator workflow is:
 

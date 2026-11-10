@@ -21,13 +21,13 @@ ubs24gc13_authorize_cleanup() { return 1; }
 ubs24gc13_authorize_retry() { return 1; }
 ubs24gc13_authorize_disarm() { return 1; }
 ubs24gc13_authorize_secret_export() { return 1; }
-ubs24gc13_runtime() { printf '%s\n' /run/ubs-v240-output-transition; }
+ubs24gc13_runtime() { printf '%s\n' /run/mvc-output-transition; }
 ubs24gc13_sha_valid() { (( $# == 1 )) && [[ $1 =~ ^[a-f0-9]{64}$ ]]; }
 
 # Stage-9 diagnostic evidence is deliberately OUTSIDE every lifecycle root.
 # Nothing in admission, cleanup, recovery or disconnect reads this directory.
 # A record may explain a failed C13 attempt, but can never grant authority.
-ubs24gc13_diagnostic_root() { printf '%s\n' /run/ubs-v240-diagnostics; }
+ubs24gc13_diagnostic_root() { printf '%s\n' /run/mvc-diagnostics; }
 
 ubs24gc13_diag_hash_value() {
     (( $# == 1 )) || return 1
@@ -39,7 +39,7 @@ ubs24gc13_publish_failure_diagnostic() {
     (( $# == 0 )) || return 1
     local root file tmp boot userns netns mntns clone attempt_sha
     local expected_nm observed_nm expected_route observed_route expected_dns observed_dns
-    [[ -f /run/ubs-v240-output-transition/attempt && ! -L /run/ubs-v240-output-transition/attempt ]] || return 1
+    [[ -f /run/mvc-output-transition/attempt && ! -L /run/mvc-output-transition/attempt ]] || return 1
     clone=${UBS24GC7_CLONE_UUID:-}
     ubs24ga_uuid_valid "$clone" || return 1
     root=$(ubs24gc13_diagnostic_root) || return 1
@@ -56,7 +56,7 @@ ubs24gc13_publish_failure_diagnostic() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    attempt_sha=$(ubs24gc13_hash_file /run/ubs-v240-output-transition/attempt) || return 1
+    attempt_sha=$(ubs24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
     expected_nm=$(ubs24gc13_diag_hash_value "${UBS24GC18_NM_FINGERPRINT:-}") || return 1
     observed_nm=$(ubs24gc13_diag_hash_value "${UBS24GC18_OBS_NM_FINGERPRINT:-}") || return 1
     expected_route=$(ubs24gc13_diag_hash_value "${UBS24GC18_ROUTE_FINGERPRINT:-}") || return 1
@@ -108,7 +108,7 @@ ubs24gc13_intent_valid() {
     local dir boot userns netns mntns c7 c1 candidate
     local -a records=() entries=()
     dir=$(ubs24gc13_runtime) || return 1
-    [[ $dir == /run/ubs-v240-output-transition ]] || return 1
+    [[ $dir == /run/mvc-output-transition ]] || return 1
     [[ -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir") == 0:700:2 ]] || return 1
     mapfile -d '' -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 -print0) || return 1
     (( ${#entries[@]} == 1 )) && [[ ${entries[0]} == "$dir/attempt" ]] || return 1
@@ -120,8 +120,8 @@ ubs24gc13_intent_valid() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c7=$(ubs24gc13_hash_file /run/ubs-v240-activation/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c7=$(ubs24gc13_hash_file /run/mvc-activation/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     [[ ${records[0]} == ubs-v240-c13-output-transition-attempt-v1 &&
        ${records[1]} == state=nft-commit-attempted-outcome-uncertain &&
        ${records[2]} == "boot=$boot" &&
@@ -149,7 +149,7 @@ ubs24gc13_candidate_matches_intent() {
     [[ -f $candidate && ! -L $candidate && -O $candidate &&
        $(stat -c '%a:%h' -- "$candidate") == 600:1 ]] || return 1
     hash=$(ubs24gc13_hash_file "$candidate") || return 1
-    recorded=$(sed -n '9p' /run/ubs-v240-output-transition/attempt) || return 1
+    recorded=$(sed -n '9p' /run/mvc-output-transition/attempt) || return 1
     [[ $recorded == "candidate_sha=$hash" ]]
 }
 
@@ -163,13 +163,13 @@ ubs24gc13_publish_intent() {
        -f $candidate && ! -L $candidate && -O $candidate &&
        $(stat -c '%a:%h' -- "$candidate") == 600:1 ]] || return 1
     dir=$(ubs24gc13_runtime) || return 1
-    [[ $dir == /run/ubs-v240-output-transition && ! -e $dir && ! -L $dir ]] || return 1
+    [[ $dir == /run/mvc-output-transition && ! -e $dir && ! -L $dir ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c7=$(ubs24gc13_hash_file /run/ubs-v240-activation/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c7=$(ubs24gc13_hash_file /run/mvc-activation/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     hash=$(ubs24gc13_hash_file "$candidate") || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
@@ -200,7 +200,7 @@ ubs24gc13_observe_postcommit() {
     ubs24gc11_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
       "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" || return 1
     pre=$(ubs24gb2_runtime) || return 1
-    [[ $pre == /run/ubs-v240-controller ]] || return 1
+    [[ $pre == /run/mvc-controller ]] || return 1
     foreign1=$(ubs24gb2_foreign_projection "$pre/prestate.json") || return 1
     foreign2=$(ubs24gb2_foreign_projection "$first") || return 1
     [[ $foreign1 == "$foreign2" ]] &&
@@ -228,7 +228,7 @@ ubs24gc13_execute_once() {
       ubs24gc3_transition_records_valid && ubs24gc5_guard_witness &&
       ubs24gc7_read_intent || return 1
     UBS24GC13_DETAIL_STAGE=runtime-scratch-prerequisites
-    [[ ! -e /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition &&
+    [[ ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition &&
        -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch first second nm_now route_now success=1
     UBS24GC13_DETAIL_STAGE=scratch-create

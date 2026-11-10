@@ -8,7 +8,7 @@
 #     -> immutable temporary-clone delete intent
 #     -> single NM delete attempt, classify by read-only presence (never blind retry)
 #     -> immutable archive plan
-#     -> archive completed same-boot journals under /run/ubs-v240-completed/<clone>
+#     -> archive completed same-boot journals under /run/mvc-completed/<clone>
 #     -> close the original controller lock
 #
 # This module has no public/live admission. The C23R/C23T private composition
@@ -33,8 +33,8 @@ ubs24gc23t_authorize_retry() { return 1; }
 ubs24gc23t_authorize_cleanup() { return 1; }
 ubs24gc23t_authorize_traffic() { return 1; }
 ubs24gc23t_authorize_secret_export() { return 1; }
-ubs24gc23t_runtime() { printf '%s\n' /run/ubs-v240-completion; }
-ubs24gc23t_archive_root() { printf '%s\n' /run/ubs-v240-completed; }
+ubs24gc23t_runtime() { printf '%s\n' /run/mvc-completion; }
+ubs24gc23t_archive_root() { printf '%s\n' /run/mvc-completed; }
 
 ubs24gc23t_sha() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
@@ -49,9 +49,9 @@ ubs24gc23t_owned_tables_absent() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
     jq -e '
       def owned($v): ($v|type)=="object" and
-        (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-         ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-         ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+        (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+         ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+         ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
       (.nftables|type)=="array" and
       ([.nftables[] | to_entries[] | select(.key!="metainfo" and owned(.value))]|length)==0
     ' -- "$1" >/dev/null 2>&1
@@ -62,9 +62,9 @@ ubs24gc23t_release_batch_write() {
     [[ -f $1 && ! -L $1 && -O $1 && ! -s $1 &&
        $(stat -c '%a:%h' -- "$1") == 600:1 ]] || return 1
     printf '%s\n' \
-      'delete table inet vpn_v240_preclone_quarantine' \
-      'delete table bridge vpn_v240_preclone_bridge' \
-      'delete table netdev vpn_v240_preclone_underlay' > "$1"
+      'delete table inet mvc_preclone_quarantine' \
+      'delete table bridge mvc_preclone_bridge' \
+      'delete table netdev mvc_preclone_underlay' > "$1"
 }
 
 ubs24gc23t_release_batch_valid() {
@@ -72,9 +72,9 @@ ubs24gc23t_release_batch_valid() {
     local -a a=()
     mapfile -t a < "$1" || return 1
     (( ${#a[@]} == 3 )) &&
-      [[ ${a[0]} == 'delete table inet vpn_v240_preclone_quarantine' &&
-         ${a[1]} == 'delete table bridge vpn_v240_preclone_bridge' &&
-         ${a[2]} == 'delete table netdev vpn_v240_preclone_underlay' ]]
+      [[ ${a[0]} == 'delete table inet mvc_preclone_quarantine' &&
+         ${a[1]} == 'delete table bridge mvc_preclone_bridge' &&
+         ${a[2]} == 'delete table netdev mvc_preclone_underlay' ]]
 }
 
 # Reconstruct the exact C3/C7/C19 identity from immutable same-boot journals.
@@ -83,7 +83,7 @@ ubs24gc23t_recover_locked_session() {
     (( $# == 0 )) || return 1
     local dir fd
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller && -d $dir && ! -L $dir ]] || return 1
+    [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || return 1
     if ! ubs24gb2_lock_valid >/dev/null 2>&1; then
         [[ -z ${UBS24GB2_FD:-} && -f $dir/controller.lock && ! -L $dir/controller.lock ]] || return 1
         exec {fd}< "$dir/controller.lock" || return 1
@@ -129,7 +129,7 @@ ubs24gc23t_recover_locked_session() {
 ubs24gc23t_c1_firewall_witness() {
     (( $# == 0 )) || return 1
     local scratch a b good=1
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-c23t-c1.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-c23t-c1.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' -- "$scratch") == 700:2 ]] || good=0
     a=$scratch/first.json
@@ -193,11 +193,11 @@ ubs24gc23t_b2_topology_witness() {
         UBS24GC23T_CONVERGENCE_DETAIL=topology-runtime-unavailable
         return 1
     }
-    [[ $dir == /run/ubs-v240-controller && -d $dir && ! -L $dir ]] || {
+    [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || {
         UBS24GC23T_CONVERGENCE_DETAIL=topology-runtime-invalid
         return 1
     }
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-c23t-topology.XXXXXXXX) || {
+    scratch=$(umask 077; mktemp -d /run/mvc-c23t-topology.XXXXXXXX) || {
         UBS24GC23T_CONVERGENCE_DETAIL=topology-scratch-create-failed
         return 1
     }
@@ -312,7 +312,7 @@ ubs24gc23t_c1_witness() {
 ubs24gc23t_release_post_witness() {
     (( $# == 0 )) || return 1
     ubs24gb4_no_active_vpn || return 1
-    local scratch a b before after prestate=/run/ubs-v240-controller/prestate.json
+    local scratch a b before after prestate=/run/mvc-controller/prestate.json
     if [[ ! -f $prestate ]]; then
         local dir clone root
         dir=$(ubs24gc23t_runtime) || return 1
@@ -325,7 +325,7 @@ ubs24gc23t_release_post_witness() {
     fi
     [[ -f $prestate && ! -L $prestate ]] || return 1
     local scratch a b before after
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-c23t-release-observe.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-c23t-release-observe.XXXXXXXX) || return 1
     a=$scratch/a.json b=$scratch/b.json
     local ok=1
     ubs24gb1_capture_nft "$a" && ubs24gb1_capture_nft "$b" && cmp -s -- "$a" "$b" &&
@@ -345,7 +345,7 @@ ubs24gc23t_release_intent_valid() {
     local dir boot c19 c1 batch clone owner
     local -a rows=() entries=()
     dir=$(ubs24gc23t_runtime) || return 1
-    [[ $dir == /run/ubs-v240-completion && -d $dir && ! -L $dir &&
+    [[ $dir == /run/mvc-completion && -d $dir && ! -L $dir &&
        $(stat -c '%u:%a' -- "$dir") == 0:700 ]] || return 1
     [[ -f $dir/release-intent && ! -L $dir/release-intent &&
        -f $dir/release.nft && ! -L $dir/release.nft &&
@@ -354,8 +354,8 @@ ubs24gc23t_release_intent_valid() {
     mapfile -t rows < "$dir/release-intent" || return 1
     (( ${#rows[@]} == 9 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
-    c19=$(ubs24gc23t_sha /run/ubs-v240-disconnect/attempt) || return 1
-    c1=$(ubs24gc23t_sha /run/ubs-v240-controller/transition-attempt) || return 1
+    c19=$(ubs24gc23t_sha /run/mvc-disconnect/attempt) || return 1
+    c1=$(ubs24gc23t_sha /run/mvc-controller/transition-attempt) || return 1
     batch=$(ubs24gc23t_sha "$dir/release.nft") || return 1
     clone=${rows[7]#clone=} owner=${rows[8]#nm_owner=}
     [[ ${rows[0]} == ubs-v240-c23t-release-intent-v1 &&
@@ -382,8 +382,8 @@ ubs24gc23t_publish_release_intent() {
     chmod 400 -- "$tmp" || return 1
     mv -T -- "$tmp" "$dir/release.nft" || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
-    c19=$(ubs24gc23t_sha /run/ubs-v240-disconnect/attempt) || return 1
-    c1=$(ubs24gc23t_sha /run/ubs-v240-controller/transition-attempt) || return 1
+    c19=$(ubs24gc23t_sha /run/mvc-disconnect/attempt) || return 1
+    c1=$(ubs24gc23t_sha /run/mvc-controller/transition-attempt) || return 1
     batch=$(ubs24gc23t_sha "$dir/release.nft") || return 1
     tmp=$(umask 077; mktemp "$dir/.intent.XXXXXXXX") || return 1
     printf '%s\n' ubs-v240-c23t-release-intent-v1 \
@@ -428,7 +428,7 @@ ubs24gc23t_clone_inventory_count() {
 ubs24gc23t_clone_present() {
     (( $# == 1 )) && ubs24ga_uuid_valid "$1" && ubs24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" || return 1
     local tmp count
-    tmp=$(umask 077; mktemp /run/ubs-v240-c23t-nm.XXXXXXXX) || return 1
+    tmp=$(umask 077; mktemp /run/mvc-c23t-nm.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || return 1
     if ! ubs24gc23t_uuid_inventory "$tmp"; then rm -f -- "$tmp"; return 1; fi
     count=$(ubs24gc23t_clone_inventory_count "$tmp" "$1") || { rm -f -- "$tmp"; return 1; }
@@ -439,7 +439,7 @@ ubs24gc23t_clone_present() {
 ubs24gc23t_clone_absent() {
     (( $# == 1 )) && ubs24ga_uuid_valid "$1" && ubs24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" || return 1
     local tmp count
-    tmp=$(umask 077; mktemp /run/ubs-v240-c23t-nm.XXXXXXXX) || return 1
+    tmp=$(umask 077; mktemp /run/mvc-c23t-nm.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || return 1
     if ! ubs24gc23t_uuid_inventory "$tmp"; then rm -f -- "$tmp"; return 1; fi
     count=$(ubs24gc23t_clone_inventory_count "$tmp" "$1") || { rm -f -- "$tmp"; return 1; }
@@ -579,7 +579,7 @@ ubs24gc23t_archive_continue() {
     # Move fixed session journals in an order that keeps controller.lock at its
     # original path until all other evidence has safely moved.
     for name in activation output-transition disconnect; do
-        src="/run/ubs-v240-$name"
+        src="/run/mvc-$name"
         if [[ -e $src || -L $src ]]; then
             [[ -d $src && ! -L $src && ! -e $archive/$name && ! -L $archive/$name ]] || return 1
             ubs24gc23t_archive_move "$src" "$archive/$name" || return 1
@@ -587,7 +587,7 @@ ubs24gc23t_archive_continue() {
             [[ -d $archive/$name && ! -L $archive/$name ]] || return 1
         fi
     done
-    src=/run/ubs-v240-controller
+    src=/run/mvc-controller
     if [[ -e $src || -L $src ]]; then
         [[ -d $src && ! -L $src && ! -e $archive/controller && ! -L $archive/controller ]] || return 1
         ubs24gc23t_archive_move "$src" "$archive/controller" || return 1
@@ -602,9 +602,9 @@ ubs24gc23t_archive_continue() {
     fi
     [[ -d $archive/completion && -d $archive/controller && -d $archive/activation &&
        -d $archive/output-transition && -d $archive/disconnect &&
-       ! -e /run/ubs-v240-controller && ! -e /run/ubs-v240-activation &&
-       ! -e /run/ubs-v240-output-transition && ! -e /run/ubs-v240-disconnect &&
-       ! -e /run/ubs-v240-completion ]] || return 1
+       ! -e /run/mvc-controller && ! -e /run/mvc-activation &&
+       ! -e /run/mvc-output-transition && ! -e /run/mvc-disconnect &&
+       ! -e /run/mvc-completion ]] || return 1
     UBS24GC23T_ARCHIVE=$archive
     ubs24gb2_close
     return 0
@@ -620,14 +620,14 @@ ubs24gc23t_execute_once() {
     UBS24GC23T_AUTHORITY=none
     ubs24gc23t_admission_witness || return 1
     ubs24gc23t_c1_witness || return 1
-    [[ ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion ]] || return 1
+    [[ ! -e /run/mvc-completion && ! -L /run/mvc-completion ]] || return 1
 
     ubs24gc23t_publish_release_intent || return 1
-    ubs24gc23t_nft_check /run/ubs-v240-completion/release.nft || return 1
+    ubs24gc23t_nft_check /run/mvc-completion/release.nft || return 1
     ubs24gc23t_c1_witness && ubs24gc23t_release_intent_valid || return 1
     UBS24GC23T_STAGE=release-attempted-outcome-uncertain
     local release_rc=0
-    ubs24gc23t_nft_commit /run/ubs-v240-completion/release.nft || release_rc=$?
+    ubs24gc23t_nft_commit /run/mvc-completion/release.nft || release_rc=$?
     if ! ubs24gc23t_release_post_witness; then
         UBS24GC23T_STAGE=release-attempt-present-poststate-unverified-no-retry
         return 1

@@ -17,7 +17,7 @@ ubs24gb1_valid_ifname() {
 ubs24gb1_scope() {
     (( $# == 0 )) || return 1
     [[ $EUID == 0 && $(stat -f -c %T /run) == tmpfs &&
-       ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+       ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     # Scope is PID1-relative, NOT cryptographic physical-host ownership.
     [[ $(readlink /proc/self/ns/net) == "$(readlink /proc/1/ns/net)" &&
        $(readlink /proc/self/ns/mnt) == "$(readlink /proc/1/ns/mnt)" ]] || return 1
@@ -70,13 +70,13 @@ ubs24gb1_render() {
     (( ${#lines[@]} == 5 )) || return 1
     {
         printf '%s\n' "${lines[@]}"
-        printf '%s\n' 'add table netdev vpn_v240_preclone_underlay'
-        printf 'add chain netdev vpn_v240_preclone_underlay lowerdev_deny { type filter hook egress device "%s" priority -310; policy drop; }\n' "$iface"
+        printf '%s\n' 'add table netdev mvc_preclone_underlay'
+        printf 'add chain netdev mvc_preclone_underlay lowerdev_deny { type filter hook egress device "%s" priority -310; policy drop; }\n' "$iface"
         # DHCP client continuity only. This narrow exception permits the host to
         # renew/reacquire IPv4 after an underlay flap while ordinary physical
         # egress remains denied. Replies are ingress and are not blocked here.
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$iface"
-        printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$iface"
+        printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
     } > "$dest" || return 1
     [[ $(grep -c '^add ' "$dest") == 9 ]]
 }
@@ -106,7 +106,7 @@ ubs24gb1_plan_once() {
       ubs24gb1_capture_routes6 "$scratch/route6a" || return 1
     declare -F ubs24op_qg_preflight_snapshot >/dev/null || return 1
     ubs24op_qg_preflight_snapshot "$scratch/nft1" || return 1
-    jq -e '[(.nftables[] | .table? | select(.family=="netdev" and .name=="vpn_v240_preclone_underlay"))] | length==0' \
+    jq -e '[(.nftables[] | .table? | select(.family=="netdev" and .name=="mvc_preclone_underlay"))] | length==0' \
       "$scratch/nft1" >/dev/null 2>&1 || return 1
     ubs24gb1_links_valid "$iface" "$scratch/links1" &&
       ubs24gb1_routes_valid "$iface" "$scratch/route4a" "$scratch/route6a" || return 1

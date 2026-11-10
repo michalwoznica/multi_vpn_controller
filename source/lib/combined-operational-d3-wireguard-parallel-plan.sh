@@ -213,25 +213,25 @@ ubs24gd3_write_parallel_guard_candidate() {
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     {
-      printf '%s\n' 'flush chain inet vpn_v240_preclone_quarantine output_deny'
-      printf '%s\n' 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "lo" accept'
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
+      printf '%s\n' 'flush chain inet mvc_preclone_quarantine output_deny'
+      printf '%s\n' 'add rule inet mvc_preclone_quarantine output_deny oifname "lo" accept'
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
         "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay" "$underlay_source" "$wg_ip" "$wg_port"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
         "$ovpn_tunnel" "$ovpn_source"
       for prefix in "$@"; do
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
           "$wg_tunnel" "$wg_source" "$prefix"
       done
-      printf '%s\n' 'flush chain netdev vpn_v240_preclone_underlay lowerdev_deny'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type arp accept'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
-      printf 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s tcp dport %s accept\n' \
+      printf '%s\n' 'flush chain netdev mvc_preclone_underlay lowerdev_deny'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type arp accept'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
+      printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s tcp dport %s accept\n' \
         "$underlay_source" "$ovpn_ip" "$ovpn_port"
-      printf 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay_source" "$wg_ip" "$wg_port"
     } > "$out"
     UBS24GD3_STAGE=parallel-guard-plan-ready-no-authority

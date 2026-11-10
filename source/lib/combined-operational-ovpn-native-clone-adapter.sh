@@ -57,7 +57,7 @@ ubs24ga_clone_temporary_once() {
     local source_uuid=$1 random='' new_name='' new_uuid=''
     IFS= read -r random < /proc/sys/kernel/random/uuid || return 1
     ubs24ga_uuid_valid "$random" || return 1
-    new_name="ubs-v240-prepared-$random"
+    new_name="mvc-prepared-$random"
     # Fail if the unique clone name exists before registration. Both stdout
     # and stderr are suppressed; nmcli may include user profile data.
     if nmcli --wait 10 -g connection.uuid connection show "$new_name" >/dev/null 2>&1; then

@@ -19,6 +19,7 @@ TESTS=(
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh
+  test-runtime-identity.sh
 )
 
 passed=0

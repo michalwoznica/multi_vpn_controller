@@ -48,11 +48,11 @@ ubs24gc11_write_candidate() {
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == '600:1' ]] || return 1
     {
-        printf '%s\n' 'flush chain inet vpn_v240_preclone_quarantine output_deny'
-        printf '%s\n' 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "lo" accept'
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' "$underlay" "$source" "$remote" "$port"
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' "$tunnel" "$tun_source"
+        printf '%s\n' 'flush chain inet mvc_preclone_quarantine output_deny'
+        printf '%s\n' 'add rule inet mvc_preclone_quarantine output_deny oifname "lo" accept'
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' "$underlay" "$source" "$remote" "$port"
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' "$tunnel" "$tun_source"
     } > "$out"
 }
 
@@ -71,9 +71,9 @@ ubs24gc11_postshape_observation() {
        def meta($key): {meta:{key:$key}};
        def payload($protocol;$field): {payload:{protocol:$protocol,field:$field}};
        def owned($v): ($v|type=="object") and
-         (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-          ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-          ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+         (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+          ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+          ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
        def ipv4dep: . == matchv(meta("nfproto");"ipv4") or
           . == matchv(meta("nfproto");"ip") or
           . == matchv(payload("ether";"type");"ip") or
@@ -101,21 +101,21 @@ ubs24gc11_postshape_observation() {
        ([.nftables[]|to_entries[]|select(.key!="metainfo" and owned(.value))|.key]|sort)==
           (["table","table","table","chain","chain","chain","chain","rule","rule","rule","rule","rule","rule","rule"]|sort) and
        ([.nftables[]|.table?|select(owned(.))|[.family,.name]]|sort)==
-          ([ ["inet","vpn_v240_preclone_quarantine"], ["bridge","vpn_v240_preclone_bridge"],
-             ["netdev","vpn_v240_preclone_underlay"] ]|sort) and
-       (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")|length)==1 and
-       (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")[0]|
+          ([ ["inet","mvc_preclone_quarantine"], ["bridge","mvc_preclone_bridge"],
+             ["netdev","mvc_preclone_underlay"] ]|sort) and
+       (chain("inet";"mvc_preclone_quarantine";"output_deny")|length)==1 and
+       (chain("inet";"mvc_preclone_quarantine";"output_deny")[0]|
           .hook=="output" and .prio== -310 and .policy=="drop") and
-       (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==1 and
-       (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")[0]|
+       (chain("inet";"mvc_preclone_quarantine";"forward_deny")|length)==1 and
+       (chain("inet";"mvc_preclone_quarantine";"forward_deny")[0]|
           .hook=="forward" and .prio== -310 and .policy=="drop") and
-       (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==1 and
-       (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")[0]|
+       (chain("bridge";"mvc_preclone_bridge";"forward_deny")|length)==1 and
+       (chain("bridge";"mvc_preclone_bridge";"forward_deny")[0]|
           .hook=="forward" and .prio== -310 and .policy=="drop") and
-       (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")|length)==1 and
-       (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")[0]|
+       (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")|length)==1 and
+       (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")[0]|
           .hook=="egress" and .dev==$iface and .prio== -310 and .policy=="drop") and
-       (rules("inet";"vpn_v240_preclone_quarantine";"output_deny") as $out|
+       (rules("inet";"mvc_preclone_quarantine";"output_deny") as $out|
           ($out|length)==4 and
           $out[0]==[matchv(meta("oifname");"lo"),{accept:null}] and
           expr($out[1];[matchv(meta("oifname");$iface),
@@ -126,7 +126,7 @@ ubs24gc11_postshape_observation() {
              matchv(payload("tcp";"dport");$port),{accept:null}];3;"tcp") and
           expr($out[3];[matchv(meta("oifname");$tun),
              matchv(payload("ip";"saddr");$tun_src),{accept:null}];1;"none")) and
-       (rules("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny") as $dev|
+       (rules("netdev";"mvc_preclone_underlay";"lowerdev_deny") as $dev|
           ($dev|length)==3 and arp($dev[0]) and
           expr($dev[1];[matchv(payload("udp";"sport");68),
              matchv(payload("udp";"dport");67),{accept:null}];3;"udp") and

@@ -13,9 +13,9 @@ ubs24gc7_reset() {
     UBS24GC7_SOURCE_SHA= UBS24GC7_CLONE_SHA= UBS24GC7_NM_OWNER=
 }
 
-ubs24gc7_runtime() { printf '%s\n' /run/ubs-v240-activation; }
+ubs24gc7_runtime() { printf '%s\n' /run/mvc-activation; }
 ubs24gc7_run_tmpfs() { [[ $(stat -f -c %T /run) == tmpfs ]]; }
-ubs24gc7_fixed_b2_runtime() { [[ $(ubs24gb2_runtime) == /run/ubs-v240-controller ]]; }
+ubs24gc7_fixed_b2_runtime() { [[ $(ubs24gb2_runtime) == /run/mvc-controller ]]; }
 ubs24gc7_owned_dir() {
     (( $# == 1 )) && [[ -d $1 && ! -L $1 &&
         $(stat -c '%u:%a:%h' -- "$1" 2>/dev/null) == 0:700:2 ]]

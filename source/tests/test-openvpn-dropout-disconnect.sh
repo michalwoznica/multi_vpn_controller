@@ -81,11 +81,11 @@ ubs24pubr_reconcile_d4_to_c11_hold_openvpn_absent &&
 
 # 4. Alternative C19 journal is truthful and hash-binds the still-live public
 # marker. Tampering that marker invalidates the intent.
-rm -rf /run/ubs-v240-disconnect /run/ubs-v240-public-session /run/ubs-v240-controller /run/ubs-v240-output-transition
-mkdir -m 700 /run/ubs-v240-public-session /run/ubs-v240-controller /run/ubs-v240-output-transition
-printf 'marker\n' > /run/ubs-v240-public-session/active; chmod 400 /run/ubs-v240-public-session/active
-printf 'c1\n' > /run/ubs-v240-controller/transition-attempt; chmod 400 /run/ubs-v240-controller/transition-attempt
-printf 'c13\n' > /run/ubs-v240-output-transition/attempt; chmod 400 /run/ubs-v240-output-transition/attempt
+rm -rf /run/mvc-disconnect /run/mvc-public-session /run/mvc-controller /run/mvc-output-transition
+mkdir -m 700 /run/mvc-public-session /run/mvc-controller /run/mvc-output-transition
+printf 'marker\n' > /run/mvc-public-session/active; chmod 400 /run/mvc-public-session/active
+printf 'c1\n' > /run/mvc-controller/transition-attempt; chmod 400 /run/mvc-controller/transition-attempt
+printf 'c13\n' > /run/mvc-output-transition/attempt; chmod 400 /run/mvc-output-transition/attempt
 B=$(mktemp /dev/shm/c24a-batch.XXXXXX); chmod 600 "$B"; printf 'batch\n' > "$B"
 UBS24GC7_CLONE_UUID=22222222-2222-4222-8222-222222222222
 UBS24GC7_NM_OWNER=':1.7|100|0'
@@ -95,9 +95,9 @@ ubs24gc3_transition_records_valid(){ return 0; }; ubs24gc13_intent_valid(){ retu
 eval "$(declare -f stat | sed '1s/^stat /c24a_old_stat /')" 2>/dev/null || true
 stat(){ if [[ $# -eq 4 && $1 == -f && $2 == -c && $3 == %T && $4 == /run ]]; then printf 'tmpfs\n'; else command stat "$@"; fi; }
 ubs24gc19_publish_absent_intent "$B" active && ubs24gc19_intent_valid && pass truthful-openvpn-absent-c19-intent-publishes-and-validates || fail absent-intent-valid
-printf 'tamper\n' >> /run/ubs-v240-public-session/active
+printf 'tamper\n' >> /run/mvc-public-session/active
 ! ubs24gc19_intent_valid && pass c19-absent-intent-rejects-public-marker-tamper || fail absent-intent-tamper
-rm -f "$B"; rm -rf /run/ubs-v240-disconnect /run/ubs-v240-public-session /run/ubs-v240-controller /run/ubs-v240-output-transition
+rm -f "$B"; rm -rf /run/mvc-disconnect /run/mvc-public-session /run/mvc-controller /run/mvc-output-transition
 
 # 5. Public coordinator ordering for exact dropout path, including normal final
 # same-boot-ready state. All lifecycle stages below are substituted only to

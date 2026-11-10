@@ -134,7 +134,7 @@ ubs24pub_b4_table_present() {
     (( $# == 2 )) || return 1
     local family=$1 table=$2
     case "$family:$table" in
-        inet:vpn_v240_preclone_quarantine|bridge:vpn_v240_preclone_bridge|netdev:vpn_v240_preclone_underlay) ;;
+        inet:mvc_preclone_quarantine|bridge:mvc_preclone_bridge|netdev:mvc_preclone_underlay) ;;
         *) return 1 ;;
     esac
     nft list table "$family" "$table" >/dev/null 2>&1
@@ -142,8 +142,8 @@ ubs24pub_b4_table_present() {
 
 ubs24pub_any_runtime_present() {
     local p public_runtime
-    for p in /run/ubs-v240-controller /run/ubs-v240-activation /run/ubs-v240-output-transition \
-             /run/ubs-v240-disconnect /run/ubs-v240-completion /run/ubs-v240-wireguard; do
+    for p in /run/mvc-controller /run/mvc-activation /run/mvc-output-transition \
+             /run/mvc-disconnect /run/mvc-completion /run/mvc-wireguard; do
         [[ ! -e $p && ! -L $p ]] || return 0
     done
     public_runtime=$(ubs24pub_session_runtime_root) || return 0
@@ -156,9 +156,9 @@ ubs24pub_baseline_clean_readonly() {
     local active
     active=$(ubs24pub_active_vpn_rows) || return 1
     [[ -z $active ]] || return 1
-    ! ubs24pub_b4_table_present inet vpn_v240_preclone_quarantine || return 1
-    ! ubs24pub_b4_table_present bridge vpn_v240_preclone_bridge || return 1
-    ! ubs24pub_b4_table_present netdev vpn_v240_preclone_underlay || return 1
+    ! ubs24pub_b4_table_present inet mvc_preclone_quarantine || return 1
+    ! ubs24pub_b4_table_present bridge mvc_preclone_bridge || return 1
+    ! ubs24pub_b4_table_present netdev mvc_preclone_underlay || return 1
     ! ubs24pub_any_runtime_present
 }
 

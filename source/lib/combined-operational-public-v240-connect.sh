@@ -41,9 +41,9 @@ ubs24pubc_runtime_absent() {
 ubs24pubc_fixed_live_roots_absent() {
     (( $# == 0 )) || return 1
     local p
-    for p in /run/ubs-v240-controller /run/ubs-v240-activation \
-             /run/ubs-v240-output-transition /run/ubs-v240-disconnect \
-             /run/ubs-v240-completion /run/ubs-v240-wireguard; do
+    for p in /run/mvc-controller /run/mvc-activation \
+             /run/mvc-output-transition /run/mvc-disconnect \
+             /run/mvc-completion /run/mvc-wireguard; do
         [[ ! -e $p && ! -L $p ]] || return 1
     done
     ubs24pubc_runtime_absent
@@ -283,7 +283,7 @@ ubs24pubc_publish_preclone_intent() {
        ${UBS24PUBC_TRANSACTION_STATE:-none} == prepared-before-mutation &&
        ${UBS24PUBC_STAGE:-} == starting-openvpn &&
        $source_uuid == "${UBS24PUBC_OVPN_UUID:-}" &&
-       $clone_name =~ ^ubs-v240-prepared-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]] || return 1
+       $clone_name =~ ^mvc-prepared-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]] || return 1
     [[ -d $runtime && ! -L $runtime && ! -e $path && ! -L $path ]] || return 1
     ubs24gb2_lock_valid && ubs24gc2_guard_witness || return 1
     ubs24ga3_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBC_NM_OWNER" ]] || return 1
@@ -291,8 +291,8 @@ ubs24pubc_publish_preclone_intent() {
     source_sha=$(ubs24op_settings_fingerprint "$UBS24GA3_SOURCE_FILE") || return 1
     [[ $source_sha =~ ^[0-9a-f]{64}$ ]] || return 1
     tx=$(ubs24pubc_hash_file "$runtime/transaction") || return 1
-    prepare=$(ubs24pubc_hash_file /run/ubs-v240-controller/prepare-intent) || return 1
-    commit=$(ubs24pubc_hash_file /run/ubs-v240-controller/commit-attempt) || return 1
+    prepare=$(ubs24pubc_hash_file /run/mvc-controller/prepare-intent) || return 1
+    commit=$(ubs24pubc_hash_file /run/mvc-controller/commit-attempt) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
@@ -505,11 +505,11 @@ ubs24pubc_transaction_finalize_after_completion() {
     UBS24PUBC_TRANSACTION_STATE=none
 }
 
-ubs24pubc_controller_prepare_path() { printf '%s\n' /run/ubs-v240-controller/prepare-intent; }
-ubs24pubc_controller_transition_path() { printf '%s\n' /run/ubs-v240-controller/transition-attempt; }
-ubs24pubc_activation_path() { printf '%s\n' /run/ubs-v240-activation/attempt; }
-ubs24pubc_output_path() { printf '%s\n' /run/ubs-v240-output-transition/attempt; }
-ubs24pubc_d4_intent_path() { printf '%s\n' /run/ubs-v240-wireguard/intent; }
+ubs24pubc_controller_prepare_path() { printf '%s\n' /run/mvc-controller/prepare-intent; }
+ubs24pubc_controller_transition_path() { printf '%s\n' /run/mvc-controller/transition-attempt; }
+ubs24pubc_activation_path() { printf '%s\n' /run/mvc-activation/attempt; }
+ubs24pubc_output_path() { printf '%s\n' /run/mvc-output-transition/attempt; }
+ubs24pubc_d4_intent_path() { printf '%s\n' /run/mvc-wireguard/intent; }
 
 ubs24pubc_publish_active_session() {
     (( $# == 0 )) || return 1
@@ -588,7 +588,7 @@ ubs24pubc_consume_authority() {
 ubs24pubc_cleanup_openvpn_only_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBC_TRANSACTION_STATE:-none} == openvpn-protected &&
-       ! -e /run/ubs-v240-wireguard && ! -L /run/ubs-v240-wireguard &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard &&
        ${UBS24GCO_STAGE:-} == protected-openvpn-observed ]] || return 1
     UBS24PUBC_STAGE=cleanup-stopping-openvpn
     ubs24gco_stop_once || return 1

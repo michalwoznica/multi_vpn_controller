@@ -10,7 +10,7 @@
 # AllowedIPs, so split activation must not take over DNS or the default route.
 #
 # Durable authority is same-boot only: the public transaction identifies
-# wireguard-split mode and /run/ubs-v240-wireguard/intent binds the exact saved
+# wireguard-split mode and /run/mvc-wireguard/intent binds the exact saved
 # profile hash, temporary UUID, endpoint, underlay and AllowedIPs. A dedicated
 # split.lock in the public-session root serializes connect/disconnect without
 # creating the protected-mode B2 controller root.
@@ -72,9 +72,9 @@ ubs24gws_lock_close() {
 
 ubs24gws_no_b4_tables() {
     (( $# == 0 )) || return 1
-    ! ubs24pub_b4_table_present inet vpn_v240_preclone_quarantine &&
-      ! ubs24pub_b4_table_present bridge vpn_v240_preclone_bridge &&
-      ! ubs24pub_b4_table_present netdev vpn_v240_preclone_underlay
+    ! ubs24pub_b4_table_present inet mvc_preclone_quarantine &&
+      ! ubs24pub_b4_table_present bridge mvc_preclone_bridge &&
+      ! ubs24pub_b4_table_present netdev mvc_preclone_underlay
 }
 
 ubs24gws_preflight_readonly() {

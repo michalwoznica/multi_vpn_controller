@@ -10,7 +10,7 @@ fail(){ printf 'FAIL: %s\n' "$1"; ((++F)); }
 
 # Production loading / fixed-path boundary.
 declare -F ubs24pube_reconcile_incomplete_start_locked >/dev/null && pass early-reconciler-loaded || fail early-reconciler-loaded
-[[ $(ubs24pub_session_runtime_root) == /run/ubs-v240-public-session ]] && pass fixed-public-runtime-root || fail fixed-public-runtime-root
+[[ $(ubs24pub_session_runtime_root) == /run/mvc-public-session ]] && pass fixed-public-runtime-root || fail fixed-public-runtime-root
 
 # The prepared transaction parser must accept only the known early-cleanup
 # evidence files. This is a real parser/file-format test, not a coordinator mock.
@@ -197,7 +197,7 @@ source lib/combined-operational-public-v240-composition.sh
 
 # CONNECT: a C7-authenticated start failure must self-clean; pre-C7 must not
 # invent ownership.
-ubs24pub_session_runtime_root(){ printf '%s\n' /run/ubs-v240-public-session; }
+ubs24pub_session_runtime_root(){ printf '%s\n' /run/mvc-public-session; }
 ubs24pubc_reset; ubs24gco_reset
 LOG=()
 ubs24pubc_preflight_readonly(){ LOG+=(preflight); UBS24PUBC_OVPN_UUID=11111111-1111-4111-8111-111111111111; UBS24PUBC_WG_UUID=22222222-2222-4222-8222-222222222222; UBS24PUBC_TEMP_UUID=33333333-3333-4333-8333-333333333333; UBS24PUBC_UNDERLAY=f15ra; return 0; }
@@ -242,9 +242,9 @@ ubs24pubd_disconnect_once && pass disconnect-prepared-live-c7-reconciles || fail
 [[ $UBS24PUBD_STAGE == public-incomplete-openvpn-start-clean-baseline-restored ]] && pass disconnect-prepared-live-c7-final-state || fail disconnect-prepared-live-c7-final-state
 
 # Frozen physical core remains unchanged.
-[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == 7d1b7a3fdb5cdf79a521c7f408107bcee01014c3b41dfe8683236d740a9510a7 ]] && pass frozen-d4-source || fail frozen-d4-source
-[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == b48ea8023298263d6c376847f459b9ea26e36e691e7850d0a22d0ec82df5bb26 ]] && pass frozen-gco-source || fail frozen-gco-source
-[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == 71b0a5e3828cf8c0a1f49bfd2ffbfc0c50c260360e207d4038634be060056d3e ]] && pass frozen-c19-source || fail frozen-c19-source
+[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == b87f3a33c982da9e72b0d65bf250927f00a57c4503b4c912bb03919023abdd01 ]] && pass r2-d4-source-identity || fail r2-d4-source-identity
+[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == bda0da209e12355df4cf644f6a6ee6433a9f45f5e4bbb35e8b7087cbc67d57c9 ]] && pass r2-gco-source-identity || fail r2-gco-source-identity
+[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == 97b8c5d87cdfbf198eadd75bd2c6025fbeac7642c094972101bce0379cebcb8b ]] && pass r2-c19-source-identity || fail r2-c19-source-identity
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
 (( F == 0 ))

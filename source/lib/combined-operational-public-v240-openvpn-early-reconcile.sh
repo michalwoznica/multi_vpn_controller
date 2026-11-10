@@ -30,23 +30,23 @@ ubs24pube_clone_delete_intent_path() { printf '%s/early-clone-delete-intent\n' "
 ubs24pube_release_batch_path() { printf '%s/early-guard-release.nft\n' "$(ubs24pube_runtime)"; }
 ubs24pube_release_intent_path() { printf '%s/early-guard-release-intent\n' "$(ubs24pube_runtime)"; }
 ubs24pube_retire_intent_path() { printf '%s/early-retire-intent\n' "$(ubs24pube_runtime)"; }
-ubs24pube_archive_root() { printf '%s\n' /run/ubs-v240-completed-early; }
-ubs24pube_preclone_archive_root() { printf '%s\n' /run/ubs-v240-completed-preclone; }
+ubs24pube_archive_root() { printf '%s\n' /run/mvc-completed-early; }
+ubs24pube_preclone_archive_root() { printf '%s\n' /run/mvc-completed-preclone; }
 ubs24pube_preclone_intent_path() { printf '%s/preclone-intent\n' "$(ubs24pube_runtime)"; }
 ubs24pube_preclone_binding_path() { printf '%s/preclone-binding\n' "$(ubs24pube_runtime)"; }
 ubs24pube_preclone_delete_intent_path() { printf '%s/preclone-delete-intent\n' "$(ubs24pube_runtime)"; }
 ubs24pube_preclone_release_batch_path() { printf '%s/preclone-release.nft\n' "$(ubs24pube_runtime)"; }
 ubs24pube_preclone_release_intent_path() { printf '%s/preclone-release-intent\n' "$(ubs24pube_runtime)"; }
 ubs24pube_preclone_retire_intent_path() { printf '%s/preclone-retire-intent\n' "$(ubs24pube_runtime)"; }
-ubs24pube_controller_runtime() { printf '%s\n' /run/ubs-v240-controller; }
-ubs24pube_activation_runtime() { printf '%s\n' /run/ubs-v240-activation; }
-ubs24pube_output_runtime() { printf '%s\n' /run/ubs-v240-output-transition; }
+ubs24pube_controller_runtime() { printf '%s\n' /run/mvc-controller; }
+ubs24pube_activation_runtime() { printf '%s\n' /run/mvc-activation; }
+ubs24pube_output_runtime() { printf '%s\n' /run/mvc-output-transition; }
 
 ubs24pube_sha() { ubs24pubc_hash_file "$1"; }
 ubs24pube_c7_intent_present() {
     (( $# == 0 )) || return 1
-    [[ -f /run/ubs-v240-activation/attempt && ! -L /run/ubs-v240-activation/attempt &&
-       $(stat -c '%u:%a:%h' -- /run/ubs-v240-activation/attempt 2>/dev/null) == '0:400:1' ]]
+    [[ -f /run/mvc-activation/attempt && ! -L /run/mvc-activation/attempt &&
+       $(stat -c '%u:%a:%h' -- /run/mvc-activation/attempt 2>/dev/null) == '0:400:1' ]]
 }
 
 ubs24pube_preclone_intent_present() {
@@ -128,12 +128,12 @@ ubs24pube_rehydrate_c7_locked() {
 ubs24pube_capture_guard_state() {
     (( $# == 0 )) || return 1
     UBS24PUBE_C13_PRESENT=no
-    if [[ -e /run/ubs-v240-output-transition || -L /run/ubs-v240-output-transition ]]; then
-        [[ -d /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition ]] || return 1
+    if [[ -e /run/mvc-output-transition || -L /run/mvc-output-transition ]]; then
+        [[ -d /run/mvc-output-transition && ! -L /run/mvc-output-transition ]] || return 1
         ubs24gc15_load_bound_intent || return 1
         UBS24PUBE_C13_PRESENT=yes
         local scratch a b c1=0 c11=0
-        scratch=$(umask 077; mktemp -d /run/ubs-v240-pube-guard.XXXXXXXX) || return 1
+        scratch=$(umask 077; mktemp -d /run/mvc-pube-guard.XXXXXXXX) || return 1
         a=$scratch/a.json; b=$scratch/b.json
         if ubs24gb1_capture_nft "$a" && ubs24gb1_capture_nft "$b" && cmp -s -- "$a" "$b"; then
             ubs24gc19_kernel_witness c1 "$a" "$b" && c1=1
@@ -167,8 +167,8 @@ ubs24pube_preclone_intent_valid() {
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(ubs24pube_sha "$runtime/transaction") || return 1
-    prepare=$(ubs24pube_sha /run/ubs-v240-controller/prepare-intent) || return 1
-    commit=$(ubs24pube_sha /run/ubs-v240-controller/commit-attempt) || return 1
+    prepare=$(ubs24pube_sha /run/mvc-controller/prepare-intent) || return 1
+    commit=$(ubs24pube_sha /run/mvc-controller/commit-attempt) || return 1
     [[ ${rows[0]} == ubs-v240-public-preclone-intent-v1 &&
        ${rows[1]} == state=name-absent-bound-before-nm-clone-write &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
@@ -183,7 +183,7 @@ ubs24pube_preclone_intent_valid() {
     UBS24PUBE_UNDERLAY=${rows[12]#underlay=}
     UBS24PUBE_NM_OWNER=${rows[13]#nm_owner=}
     [[ $source_sha =~ ^[0-9a-f]{64}$ &&
-       $UBS24PUBE_PRECLONE_NAME =~ ^ubs-v240-prepared-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]] || return 1
+       $UBS24PUBE_PRECLONE_NAME =~ ^mvc-prepared-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]] || return 1
     UBS24PUBE_PRECLONE_TOKEN=${BASH_REMATCH[1]}
     ubs24ga_uuid_valid "$UBS24PUBE_SOURCE_UUID" && ubs24ga_uuid_valid "$UBS24PUBE_PRECLONE_TOKEN" &&
       ubs24gb1_valid_ifname "$UBS24PUBE_UNDERLAY" && ubs24gc7_nm_owner_valid "$UBS24PUBE_NM_OWNER" || return 1
@@ -194,7 +194,7 @@ ubs24pube_preclone_intent_valid() {
     fi
     local UBS24S_LOCK_HELD=1
     ubs24op_session_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBE_NM_OWNER" ]] || return 1
-    tmp=$(umask 077; mktemp /run/ubs-v240-pube-source.XXXXXXXX) || return 1
+    tmp=$(umask 077; mktemp /run/mvc-pube-source.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || { rm -f -- "$tmp"; return 1; }
     if ! ubs24ga3_capture_source "$UBS24PUBE_SOURCE_UUID" "$tmp"; then rm -f -- "$tmp"; return 1; fi
     current_sha=$(ubs24op_settings_fingerprint "$tmp") || { rm -f -- "$tmp"; return 1; }
@@ -220,16 +220,16 @@ ubs24pube_preclone_guard_state_locked() {
     (( $# == 0 )) || return 1
     local dir entries scratch a b before after state=unknown
     ubs24pube_preclone_intent_valid || return 1
-    [[ ! -e /run/ubs-v240-activation && ! -L /run/ubs-v240-activation &&
-       ! -e /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition &&
-       ! -e /run/ubs-v240-wireguard && ! -L /run/ubs-v240-wireguard ]] || return 1
+    [[ ! -e /run/mvc-activation && ! -L /run/mvc-activation &&
+       ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
     ubs24gb4_no_active_vpn || return 1
     dir=$(ubs24gb2_runtime) || return 1
     ubs24gb2_records_valid || return 1
     entries=$(find "$dir" -mindepth 1 -maxdepth 1 -print | wc -l) || return 1
     (( entries == 8 || entries == 10 )) || return 1
     if (( entries == 10 )); then ubs24gc3_transition_payload_valid "$dir" || return 1; fi
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-pube-preclone-guard.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-pube-preclone-guard.XXXXXXXX) || return 1
     a=$scratch/a.json; b=$scratch/b.json
     if ! ubs24gb1_capture_nft "$a" || ! ubs24gb1_capture_nft "$b" || ! cmp -s -- "$a" "$b"; then rm -rf -- "$scratch"; return 1; fi
     before=$(ubs24gb2_foreign_projection "$dir/prestate.json") || { rm -rf -- "$scratch"; return 1; }
@@ -251,7 +251,7 @@ ubs24pube_preclone_topology_witness_dir() {
     (( $# == 1 )) || return 1
     local dir=$1 scratch links r4 r6 ok=1
     [[ -d $dir && ! -L $dir ]] || return 1
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-pube-preclone-topo.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-pube-preclone-topo.XXXXXXXX) || return 1
     links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
     ubs24gb1_capture_links "$links" && ubs24gb1_capture_routes4 "$r4" && ubs24gb1_capture_routes6 "$r6" &&
       cmp -s -- "$links" "$dir/links.json" && cmp -s -- "$r4" "$dir/routes4.json" && cmp -s -- "$r6" "$dir/routes6.json" || ok=0
@@ -269,7 +269,7 @@ ubs24pube_preclone_name_lookup() {
         ubs24pube_preclone_binding_valid || return 1
         uuid=$UBS24PUBE_PRECLONE_UUID
         UBS24GC23T_SOURCE_UUID=$UBS24PUBE_SOURCE_UUID
-        inv=$(umask 077; mktemp /run/ubs-v240-pube-inv.XXXXXXXX) || return 1; chmod 600 -- "$inv" || { rm -f -- "$inv"; return 1; }
+        inv=$(umask 077; mktemp /run/mvc-pube-inv.XXXXXXXX) || return 1; chmod 600 -- "$inv" || { rm -f -- "$inv"; return 1; }
         if ! ubs24gc23t_uuid_inventory "$inv"; then rm -f -- "$inv"; return 1; fi
         count=$(ubs24gc23t_clone_inventory_count "$inv" "$uuid") || { rm -f -- "$inv"; return 1; }
         rm -f -- "$inv" || return 1
@@ -291,7 +291,7 @@ ubs24pube_preclone_name_lookup() {
     obj=${BASH_REMATCH[1]}
     unsaved=$(ubs24g_get_property org.freedesktop.NetworkManager "$obj" org.freedesktop.NetworkManager.Settings.Connection Unsaved b) || return 1
     [[ $unsaved == 'b true' ]] || return 1
-    tmp=$(umask 077; mktemp /run/ubs-v240-pube-clone.XXXXXXXX) || return 1; chmod 600 -- "$tmp" || { rm -f -- "$tmp"; return 1; }
+    tmp=$(umask 077; mktemp /run/mvc-pube-clone.XXXXXXXX) || return 1; chmod 600 -- "$tmp" || { rm -f -- "$tmp"; return 1; }
     if ! ubs24gs_capture_settings "$obj" "$tmp"; then rm -f -- "$tmp"; return 1; fi
     jq -e --arg uuid "$uuid" --arg raw "$UBS24PUBE_PRECLONE_NAME" '
       .type=="a{sa{sv}}" and (.data|type=="array" and length==1) and
@@ -398,7 +398,7 @@ ubs24pube_preclone_release_guard() {
         ubs24pube_preclone_guard_state_locked || return 1
         nft --file "$batch" >/dev/null 2>&1 || return 1
     fi
-    ubs24gc23t_release_post_witness && ubs24pube_preclone_topology_witness_dir /run/ubs-v240-controller
+    ubs24gc23t_release_post_witness && ubs24pube_preclone_topology_witness_dir /run/mvc-controller
 }
 
 ubs24pube_preclone_retire_intent_valid() {
@@ -415,7 +415,7 @@ ubs24pube_preclone_retire_intent_valid() {
        ${rows[9]} == source=* && ${rows[10]} == clone_name=* && ${rows[11]} == token=* && ${rows[12]} == controller_entries=* &&
        ${rows[13]} == transition=* && ${rows[14]} == nm_owner=* ]] || return 1
     UBS24PUBE_SOURCE_UUID=${rows[9]#source=}; UBS24PUBE_PRECLONE_NAME=${rows[10]#clone_name=}; token=${rows[11]#token=}; entries=${rows[12]#controller_entries=}; transition=${rows[13]#transition=}; UBS24PUBE_NM_OWNER=${rows[14]#nm_owner=}
-    [[ $UBS24PUBE_PRECLONE_NAME == "ubs-v240-prepared-$token" && ( $entries == 8 || $entries == 10 ) ]] || return 1
+    [[ $UBS24PUBE_PRECLONE_NAME == "mvc-prepared-$token" && ( $entries == 8 || $entries == 10 ) ]] || return 1
     ubs24ga_uuid_valid "$UBS24PUBE_SOURCE_UUID" && ubs24ga_uuid_valid "$token" && ubs24gc7_nm_owner_valid "$UBS24PUBE_NM_OWNER" || return 1
     UBS24PUBE_PRECLONE_TOKEN=$token; UBS24PUBE_PRECLONE_CONTROLLER_ENTRIES=$entries; UBS24PUBE_PRECLONE_TRANSITION_SHA=$transition
     [[ $entries == 8 && $transition == - || $entries == 10 && $transition =~ ^[0-9a-f]{64}$ ]]
@@ -427,9 +427,9 @@ ubs24pube_preclone_publish_retire_intent() {
     runtime=$(ubs24pube_runtime); path=$(ubs24pube_preclone_retire_intent_path) || return 1
     [[ ! -e $path && ! -L $path ]] || return 1
     ubs24gb4_no_active_vpn && [[ $(ubs24pube_preclone_name_lookup) == absent ]] && ubs24pube_owned_tables_absent_now &&
-      ubs24gc23t_release_post_witness && ubs24pube_preclone_topology_witness_dir /run/ubs-v240-controller || return 1
-    entries=$(find /run/ubs-v240-controller -mindepth 1 -maxdepth 1 -print | wc -l) || return 1
-    if (( entries == 10 )); then transition=$(ubs24pube_sha /run/ubs-v240-controller/transition-attempt) || return 1; elif (( entries != 8 )); then return 1; fi
+      ubs24gc23t_release_post_witness && ubs24pube_preclone_topology_witness_dir /run/mvc-controller || return 1
+    entries=$(find /run/mvc-controller -mindepth 1 -maxdepth 1 -print | wc -l) || return 1
+    if (( entries == 10 )); then transition=$(ubs24pube_sha /run/mvc-controller/transition-attempt) || return 1; elif (( entries != 8 )); then return 1; fi
     boot=$(cat /proc/sys/kernel/random/boot_id); userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(ubs24pube_sha "$runtime/transaction"); pre=$(ubs24pube_sha "$(ubs24pube_preclone_intent_path)"); release=$(ubs24pube_sha "$(ubs24pube_preclone_release_intent_path)") || return 1
     tmp=$runtime/.preclone-retire.tmp; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
@@ -461,11 +461,11 @@ ubs24pube_preclone_retire_archive_continue() {
     runtime=$(ubs24pube_runtime) || return 1
     ubs24pube_preclone_retire_intent_valid || return 1
     ubs24gb4_no_active_vpn && ubs24pube_owned_tables_absent_now || return 1
-    [[ ! -e /run/ubs-v240-activation && ! -L /run/ubs-v240-activation && ! -e /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition &&
-       ! -e /run/ubs-v240-disconnect && ! -L /run/ubs-v240-disconnect && ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion &&
-       ! -e /run/ubs-v240-wireguard && ! -L /run/ubs-v240-wireguard ]] || return 1
+    [[ ! -e /run/mvc-activation && ! -L /run/mvc-activation && ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition &&
+       ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect && ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
     [[ $(ubs24pube_preclone_name_lookup) == absent ]] || return 1
-    root=$(ubs24pube_preclone_archive_root); archive=$root/$UBS24PUBE_PRECLONE_TOKEN; controller=/run/ubs-v240-controller || return 1
+    root=$(ubs24pube_preclone_archive_root); archive=$root/$UBS24PUBE_PRECLONE_TOKEN; controller=/run/mvc-controller || return 1
     if [[ ! -e $root && ! -L $root ]]; then (umask 077; mkdir -m 700 -- "$root") || return 1; fi
     [[ -d $root && ! -L $root && $(stat -c '%u:%a' -- "$root") == '0:700' ]] || return 1
     if [[ ! -e $archive && ! -L $archive ]]; then (umask 077; mkdir -m 700 -- "$archive") || return 1; fi
@@ -529,15 +529,15 @@ ubs24pube_plan_valid() {
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(ubs24pube_sha "$runtime/transaction") || return 1
-    c1=$(ubs24pube_sha /run/ubs-v240-controller/transition-attempt) || return 1
-    c7=$(ubs24pube_sha /run/ubs-v240-activation/attempt) || return 1
+    c1=$(ubs24pube_sha /run/mvc-controller/transition-attempt) || return 1
+    c7=$(ubs24pube_sha /run/mvc-activation/attempt) || return 1
     expected_c13='-'
-    if [[ -e /run/ubs-v240-output-transition || -L /run/ubs-v240-output-transition ]]; then
-        [[ -d /run/ubs-v240-output-transition && ! -L /run/ubs-v240-output-transition &&
-           -f /run/ubs-v240-output-transition/attempt && ! -L /run/ubs-v240-output-transition/attempt &&
-           $(stat -c '%u:%a:%h' -- /run/ubs-v240-output-transition 2>/dev/null) == '0:700:2' &&
-           $(stat -c '%u:%a:%h' -- /run/ubs-v240-output-transition/attempt 2>/dev/null) == '0:400:1' ]] || return 1
-        expected_c13=$(ubs24pube_sha /run/ubs-v240-output-transition/attempt) || return 1
+    if [[ -e /run/mvc-output-transition || -L /run/mvc-output-transition ]]; then
+        [[ -d /run/mvc-output-transition && ! -L /run/mvc-output-transition &&
+           -f /run/mvc-output-transition/attempt && ! -L /run/mvc-output-transition/attempt &&
+           $(stat -c '%u:%a:%h' -- /run/mvc-output-transition 2>/dev/null) == '0:700:2' &&
+           $(stat -c '%u:%a:%h' -- /run/mvc-output-transition/attempt 2>/dev/null) == '0:400:1' ]] || return 1
+        expected_c13=$(ubs24pube_sha /run/mvc-output-transition/attempt) || return 1
     fi
     [[ ${rows[0]} == ubs-v240-public-early-openvpn-cleanup-v1 &&
        ${rows[1]} == state=cleanup-authorized-observation-driven &&
@@ -569,9 +569,9 @@ ubs24pube_publish_plan() {
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(ubs24pube_sha "$runtime/transaction") || return 1
-    c1=$(ubs24pube_sha /run/ubs-v240-controller/transition-attempt) || return 1
-    c7=$(ubs24pube_sha /run/ubs-v240-activation/attempt) || return 1
-    if [[ $UBS24PUBE_C13_PRESENT == yes ]]; then c13=$(ubs24pube_sha /run/ubs-v240-output-transition/attempt) || return 1; fi
+    c1=$(ubs24pube_sha /run/mvc-controller/transition-attempt) || return 1
+    c7=$(ubs24pube_sha /run/mvc-activation/attempt) || return 1
+    if [[ $UBS24PUBE_C13_PRESENT == yes ]]; then c13=$(ubs24pube_sha /run/mvc-output-transition/attempt) || return 1; fi
     tmp=$runtime/.early-plan.tmp
     : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
     printf '%s\n' \
@@ -602,7 +602,7 @@ ubs24pube_guard_state_now() {
     (( $# == 0 )) || return 1
     if [[ $UBS24PUBE_C13_PRESENT == yes ]]; then
         local scratch a b c1=0 c11=0
-        scratch=$(umask 077; mktemp -d /run/ubs-v240-pube-now.XXXXXXXX) || return 1
+        scratch=$(umask 077; mktemp -d /run/mvc-pube-now.XXXXXXXX) || return 1
         a=$scratch/a.json; b=$scratch/b.json
         if ubs24gb1_capture_nft "$a" && ubs24gb1_capture_nft "$b" && cmp -s -- "$a" "$b"; then
             ubs24gc19_kernel_witness c1 "$a" "$b" && c1=1
@@ -788,7 +788,7 @@ ubs24pube_release_intent_valid() {
 
 ubs24pube_owned_tables_absent_now() {
     (( $# == 0 )) || return 1
-    local tmp; tmp=$(umask 077; mktemp /run/ubs-v240-pube-nft.XXXXXXXX) || return 1
+    local tmp; tmp=$(umask 077; mktemp /run/mvc-pube-nft.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || return 1
     local ok=1
     ubs24gb1_capture_nft "$tmp" && ubs24gc23t_owned_tables_absent "$tmp" || ok=0
@@ -960,9 +960,9 @@ ubs24pube_retire_archive_continue() {
     # the independently checkable safety poststate needed to retire journals.
     ubs24gb4_no_active_vpn && ubs24gc23t_clone_absent "$UBS24PUBE_CLONE_UUID" &&
       ubs24pube_owned_tables_absent_now || return 1
-    [[ ! -e /run/ubs-v240-disconnect && ! -L /run/ubs-v240-disconnect &&
-       ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion &&
-       ! -e /run/ubs-v240-wireguard && ! -L /run/ubs-v240-wireguard ]] || return 1
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
     root=$(ubs24pube_archive_root) || return 1
     archive=$root/$UBS24PUBE_CLONE_UUID
     if [[ ! -e $root && ! -L $root ]]; then (umask 077; mkdir -m 700 -- "$root") || return 1; fi
@@ -992,9 +992,9 @@ ubs24pube_retire_runtime_roots() {
     ubs24pube_release_intent_valid && ubs24gc23t_release_post_witness &&
       ubs24gc23t_b2_topology_witness && ubs24gc23t_clone_absent "$UBS24PUBE_CLONE_UUID" &&
       ubs24pube_owned_tables_absent_now || return 1
-    [[ ! -e /run/ubs-v240-disconnect && ! -L /run/ubs-v240-disconnect &&
-       ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion &&
-       ! -e /run/ubs-v240-wireguard && ! -L /run/ubs-v240-wireguard ]] || return 1
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
     local intent; intent=$(ubs24pube_retire_intent_path) || return 1
     if [[ ! -e $intent && ! -L $intent ]]; then ubs24pube_publish_retire_intent || return 1; fi
     ubs24pube_retire_intent_valid || return 1

@@ -319,8 +319,8 @@ ubs24pubd_parse_completed_session_marker() {
        ${plan_rows[6]} == "clone=$UBS24PUBD_OVPN_CLONE_UUID" &&
        ${plan_rows[7]} == "archive=$archive" ]] || return 1
 
-    for entry in /run/ubs-v240-controller /run/ubs-v240-activation /run/ubs-v240-output-transition \
-                 /run/ubs-v240-disconnect /run/ubs-v240-completion /run/ubs-v240-wireguard; do
+    for entry in /run/mvc-controller /run/mvc-activation /run/mvc-output-transition \
+                 /run/mvc-disconnect /run/mvc-completion /run/mvc-wireguard; do
         [[ ! -e $entry && ! -L $entry ]] || return 1
     done
     ubs24gb4_no_active_vpn || return 1
@@ -364,7 +364,7 @@ ubs24pubd_acquire_existing_lock() {
     ubs24gb2_root_scope && ubs24gb2_runtime_shape || return 1
     local dir fd
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller ]] || return 1
+    [[ $dir == /run/mvc-controller ]] || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
     UBS24GB2_FD=$fd
@@ -531,8 +531,8 @@ ubs24pubd_adopt_openvpn_absence_to_c1() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBD_STAGE:-} == adopting-openvpn-absence ]] || return 1
     ubs24pub_disconnect_admission_witness || return 1
-    [[ ! -e /run/ubs-v240-disconnect && ! -L /run/ubs-v240-disconnect &&
-       ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion &&
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
        $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch a b success=1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v241-c24a-absent.XXXXXXXX) || return 1
@@ -753,8 +753,8 @@ ubs24pubd_finalize_prepared_transaction_if_clean() {
     runtime=$(ubs24pub_session_runtime_root) || return 1
     [[ ${UBS24PUBD_TRANSACTION_STATE:-} == prepared-before-mutation &&
        -d $runtime && ! -L $runtime && -f $runtime/transaction && ! -L $runtime/transaction ]] || return 1
-    for p in /run/ubs-v240-controller /run/ubs-v240-activation /run/ubs-v240-output-transition \
-             /run/ubs-v240-disconnect /run/ubs-v240-completion /run/ubs-v240-wireguard; do
+    for p in /run/mvc-controller /run/mvc-activation /run/mvc-output-transition \
+             /run/mvc-disconnect /run/mvc-completion /run/mvc-wireguard; do
         [[ ! -e $p && ! -L $p ]] || return 1
     done
     rm -f -- "$runtime/transaction" || return 1

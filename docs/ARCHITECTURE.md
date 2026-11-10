@@ -15,4 +15,6 @@ The generated artifact is built from `source/build/monolith-runtime.manifest`. M
 
 Runtime state is ephemeral across reboot. MVC 2.4.x intentionally uses manual activation rather than an always-on early-boot service.
 
-Some internal runtime identifiers and audited module filenames retain a legacy implementation namespace. That namespace is not part of the public MVC command/API and is intentionally deferred to a separate no-behavior-change refactor.
+MVC-owned runtime filesystem state uses `/run/mvc-*`, and MVC-owned B4 nftables tables use the `mvc_preclone_*` namespace. These names are runtime-visible implementation identifiers and are authenticated as part of the same-boot lifecycle.
+
+The deeper internal Bash function/variable namespace (`ubs24*`), journal record signatures and several audited module filenames still retain their legacy implementation names. They are not part of the public MVC command/API and are intentionally deferred to a separate no-behavior-change refactor.

@@ -34,7 +34,7 @@ ubs24gd4_reset() {
     UBS24GD4_STAGE=idle
     UBS24GD4_DETAIL=none
     UBS24GD4_ATTEMPTED=no
-    UBS24GD4_RUNTIME=/run/ubs-v240-wireguard
+    UBS24GD4_RUNTIME=/run/mvc-wireguard
     UBS24GD4_TEMP_NAME=vpnks-wg
     UBS24GD4_TEMP_UUID=
     UBS24GD4_TEMP_FILE=/run/NetworkManager/system-connections/vpnks-wg.nmconnection
@@ -84,8 +84,8 @@ ubs24gd4_hash_file() {
 }
 
 ubs24gd4_private_runtime_absent() {
-    [[ ! -e ${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} &&
-       ! -L ${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} ]]
+    [[ ! -e ${UBS24GD4_RUNTIME:-/run/mvc-wireguard} &&
+       ! -L ${UBS24GD4_RUNTIME:-/run/mvc-wireguard} ]]
 }
 
 ubs24gd4_temp_profile_absent() {
@@ -157,29 +157,29 @@ ubs24gd4_write_parallel_guard_candidate() {
       "$ovpn_tunnel" "$ovpn_source" "$wg_tunnel" "$wg_source" "$wg_ip" "$wg_port" "$@" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out && $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     {
-      printf '%s\n' 'flush chain inet vpn_v240_preclone_quarantine output_deny'
-      printf '%s\n' 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "lo" accept'
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
+      printf '%s\n' 'flush chain inet mvc_preclone_quarantine output_deny'
+      printf '%s\n' 'add rule inet mvc_preclone_quarantine output_deny oifname "lo" accept'
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
         "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay" "$underlay_source" "$wg_ip" "$wg_port"
       for prefix in "$@"; do
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s drop\n' \
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s drop\n' \
           "$ovpn_tunnel" "$ovpn_source" "$prefix"
       done
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
         "$ovpn_tunnel" "$ovpn_source"
       for prefix in "$@"; do
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
           "$wg_tunnel" "$wg_source" "$prefix"
       done
-      printf '%s\n' 'flush chain netdev vpn_v240_preclone_underlay lowerdev_deny'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type arp accept'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
-      printf 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s tcp dport %s accept\n' \
+      printf '%s\n' 'flush chain netdev mvc_preclone_underlay lowerdev_deny'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type arp accept'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
+      printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s tcp dport %s accept\n' \
         "$underlay_source" "$ovpn_ip" "$ovpn_port"
-      printf 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay_source" "$wg_ip" "$wg_port"
     } > "$out"
 }
@@ -219,9 +219,9 @@ ubs24gd4_parallel_guard_observation() {
         if ($p[1]|tonumber)==32 then $p[0]
         else {prefix:{addr:$p[0],len:($p[1]|tonumber)}} end;
       def owned($v): ($v|type=="object") and
-        (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-         ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-         ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+        (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+         ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+         ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
       def chain($f;$t;$n): [.nftables[]|.chain?|select(.family==$f and .table==$t and .name==$n)];
       def rules($f;$t;$n): [.nftables[]|.rule?|select(.family==$f and .table==$t and .chain==$n)|.expr];
       def arp($v):
@@ -233,26 +233,26 @@ ubs24gd4_parallel_guard_observation() {
         ((["table","table","table","chain","chain","chain","chain",
            "rule","rule","rule","rule","rule","rule","rule","rule","rule"] + $wg_rule_keys)|sort) and
       ([.nftables[]|.chain?|select(owned(.))|[.family,.table,.name]]|sort)==
-        ([ ["inet","vpn_v240_preclone_quarantine","output_deny"],
-           ["inet","vpn_v240_preclone_quarantine","forward_deny"],
-           ["bridge","vpn_v240_preclone_bridge","forward_deny"],
-           ["netdev","vpn_v240_preclone_underlay","lowerdev_deny"] ]|sort) and
+        ([ ["inet","mvc_preclone_quarantine","output_deny"],
+           ["inet","mvc_preclone_quarantine","forward_deny"],
+           ["bridge","mvc_preclone_bridge","forward_deny"],
+           ["netdev","mvc_preclone_underlay","lowerdev_deny"] ]|sort) and
       ([.nftables[]|.table?|select(owned(.))|[.family,.name]]|sort)==
-        ([ ["inet","vpn_v240_preclone_quarantine"], ["bridge","vpn_v240_preclone_bridge"],
-           ["netdev","vpn_v240_preclone_underlay"] ]|sort) and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")[0]|
+        ([ ["inet","mvc_preclone_quarantine"], ["bridge","mvc_preclone_bridge"],
+           ["netdev","mvc_preclone_underlay"] ]|sort) and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")[0]|
         .hook=="output" and .prio==-310 and .policy=="drop") and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")[0]|
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")[0]|
         .hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==1 and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")[0]|
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")|length)==1 and
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")[0]|
         .hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")|length)==1 and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")[0]|
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")|length)==1 and
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")[0]|
         .hook=="egress" and .dev==$iface and .prio==-310 and .policy=="drop") and
-      (rules("inet";"vpn_v240_preclone_quarantine";"output_deny") as $out |
+      (rules("inet";"mvc_preclone_quarantine";"output_deny") as $out |
         ($out|map(core)) ==
         ([ [m(meta("oifname");"lo"),{accept:null}],
            [m(meta("oifname");$iface),m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}],
@@ -264,9 +264,9 @@ ubs24gd4_parallel_guard_observation() {
         proto_ok($out[0];"none") and proto_ok($out[1];"udp") and
         proto_ok($out[2];"tcp") and proto_ok($out[3];"udp") and
         all(range(4;($out|length)); proto_ok($out[.];"none"))) and
-      (rules("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==0 and
-      (rules("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==0 and
-      (rules("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny") as $r |
+      (rules("inet";"mvc_preclone_quarantine";"forward_deny")|length)==0 and
+      (rules("bridge";"mvc_preclone_bridge";"forward_deny")|length)==0 and
+      (rules("netdev";"mvc_preclone_underlay";"lowerdev_deny") as $r |
         ($r|length)==4 and arp($r[0]) and
         ($r[1]|core)==[m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}] and
         ($r[2]|core)==[m(pay("ip";"saddr");$src),m(pay("ip";"daddr");$od),m(pay("tcp";"dport");$op),{accept:null}] and
@@ -279,7 +279,7 @@ ubs24gd4_foreign_policy_unchanged() {
     (( $# == 1 )) || return 1
     local snapshot=$1 pre foreign_before foreign_after
     pre=$(ubs24gb2_runtime) || return 1
-    [[ $pre == /run/ubs-v240-controller && -f $pre/prestate.json && ! -L $pre/prestate.json ]] || return 1
+    [[ $pre == /run/mvc-controller && -f $pre/prestate.json && ! -L $pre/prestate.json ]] || return 1
     foreign_before=$(ubs24gb2_foreign_projection "$pre/prestate.json") || return 1
     foreign_after=$(ubs24gb2_foreign_projection "$snapshot") || return 1
     [[ $foreign_before == "$foreign_after" ]]
@@ -428,7 +428,7 @@ ubs24gd4_publish_profile() {
     local scratch temp hash loaded_uuid loaded_type loaded_iface
     ubs24gd4_authority_witness && ubs24gd4_private_runtime_absent && ubs24gd4_temp_profile_absent || return 1
     [[ ${UBS24GD4_STAGE:-} == protected-endpoint-resolved-no-wireguard-mutation-yet ]] || return 1
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-c23ai-profile.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-c23ai-profile.XXXXXXXX) || return 1
     temp=$scratch/pinned.nmconnection
     (umask 077; : > "$temp") || { rmdir "$scratch"; return 1; }
     chmod 600 -- "$temp" || { rm -rf -- "$scratch"; return 1; }
@@ -659,7 +659,7 @@ ubs24gd4_write_openvpn_restore_candidate() {
     # stale WG physical-egress exception survives after WG is down. Reuse C1's
     # exact underlay reconstruction, then append the proven C11 tunnel rule.
     ubs24gc1_write_batch "$underlay" "$source" "$remote" "$port" "$out" || return 1
-    printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
+    printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
       "$tunnel" "$tun_source" >> "$out"
 }
 

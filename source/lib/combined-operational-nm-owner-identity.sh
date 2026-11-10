@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Root-neutral NetworkManager D-Bus owner identity witness.
 # Extracted from combined-operational-session-underlay-binding.sh so the
-# reconstructed /run/ubs-v240-* composition does not import the older
+# reconstructed /run/mvc-* composition does not import the older
 # older controller runtime family merely to obtain this helper.
 # Read-only: no NetworkManager, D-Bus, nftables, route, DNS or file writes.
 

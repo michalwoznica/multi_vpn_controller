@@ -15,7 +15,7 @@ ubs24gb2_reset() {
     UBS24GB2_ATTEMPTED=no
 }
 
-ubs24gb2_runtime() { printf '%s\n' /run/ubs-v240-controller; }
+ubs24gb2_runtime() { printf '%s\n' /run/mvc-controller; }
 
 ubs24gb2_root_scope() {
     (( $# == 0 )) && [[ $EUID == 0 ]] || return 1
@@ -112,17 +112,17 @@ ubs24gb2_batch_valid() {
     (( ${#original[@]} == 5 && ${#actual[@]} == 9 )) || return 1
     local i
     for (( i=0; i<5; i++ )); do [[ ${actual[i]} == "${original[i]}" ]] || return 1; done
-    [[ ${actual[5]} == 'add table netdev vpn_v240_preclone_underlay' &&
-       ${actual[6]} == "add chain netdev vpn_v240_preclone_underlay lowerdev_deny { type filter hook egress device \"$iface\" priority -310; policy drop; }" &&
-       ${actual[7]} == "add rule inet vpn_v240_preclone_quarantine output_deny oifname \"$iface\" ip protocol udp udp sport 68 udp dport 67 accept" &&
-       ${actual[8]} == 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept' ]]
+    [[ ${actual[5]} == 'add table netdev mvc_preclone_underlay' &&
+       ${actual[6]} == "add chain netdev mvc_preclone_underlay lowerdev_deny { type filter hook egress device \"$iface\" priority -310; policy drop; }" &&
+       ${actual[7]} == "add rule inet mvc_preclone_quarantine output_deny oifname \"$iface\" ip protocol udp udp sport 68 udp dport 67 accept" &&
+       ${actual[8]} == 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept' ]]
 }
 
 ubs24gb2_prestate_netdev_absent() {
     (( $# == 1 )) && jq -e '
        [ .nftables[] | to_entries[] | select(.key != "metainfo") | .value |
           select(type=="object" and .family=="netdev" and
-              (.table // .name // "")=="vpn_v240_preclone_underlay") ] | length==0
+              (.table // .name // "")=="mvc_preclone_underlay") ] | length==0
     ' -- "$1" >/dev/null 2>&1
 }
 
@@ -141,34 +141,34 @@ ubs24gb2_poststate_valid() {
         . == m(pay("ip";"protocol");17);
       def core($expr): [ $expr[] | select(dep|not) ];
       def owned($v): ($v|type=="object") and
-        (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-         ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-         ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+        (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+         ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+         ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
       def chain($f;$t;$n): [.nftables[]|.chain?|select(.family==$f and .table==$t and .name==$n)];
       def rules($f;$t;$n): [.nftables[]|.rule?|select(.family==$f and .table==$t and .chain==$n)|.expr];
       (.nftables|type)=="array" and
       ([.nftables[]|to_entries[]|select(.key!="metainfo" and owned(.value))|.key]|sort)==
         (["table","table","table","chain","chain","chain","chain","rule","rule"]|sort) and
       ([.nftables[]|.table?|select(owned(.))|[.family,.name]]|sort)==
-        ([ ["inet","vpn_v240_preclone_quarantine"], ["bridge","vpn_v240_preclone_bridge"],
-           ["netdev","vpn_v240_preclone_underlay"] ]|sort) and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")[0]|
+        ([ ["inet","mvc_preclone_quarantine"], ["bridge","mvc_preclone_bridge"],
+           ["netdev","mvc_preclone_underlay"] ]|sort) and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")[0]|
         .hook=="output" and .prio==-310 and .policy=="drop") and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")[0]|
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")[0]|
         .hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==1 and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")[0]|
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")|length)==1 and
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")[0]|
         .hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")|length)==1 and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")[0]|
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")|length)==1 and
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")[0]|
         .hook=="egress" and .dev==$iface and .prio==-310 and .policy=="drop") and
-      (rules("inet";"vpn_v240_preclone_quarantine";"output_deny")|map(core(.)))==
+      (rules("inet";"mvc_preclone_quarantine";"output_deny")|map(core(.)))==
         [[m(meta("oifname");$iface),m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}]] and
-      (rules("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==0 and
-      (rules("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==0 and
-      (rules("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")|map(core(.)))==
+      (rules("inet";"mvc_preclone_quarantine";"forward_deny")|length)==0 and
+      (rules("bridge";"mvc_preclone_bridge";"forward_deny")|length)==0 and
+      (rules("netdev";"mvc_preclone_underlay";"lowerdev_deny")|map(core(.)))==
         [[m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}]]
     ' -- "$file" >/dev/null 2>&1
 }
@@ -178,9 +178,9 @@ ubs24gb2_foreign_projection() {
     jq -ecS '
       def ours($v):
         ($v | type=="object") and
-        (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-         ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-         ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+        (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+         ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+         ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
       if type!="object" or ((keys-["nftables"])|length)!=0 or (.nftables|type)!="array" or
         any(.nftables[]; type!="object" or (keys|length)!=1 or
           (keys[0] | IN("metainfo","table","chain","rule","set","element","flowtable","map","counter","quota","limit","ct helper","ct timeout","ct expectation","synproxy") | not))
@@ -212,7 +212,7 @@ ubs24gb2_attest() {
     dir=$(ubs24gb2_runtime) || return 1
     ubs24gb2_records_valid || return 1
     iface=$(ubs24gb2_derive_iface) || return 1
-    scratch=$(mktemp -d /run/ubs-v240-b2-observe.XXXXXXXX) || return 1
+    scratch=$(mktemp -d /run/mvc-b2-observe.XXXXXXXX) || return 1
     chmod 700 "$scratch" || return 1
     first=$scratch/nft1; second=$scratch/nft2
     links=$scratch/links; r4=$scratch/route4; r6=$scratch/route6
@@ -274,7 +274,7 @@ ubs24gb2_install_once() {
     ubs24gb2_root_scope && ubs24gb1_valid_ifname "$iface" || return 1
     dir=$(ubs24gb2_runtime) || return 1
     [[ ! -e $dir && ! -L $dir ]] || return 1
-    scratch=$(mktemp -d /run/ubs-v240-b2-plan.XXXXXXXX) || return 1
+    scratch=$(mktemp -d /run/mvc-b2-plan.XXXXXXXX) || return 1
     chmod 700 -- "$scratch" || return 1
     # B1 includes two direct kernel + route/link captures and nft --check.
     ubs24gb1_plan_once "$iface" "$base" "$scratch" || return 1

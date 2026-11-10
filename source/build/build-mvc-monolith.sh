@@ -7,7 +7,7 @@ umask 077
 export LC_ALL=C
 
 UBS24_BUILD_VERSION='2.4.1'
-UBS24_BUILD_CHECKPOINT='MVC_R1_PUBLIC_IDENTITY'
+UBS24_BUILD_CHECKPOINT='MVC_R2_RUNTIME_IDENTITY'
 UBS24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 ubs24_build_die() {
@@ -257,7 +257,7 @@ ubs24mon_runtime_assets_cleanup() {
     (( $# == 0 )) || return 1
     local dir=${UBS24_MONOLITH_ASSET_DIR:-}
     [[ -n $dir ]] || return 0
-    if [[ -d $dir && ! -L $dir && $dir == /dev/shm/ubs-v240-monolith-assets.* ]]; then
+    if [[ -d $dir && ! -L $dir && $dir == /dev/shm/mvc-monolith-assets.* ]]; then
         rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/vpn-v240-preclone-quarantine-offline.nft" 2>/dev/null || :
         rmdir -- "$dir" 2>/dev/null || :
     fi
@@ -276,7 +276,7 @@ ubs24mon_runtime_assets_prepare() {
         return 0
     fi
     [[ -d /dev/shm && ! -L /dev/shm && $(stat -f -c %T /dev/shm 2>/dev/null) == tmpfs ]] || return 1
-    dir=$(umask 077; mktemp -d /dev/shm/ubs-v240-monolith-assets.XXXXXXXX) || return 1
+    dir=$(umask 077; mktemp -d /dev/shm/mvc-monolith-assets.XXXXXXXX) || return 1
     chmod 700 -- "$dir" || { rmdir -- "$dir" 2>/dev/null || :; return 1; }
     if ! ubs24mon_materialize_resource gvariant-awk "$dir/gvariant-settings-to-json.awk" ||
        ! ubs24mon_materialize_resource b4-bootstrap-nft "$dir/vpn-v240-preclone-quarantine-offline.nft"; then
@@ -378,8 +378,8 @@ cat >> "$ubs24_tmp" <<'BASH_MONOLITH_GLUE'
 # Derived from loader-only combined-operational-public-v240-composition.sh.
 # This section intentionally contains runtime glue only; no project-tree source.
 # ============================================================================
-ubs24pub_session_runtime_root() { printf '%s\n' /run/ubs-v240-public-session; }
-ubs24pub_wireguard_runtime_root() { printf '%s\n' /run/ubs-v240-wireguard; }
+ubs24pub_session_runtime_root() { printf '%s\n' /run/mvc-public-session; }
+ubs24pub_wireguard_runtime_root() { printf '%s\n' /run/mvc-wireguard; }
 
 ubs24pub_process_initialize() {
     (( $# == 0 )) || return 1
@@ -403,7 +403,7 @@ ubs24pub_process_initialize() {
     UBS24GC4_SOURCE_ROOT=
 
     [[ ${UBS24GD4_TEMP_NAME:-} == vpnks-wg &&
-       ${UBS24GD4_RUNTIME:-} == /run/ubs-v240-wireguard &&
+       ${UBS24GD4_RUNTIME:-} == /run/mvc-wireguard &&
        ${UBS24PUBC_STAGE:-} == idle && ${UBS24PUBD_STAGE:-} == idle ]]
 }
 # <<< END MONOLITH COMPOSITION GLUE

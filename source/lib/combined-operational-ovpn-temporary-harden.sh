@@ -44,7 +44,7 @@ ubs24ga2_harden_once() {
         seen[$item]=1
     done
     [[ ! -s $first && ! -s $second ]] || return 1
-    [[ ${UBS24GA_CLONE_NAME:-} == ubs-v240-prepared-* ]] || return 1
+    [[ ${UBS24GA_CLONE_NAME:-} == mvc-prepared-* ]] || return 1
     clone_uuid=${UBS24GA_CLONE_UUID:-}
     declare -F ubs24ga_uuid_valid >/dev/null &&
         declare -F ubs24op_candidate_plan >/dev/null &&

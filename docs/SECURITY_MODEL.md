@@ -14,3 +14,5 @@ Key properties include:
 - no automatic reconnect/watchdog behavior.
 
 A partial tunnel loss does not grant authority by itself. MVC first authenticates the owned same-boot session from its durable runtime evidence, then reconciles only tightly recognized states. Unknown or ambiguous state remains fail-closed.
+
+MVC same-boot ownership records live under `/run/mvc-*`. Protected-session B4 tables use the `mvc_preclone_*` nftables namespace. Both are ephemeral runtime state rather than persistent configuration.

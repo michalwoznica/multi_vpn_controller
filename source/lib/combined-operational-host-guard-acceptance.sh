@@ -89,7 +89,7 @@ ubs24gb4_install() {
     UBS24GB4_APPROVAL=none
     local iface confirmed_iface
     ubs24gb4_scope && ubs24gb4_no_active_vpn || return 1
-    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     iface=$(ubs24gb4_underlay) || return 1
     ubs24gb4_confirm 'INSTALL UBS V240 DENY ALL' || return 1
     # Recheck immediately before calling the one-shot B2 transaction.

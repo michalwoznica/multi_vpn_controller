@@ -18,7 +18,7 @@ ubs24gc19_authorize_cleanup() { return 1; }
 ubs24gc19_authorize_retry() { return 1; }
 ubs24gc19_authorize_traffic() { return 1; }
 ubs24gc19_authorize_secret_export() { return 1; }
-ubs24gc19_runtime() { printf '%s\n' /run/ubs-v240-disconnect; }
+ubs24gc19_runtime() { printf '%s\n' /run/mvc-disconnect; }
 
 # Change ONLY host OUTPUT; restore the exact current C1 host shape: loopback,
 # narrow DHCPv4 client continuity, and the pinned OpenVPN TCP endpoint.
@@ -30,10 +30,10 @@ ubs24gc19_write_c1_handback() {
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     {
-        printf '%s\n' 'flush chain inet vpn_v240_preclone_quarantine output_deny'
-        printf '%s\n' 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "lo" accept'
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$iface"
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
+        printf '%s\n' 'flush chain inet mvc_preclone_quarantine output_deny'
+        printf '%s\n' 'add rule inet mvc_preclone_quarantine output_deny oifname "lo" accept'
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$iface"
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s tcp dport %s accept\n' \
             "$iface" "$source" "$remote" "$port"
     } > "$out"
 }
@@ -63,7 +63,7 @@ ubs24gc19_kernel_witness() {
         *) return 1 ;;
     esac
     pre=$(ubs24gb2_runtime) || return 1
-    [[ $pre == /run/ubs-v240-controller ]] || return 1
+    [[ $pre == /run/mvc-controller ]] || return 1
     before=$(ubs24gb2_foreign_projection "$pre/prestate.json") || return 1
     after=$(ubs24gb2_foreign_projection "$first") || return 1
     [[ $before == "$after" ]] && ubs24gb2_lock_valid
@@ -73,7 +73,7 @@ ubs24gc19_intent_valid() {
     (( $# == 0 )) || return 1
     local dir first
     dir=$(ubs24gc19_runtime) || return 1
-    [[ $dir == /run/ubs-v240-disconnect && -d $dir && ! -L $dir &&
+    [[ $dir == /run/mvc-disconnect && -d $dir && ! -L $dir &&
        $(stat -c '%u:%a:%h' -- "$dir") == 0:700:2 ]] || return 1
     [[ -f $dir/attempt && ! -L $dir/attempt &&
        $(stat -c '%u:%a:%h' -- "$dir/attempt") == 0:400:1 ]] || return 1
@@ -90,7 +90,7 @@ ubs24gc19_normal_intent_valid() {
     local dir boot userns netns mntns c13 c1
     local -a records=() entries=()
     dir=$(ubs24gc19_runtime) || return 1
-    [[ $dir == /run/ubs-v240-disconnect && -d $dir && ! -L $dir &&
+    [[ $dir == /run/mvc-disconnect && -d $dir && ! -L $dir &&
        $(stat -c '%u:%a:%h' -- "$dir") == 0:700:2 ]] || return 1
     mapfile -d '' -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 -print0) || return 1
     (( ${#entries[@]} == 1 )) && [[ ${entries[0]} == "$dir/attempt" ]] || return 1
@@ -102,8 +102,8 @@ ubs24gc19_normal_intent_valid() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c13=$(ubs24gc13_hash_file /run/ubs-v240-output-transition/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c13=$(ubs24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     [[ ${records[0]} == ubs-v240-c19-openvpn-stop-v1 &&
        ${records[1]} == state=handback-commit-attempted-outcome-uncertain &&
        ${records[2]} == "boot=$boot" &&
@@ -133,7 +133,7 @@ ubs24gc19_absent_intent_valid() {
     local dir boot userns netns mntns c13 c1 marker_kind marker_path marker_sha current_marker_sha
     local -a records=() entries=()
     dir=$(ubs24gc19_runtime) || return 1
-    [[ $dir == /run/ubs-v240-disconnect && -d $dir && ! -L $dir &&
+    [[ $dir == /run/mvc-disconnect && -d $dir && ! -L $dir &&
        $(stat -c '%u:%a:%h' -- "$dir") == 0:700:2 ]] || return 1
     mapfile -d '' -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 -print0) || return 1
     (( ${#entries[@]} == 1 )) && [[ ${entries[0]} == "$dir/attempt" ]] || return 1
@@ -143,11 +143,11 @@ ubs24gc19_absent_intent_valid() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c13=$(ubs24gc13_hash_file /run/ubs-v240-output-transition/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c13=$(ubs24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     marker_kind=${records[11]#marker=}
     case $marker_kind in active|transaction) ;; *) return 1 ;; esac
-    marker_path=/run/ubs-v240-public-session/$marker_kind
+    marker_path=/run/mvc-public-session/$marker_kind
     [[ -f $marker_path && ! -L $marker_path &&
        $(stat -c '%u:%a:%h' -- "$marker_path") == 0:400:1 ]] || return 1
     marker_sha=${records[12]#marker_sha=}
@@ -179,13 +179,13 @@ ubs24gc19_publish_intent() {
     [[ $(stat -f -c %T /run) == tmpfs && -f $batch && ! -L $batch && -O $batch &&
        $(stat -c '%a:%h' -- "$batch") == 600:1 ]] || return 1
     dir=$(ubs24gc19_runtime) || return 1
-    [[ $dir == /run/ubs-v240-disconnect && ! -e $dir && ! -L $dir ]] || return 1
+    [[ $dir == /run/mvc-disconnect && ! -e $dir && ! -L $dir ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c13=$(ubs24gc13_hash_file /run/ubs-v240-output-transition/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c13=$(ubs24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     digest=$(ubs24gc13_hash_file "$batch") || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
@@ -213,17 +213,17 @@ ubs24gc19_publish_absent_intent() {
       ubs24gc3_transition_records_valid && ubs24gc13_intent_valid || return 1
     [[ $(stat -f -c %T /run) == tmpfs && -f $batch && ! -L $batch && -O $batch &&
        $(stat -c '%a:%h' -- "$batch") == 600:1 ]] || return 1
-    marker_path=/run/ubs-v240-public-session/$marker_kind
+    marker_path=/run/mvc-public-session/$marker_kind
     [[ -f $marker_path && ! -L $marker_path &&
        $(stat -c '%u:%a:%h' -- "$marker_path") == 0:400:1 ]] || return 1
     dir=$(ubs24gc19_runtime) || return 1
-    [[ $dir == /run/ubs-v240-disconnect && ! -e $dir && ! -L $dir ]] || return 1
+    [[ $dir == /run/mvc-disconnect && ! -e $dir && ! -L $dir ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c13=$(ubs24gc13_hash_file /run/ubs-v240-output-transition/attempt) || return 1
-    c1=$(ubs24gc13_hash_file /run/ubs-v240-controller/transition-attempt) || return 1
+    c13=$(ubs24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
+    c1=$(ubs24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
     digest=$(ubs24gc13_hash_file "$batch") || return 1
     marker_sha=$(ubs24gc13_hash_file "$marker_path") || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
@@ -312,7 +312,7 @@ ubs24gc19_execute_once() {
     ubs24gb2_root_scope && ubs24gb2_lock_valid &&
         ubs24gc3_transition_records_valid && ubs24gc7_read_intent &&
         ubs24gc13_intent_valid || return 1
-    [[ ! -e /run/ubs-v240-disconnect && ! -L /run/ubs-v240-disconnect &&
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
        $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch a b nm route success=1 expected
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c19.XXXXXXXX) || return 1

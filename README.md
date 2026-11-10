@@ -62,4 +62,4 @@ The suite is hermetic and does not require live VPN activation.
 
 ## Internal compatibility names
 
-The public project identity is **Multi VPN Controller** and the command is `mvc`. Some audited 2.4.x internal Bash symbols, runtime-state identifiers and module filenames still retain legacy implementation names. They are not public API and are intentionally left unchanged in this identity-only refactor.
+The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership now uses `/run/mvc-*` and `mvc_preclone_*`. Some audited 2.4.x internal Bash symbols (`ubs24*`), journal record signatures and module filenames still retain legacy implementation names. They are not public API and are intentionally deferred to a later no-behavior-change cleanup.

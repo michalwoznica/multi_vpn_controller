@@ -6,7 +6,7 @@ Run the curated public regression suite from the repository root:
 ./source/tests/run-tests.sh
 ```
 
-The public suite is hermetic. It covers deterministic generation, embedded runtime seams, CLI/verifier behavior, structural equivalence, installer behavior, partial-session reconciliation, generated-artifact dropout handling and public-tree sanitization.
+The public suite is hermetic. It covers deterministic generation, embedded runtime seams, CLI/verifier behavior, structural equivalence, installer behavior, partial-session reconciliation, generated-artifact dropout handling, public/runtime identity boundaries and public-tree sanitization.
 
 A release candidate should also satisfy:
 

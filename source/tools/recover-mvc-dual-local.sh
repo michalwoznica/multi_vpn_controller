@@ -13,7 +13,7 @@
 #     file still carries the authenticated temporary UUID;
 #   * remove the private hold routes only when no active OpenVPN remains.
 #
-# The /run/ubs-v240-wireguard intent is retained as same-boot evidence. After
+# The /run/mvc-wireguard intent is retained as same-boot evidence. After
 # successful recovery, use /root/mvc-emergency-rollback separately only
 # if you consciously want to DISABLE the v2.4 kill switch.
 set -euo pipefail
@@ -31,7 +31,7 @@ for cmd in awk cat grep ip nmcli readlink rm stat wg; do
     command -v "$cmd" >/dev/null 2>&1 || { printf 'ERROR: required command missing: %s\n' "$cmd" >&2; exit 1; }
 done
 
-RUNTIME=/run/ubs-v240-wireguard
+RUNTIME=/run/mvc-wireguard
 INTENT=$RUNTIME/intent
 TEMP_NAME=vpnks-wg
 TEMP_FILE=/run/NetworkManager/system-connections/vpnks-wg.nmconnection
@@ -427,7 +427,7 @@ inspect_state || exit 1
 printf '%s\n' \
   'WARNING: This removes ONLY authenticated C23AI WireGuard residue.' \
   'It does NOT stop OpenVPN and does NOT remove the v2.4 nftables quarantine.' \
-  'The /run/ubs-v240-wireguard intent is retained as evidence; do not start another session in this boot.' \
+  'The /run/mvc-wireguard intent is retained as evidence; do not start another session in this boot.' \
   'Type exactly: RECOVER MVC DUAL WIREGUARD' > /dev/tty
 printf '> ' > /dev/tty
 IFS= read -r confirmation < /dev/tty || exit 1
@@ -504,5 +504,5 @@ printf '%s\n' \
   'PASS: authenticated C23AI WireGuard profile and endpoint route are absent' \
   'RESULT: MVC WIREGUARD RECOVERY COMPLETE — CONTROLLER FIREWALL LEFT IN PLACE' \
   "NOTE: $hold_note" \
-  'NOTE: /run/ubs-v240-wireguard is intentionally retained; do not retry this session in the same boot.' \
+  'NOTE: /run/mvc-wireguard is intentionally retained; do not retry this session in the same boot.' \
   'NOTE: use /root/mvc-emergency-rollback separately only if you deliberately choose to disable the kill switch.'

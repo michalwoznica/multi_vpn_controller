@@ -166,14 +166,14 @@ ubs24gco_start_once() {
     ubs24ga_uuid_valid "$source_uuid" && ubs24gb1_valid_ifname "$underlay" || return 1
     # Refuse a new session while ANY fixed live-session journal root from an
     # interrupted or incomplete prior session remains. Completed archives under
-    # /run/ubs-v240-completed are intentionally permitted.
+    # /run/mvc-completed are intentionally permitted.
     local live_root
     for live_root in \
-        /run/ubs-v240-controller \
-        /run/ubs-v240-activation \
-        /run/ubs-v240-output-transition \
-        /run/ubs-v240-disconnect \
-        /run/ubs-v240-completion; do
+        /run/mvc-controller \
+        /run/mvc-activation \
+        /run/mvc-output-transition \
+        /run/mvc-disconnect \
+        /run/mvc-completion; do
         [[ ! -e $live_root && ! -L $live_root ]] || return 1
     done
     UBS24GCO_ATTEMPTED=yes
@@ -222,9 +222,9 @@ ubs24gco_complete_once() {
 ubs24gco_resume_completion_once() {
     (( $# == 0 )) || return 1
     ubs24gco_enabled || return 1
-    [[ ! -e /run/ubs-v240-completion && ! -L /run/ubs-v240-completion &&
-       -f /run/ubs-v240-disconnect/attempt &&
-       ! -L /run/ubs-v240-disconnect/attempt ]] || return 1
+    [[ ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       -f /run/mvc-disconnect/attempt &&
+       ! -L /run/mvc-disconnect/attempt ]] || return 1
     UBS24GCO_STAGE=completing
     ubs24gc23t_execute_once || return 1
     [[ ${UBS24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1

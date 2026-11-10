@@ -39,7 +39,7 @@ ubs24gc2_guard_witness() {
     # *different* description: its nonblocking exclusive lock must contend.
     local dir
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller ]] || return 1
+    [[ $dir == /run/mvc-controller ]] || return 1
     ubs24gc2_lock_held "$dir/controller.lock" "$UBS24GB2_FD" || return 1
     ubs24gb2_attest || return 1
     [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only &&

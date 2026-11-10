@@ -105,9 +105,9 @@ ubs24v_main() {
 
     local b4_count=0
     if (( nft_rc == 0 )); then
-        grep -qx 'table inet vpn_v240_preclone_quarantine' <<<"$nft_rows" && ((b4_count+=1)) || :
-        grep -qx 'table bridge vpn_v240_preclone_bridge' <<<"$nft_rows" && ((b4_count+=1)) || :
-        grep -qx 'table netdev vpn_v240_preclone_underlay' <<<"$nft_rows" && ((b4_count+=1)) || :
+        grep -qx 'table inet mvc_preclone_quarantine' <<<"$nft_rows" && ((b4_count+=1)) || :
+        grep -qx 'table bridge mvc_preclone_bridge' <<<"$nft_rows" && ((b4_count+=1)) || :
+        grep -qx 'table netdev mvc_preclone_underlay' <<<"$nft_rows" && ((b4_count+=1)) || :
     fi
 
     local observed_shape=ambiguous
@@ -170,7 +170,7 @@ ubs24v_main() {
     )
     [[ -n $private_routes ]] && printf '%s\n' "$private_routes" || echo 'none'
 
-    ubs24v_section 'UBS ROUTE PROTOCOLS'
+    ubs24v_section 'MVC ROUTE PROTOCOLS'
     local proto186 proto187
     echo '-- proto 186 --'
     proto186=$(ip -4 route show table all proto 186 2>&1 || :)
@@ -193,10 +193,10 @@ ubs24v_main() {
         echo 'resolv.conf unavailable'
     fi
 
-    ubs24v_section 'UBS NFT TABLES'
+    ubs24v_section 'MVC NFT TABLES'
     local filtered_tables
     if (( nft_rc == 0 )); then
-        filtered_tables=$(grep -E '^table (inet laptop_base|inet vpn_v240_preclone_quarantine|bridge vpn_v240_preclone_bridge|netdev vpn_v240_preclone_underlay)$' <<<"$nft_rows" || :)
+        filtered_tables=$(grep -E '^table (inet laptop_base|inet mvc_preclone_quarantine|bridge mvc_preclone_bridge|netdev mvc_preclone_underlay)$' <<<"$nft_rows" || :)
         [[ -n $filtered_tables ]] && printf '%s\n' "$filtered_tables" || echo 'none'
         printf 'b4_quarantine_tables=%d/3\n' "$b4_count"
     else
@@ -207,13 +207,13 @@ ubs24v_main() {
     ubs24v_section 'FIXED RUNTIME ROOTS'
     local p
     for p in \
-        /run/ubs-v240-controller \
-        /run/ubs-v240-activation \
-        /run/ubs-v240-output-transition \
-        /run/ubs-v240-disconnect \
-        /run/ubs-v240-completion \
-        /run/ubs-v240-wireguard \
-        /run/ubs-v240-public-session
+        /run/mvc-controller \
+        /run/mvc-activation \
+        /run/mvc-output-transition \
+        /run/mvc-disconnect \
+        /run/mvc-completion \
+        /run/mvc-wireguard \
+        /run/mvc-public-session
     do
         if [[ -e $p || -L $p ]]; then
             echo "PRESENT: $p"

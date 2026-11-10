@@ -21,7 +21,7 @@ ubs24gc15_load_bound_intent() {
     (( $# == 0 )) || return 1
     local dir row tuple tunnel address owner
     dir=$(ubs24gc13_runtime) || return 1
-    [[ $dir == /run/ubs-v240-output-transition &&
+    [[ $dir == /run/mvc-output-transition &&
        -f $dir/attempt && ! -L $dir/attempt ]] || return 1
     row=$(sed -n '10p' -- "$dir/attempt") || return 1
     [[ $row =~ ^tunnel=(tun[a-zA-Z0-9_.-]*)\|source=([0-9.]+)$ ]] || return 1
@@ -43,7 +43,7 @@ ubs24gc15_candidate_digest_valid() {
     (( $# == 0 )) || return 1
     local dir scratch batch expected actual result=1
     dir=$(ubs24gc13_runtime) || return 1
-    [[ $dir == /run/ubs-v240-output-transition ]] || return 1
+    [[ $dir == /run/mvc-output-transition ]] || return 1
     expected=$(sed -n '9p' -- "$dir/attempt") || return 1
     [[ $expected == candidate_sha=* ]] || return 1
     expected=${expected#candidate_sha=}
@@ -112,7 +112,7 @@ ubs24gc15_reconcile_locked() {
             post=1
         fi
         if (( pre + post == 1 )); then
-            if foreign_before=$(ubs24gb2_foreign_projection /run/ubs-v240-controller/prestate.json) &&
+            if foreign_before=$(ubs24gb2_foreign_projection /run/mvc-controller/prestate.json) &&
                foreign_after=$(ubs24gb2_foreign_projection "$first"); then
                 [[ $foreign_before == "$foreign_after" ]] && result=0
             fi
@@ -149,7 +149,7 @@ ubs24gc15_reconcile_readonly() {
         ubs24gb2_runtime_shape || return 1
     local dir fd result=1 stage
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller ]] || return 1
+    [[ $dir == /run/mvc-controller ]] || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
     UBS24GB2_FD=$fd

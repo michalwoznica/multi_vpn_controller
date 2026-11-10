@@ -47,19 +47,19 @@ ubs24gwg_write_guard_candidate() {
     ubs24gwg_parameters "$underlay" "$underlay_source" "$wg_tunnel" "$wg_source" "$endpoint_ip" "$endpoint_port" "$@" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out && $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     {
-      printf '%s\n' 'flush chain inet vpn_v240_preclone_quarantine output_deny'
-      printf '%s\n' 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "lo" accept'
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
-      printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf '%s\n' 'flush chain inet mvc_preclone_quarantine output_deny'
+      printf '%s\n' 'add rule inet mvc_preclone_quarantine output_deny oifname "lo" accept'
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip protocol udp udp sport 68 udp dport 67 accept\n' "$underlay"
+      printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay" "$underlay_source" "$endpoint_ip" "$endpoint_port"
       for prefix in "$@"; do
-        printf 'add rule inet vpn_v240_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
+        printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s ip daddr %s accept\n' \
           "$wg_tunnel" "$wg_source" "$prefix"
       done
-      printf '%s\n' 'flush chain netdev vpn_v240_preclone_underlay lowerdev_deny'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type arp accept'
-      printf '%s\n' 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
-      printf 'add rule netdev vpn_v240_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
+      printf '%s\n' 'flush chain netdev mvc_preclone_underlay lowerdev_deny'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type arp accept'
+      printf '%s\n' 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept'
+      printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay_source" "$endpoint_ip" "$endpoint_port"
     } > "$out"
 }
@@ -89,9 +89,9 @@ ubs24gwg_guard_observation() {
       def rhs($cidr): ($cidr|split("/")) as $p |
         if ($p[1]|tonumber)==32 then $p[0] else {prefix:{addr:$p[0],len:($p[1]|tonumber)}} end;
       def owned($v): ($v|type=="object") and
-        (($v.family=="inet" and ($v.table // $v.name // "")=="vpn_v240_preclone_quarantine") or
-         ($v.family=="bridge" and ($v.table // $v.name // "")=="vpn_v240_preclone_bridge") or
-         ($v.family=="netdev" and ($v.table // $v.name // "")=="vpn_v240_preclone_underlay"));
+        (($v.family=="inet" and ($v.table // $v.name // "")=="mvc_preclone_quarantine") or
+         ($v.family=="bridge" and ($v.table // $v.name // "")=="mvc_preclone_bridge") or
+         ($v.family=="netdev" and ($v.table // $v.name // "")=="mvc_preclone_underlay"));
       def chain($f;$t;$n): [.nftables[]|.chain?|select(.family==$f and .table==$t and .name==$n)];
       def rules($f;$t;$n): [.nftables[]|.rule?|select(.family==$f and .table==$t and .chain==$n)|.expr];
       def arp($v):
@@ -102,19 +102,19 @@ ubs24gwg_guard_observation() {
       ([.nftables[]|to_entries[]|select(.key!="metainfo" and owned(.value))|.key]|sort)==
         ((["table","table","table","chain","chain","chain","chain","rule","rule","rule","rule","rule","rule"] + $wg_rule_keys)|sort) and
       ([.nftables[]|.chain?|select(owned(.))|[.family,.table,.name]]|sort)==
-        ([ ["inet","vpn_v240_preclone_quarantine","output_deny"],
-           ["inet","vpn_v240_preclone_quarantine","forward_deny"],
-           ["bridge","vpn_v240_preclone_bridge","forward_deny"],
-           ["netdev","vpn_v240_preclone_underlay","lowerdev_deny"] ]|sort) and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"output_deny")[0]|.hook=="output" and .prio==-310 and .policy=="drop") and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==1 and
-      (chain("inet";"vpn_v240_preclone_quarantine";"forward_deny")[0]|.hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==1 and
-      (chain("bridge";"vpn_v240_preclone_bridge";"forward_deny")[0]|.hook=="forward" and .prio==-310 and .policy=="drop") and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")|length)==1 and
-      (chain("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny")[0]|.hook=="egress" and .dev==$iface and .prio==-310 and .policy=="drop") and
-      (rules("inet";"vpn_v240_preclone_quarantine";"output_deny") as $out |
+        ([ ["inet","mvc_preclone_quarantine","output_deny"],
+           ["inet","mvc_preclone_quarantine","forward_deny"],
+           ["bridge","mvc_preclone_bridge","forward_deny"],
+           ["netdev","mvc_preclone_underlay","lowerdev_deny"] ]|sort) and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"output_deny")[0]|.hook=="output" and .prio==-310 and .policy=="drop") and
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")|length)==1 and
+      (chain("inet";"mvc_preclone_quarantine";"forward_deny")[0]|.hook=="forward" and .prio==-310 and .policy=="drop") and
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")|length)==1 and
+      (chain("bridge";"mvc_preclone_bridge";"forward_deny")[0]|.hook=="forward" and .prio==-310 and .policy=="drop") and
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")|length)==1 and
+      (chain("netdev";"mvc_preclone_underlay";"lowerdev_deny")[0]|.hook=="egress" and .dev==$iface and .prio==-310 and .policy=="drop") and
+      (rules("inet";"mvc_preclone_quarantine";"output_deny") as $out |
         ($out|map(core)) ==
           ([ [m(meta("oifname");"lo"),{accept:null}],
              [m(meta("oifname");$iface),m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}],
@@ -122,9 +122,9 @@ ubs24gwg_guard_observation() {
            ($prefixes|map([m(meta("oifname");$wt),m(pay("ip";"saddr");$ws),m(pay("ip";"daddr");rhs(.)),{accept:null}]))) and
         proto_ok($out[0];"none") and proto_ok($out[1];"udp") and proto_ok($out[2];"udp") and
         all(range(3;($out|length)); proto_ok($out[.];"none"))) and
-      (rules("inet";"vpn_v240_preclone_quarantine";"forward_deny")|length)==0 and
-      (rules("bridge";"vpn_v240_preclone_bridge";"forward_deny")|length)==0 and
-      (rules("netdev";"vpn_v240_preclone_underlay";"lowerdev_deny") as $r |
+      (rules("inet";"mvc_preclone_quarantine";"forward_deny")|length)==0 and
+      (rules("bridge";"mvc_preclone_bridge";"forward_deny")|length)==0 and
+      (rules("netdev";"mvc_preclone_underlay";"lowerdev_deny") as $r |
         ($r|length)==3 and arp($r[0]) and
         ($r[1]|core)==[m(pay("udp";"sport");68),m(pay("udp";"dport");67),{accept:null}] and
         ($r[2]|core)==[m(pay("ip";"saddr");$src),m(pay("ip";"daddr");$wd),m(pay("udp";"dport");$wp),{accept:null}] and
@@ -158,14 +158,14 @@ ubs24gwg_write_release_batch() {
     local out=$1
     [[ -f $out && ! -L $out && -O $out && ! -s $out && $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     printf '%s\n' \
-      'delete table inet vpn_v240_preclone_quarantine' \
-      'delete table bridge vpn_v240_preclone_bridge' \
-      'delete table netdev vpn_v240_preclone_underlay' > "$out"
+      'delete table inet mvc_preclone_quarantine' \
+      'delete table bridge mvc_preclone_bridge' \
+      'delete table netdev mvc_preclone_underlay' > "$out"
 }
 
 ubs24gwg_owned_tables_absent_now() {
     (( $# == 0 )) || return 1
-    local scratch a b before after good=1 pre=/run/ubs-v240-controller/prestate.json
+    local scratch a b before after good=1 pre=/run/mvc-controller/prestate.json
     [[ -f $pre && ! -L $pre ]] || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-release-observe.XXXXXXXX) || return 1
     a=$scratch/a.json; b=$scratch/b.json
@@ -184,7 +184,7 @@ ubs24gwg_owned_tables_absent_now() {
 
 ubs24gwg_publish_release_intent() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} batch tmp boot intent_sha prepare_sha
+    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} batch tmp boot intent_sha prepare_sha
     [[ -d $runtime && ! -L $runtime && -f $runtime/intent && ! -L $runtime/intent &&
        ! -e $runtime/protected-release-intent && ! -L $runtime/protected-release-intent ]] || return 1
     batch=$runtime/protected-release.nft
@@ -195,7 +195,7 @@ ubs24gwg_publish_release_intent() {
     chmod 400 -- "$batch" || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     intent_sha=$(ubs24gd4_hash_file "$runtime/intent") || return 1
-    prepare_sha=$(ubs24gd4_hash_file /run/ubs-v240-controller/prepare-intent) || return 1
+    prepare_sha=$(ubs24gd4_hash_file /run/mvc-controller/prepare-intent) || return 1
     tmp=$runtime/.protected-release-intent.tmp
     : > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
@@ -208,7 +208,7 @@ ubs24gwg_publish_release_intent() {
 
 ubs24gwg_release_intent_valid() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} boot
+    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} boot
     local -a rows=()
     [[ -f $runtime/protected-release-intent && ! -L $runtime/protected-release-intent &&
        -f $runtime/protected-release.nft && ! -L $runtime/protected-release.nft ]] || return 1
@@ -219,7 +219,7 @@ ubs24gwg_release_intent_valid() {
        ${rows[1]} == state=nft-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" &&
        ${rows[3]} == "d4_intent=$(ubs24gd4_hash_file "$runtime/intent")" &&
-       ${rows[4]} == "controller_prepare=$(ubs24gd4_hash_file /run/ubs-v240-controller/prepare-intent)" &&
+       ${rows[4]} == "controller_prepare=$(ubs24gd4_hash_file /run/mvc-controller/prepare-intent)" &&
        ${rows[5]} == "batch=$(ubs24gd4_hash_file "$runtime/protected-release.nft")" ]]
 }
 
@@ -414,7 +414,7 @@ ubs24gwg_delete_profile_once() {
 
 ubs24gwg_release_guard_once() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} rc
+    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} rc
     if [[ ! -f $runtime/protected-release-intent ]]; then
         ubs24gwg_publish_release_intent || return 1
     fi
@@ -465,7 +465,7 @@ ubs24gwg_network_clean_retirement_pending_observed() {
 
 ubs24gwg_retire_runtime_once() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/ubs-v240-wireguard} controller public
+    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} controller public
     controller=$(ubs24gb2_runtime) || return 1
     public=$(ubs24pub_session_runtime_root) || return 1
     ubs24gwg_owned_tables_absent_now && ubs24gwg_temp_profile_inventory_absent || return 1

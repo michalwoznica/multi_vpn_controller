@@ -61,9 +61,9 @@ case_name=${VERIFY_CASE:?}
 echo 'table inet laptop_base'
 case $case_name in
     openvpn|combined|wg-protected)
-        echo 'table inet vpn_v240_preclone_quarantine'
-        echo 'table bridge vpn_v240_preclone_bridge'
-        echo 'table netdev vpn_v240_preclone_underlay'
+        echo 'table inet mvc_preclone_quarantine'
+        echo 'table bridge mvc_preclone_bridge'
+        echo 'table netdev mvc_preclone_underlay'
         ;;
 esac
 SH

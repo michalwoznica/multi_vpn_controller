@@ -60,7 +60,7 @@ ubs24gc3_execute_once() {
     ubs24gc3_admission_witness && ubs24gb4_scope &&
         ubs24gb4_no_active_vpn && ubs24ga_uuid_valid "$source_uuid" &&
         ubs24gb1_valid_ifname "$iface" || return 1
-    [[ ! -e /run/ubs-v240-controller && ! -L /run/ubs-v240-controller ]] || return 1
+    [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     UBS24GC3_STAGE=b2-install-attempted-uncertain
     ubs24gb2_install_once "$iface" "$policy" || return 1
     UBS24GC3_STAGE=quarantine-attestation-required
@@ -103,7 +103,7 @@ ubs24gc3_transition_payload_valid() {
     # Extract ONLY from the exact position and strictly anchored grammar;
     # independently rebuild the entire batch byte-for-byte below.
     line=${batch[3]}
-    [[ $line =~ ^add\ rule\ inet\ vpn_v240_preclone_quarantine\ output_deny\ oifname\ \"([a-zA-Z0-9_.-]+)\"\ ip\ saddr\ ([0-9.]+)\ ip\ daddr\ ([0-9.]+)\ tcp\ dport\ ([0-9]+)\ accept$ ]] || return 1
+    [[ $line =~ ^add\ rule\ inet\ mvc_preclone_quarantine\ output_deny\ oifname\ \"([a-zA-Z0-9_.-]+)\"\ ip\ saddr\ ([0-9.]+)\ ip\ daddr\ ([0-9.]+)\ tcp\ dport\ ([0-9]+)\ accept$ ]] || return 1
     iface=${BASH_REMATCH[1]} source=${BASH_REMATCH[2]}
     remote=${BASH_REMATCH[3]} port=${BASH_REMATCH[4]}
     [[ $iface == "$(ubs24gb2_derive_iface)" ]] &&
@@ -117,7 +117,7 @@ ubs24gc3_transition_records_valid() {
     (( $# == 0 )) || return 1
     local dir
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller ]] || return 1
+    [[ $dir == /run/mvc-controller ]] || return 1
     ubs24gb2_runtime_shape && ubs24gb2_records_valid &&
         ubs24gc2_lock_held "$dir/controller.lock" "$UBS24GB2_FD" || return 1
     [[ $(find "$dir" -mindepth 1 -maxdepth 1 -print | wc -l) -eq 10 ]] || return 1
@@ -134,7 +134,7 @@ ubs24gc3_post_c1_witness() {
     ubs24gb2_root_scope && ubs24gc3_transition_records_valid || return 1
     local dir scratch first second foreign_before foreign_after
     dir=$(ubs24gb2_runtime) || return 1
-    scratch=$(mktemp -d /run/ubs-v240-c3-observe.XXXXXXXX) || return 1
+    scratch=$(mktemp -d /run/mvc-c3-observe.XXXXXXXX) || return 1
     chmod 700 "$scratch" || return 1
     local good=1
     first=$scratch/nft1.json second=$scratch/nft2.json
@@ -177,7 +177,7 @@ ubs24gc3_reconcile_readonly() {
     [[ -z ${UBS24GB2_FD:-} ]] && ubs24gb2_root_scope || return 1
     local dir entries fd
     dir=$(ubs24gb2_runtime) || return 1
-    [[ $dir == /run/ubs-v240-controller && -d $dir && ! -L $dir ]] || return 1
+    [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || return 1
     entries=$(find "$dir" -mindepth 1 -maxdepth 1 -print | wc -l) || return 1
     case $entries in
       8)

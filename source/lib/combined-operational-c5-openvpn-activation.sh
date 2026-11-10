@@ -116,7 +116,7 @@ ubs24gc5_guard_witness() {
     ubs24gc3_transition_records_valid || return 1
     local dir scratch a b before after good=1
     dir=$(ubs24gb2_runtime) || return 1
-    scratch=$(umask 077; mktemp -d /run/ubs-v240-c5-guard.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-c5-guard.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     a=$scratch/first.json b=$scratch/second.json

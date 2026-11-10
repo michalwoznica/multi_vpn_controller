@@ -9,8 +9,8 @@
 # An eventual production installer must add BOTH tables in one nft transaction,
 # under its authenticated fixed-root lock, with an independently verified
 # pre/post kernel witness. F14 does not provide that installer or authority.
-add table inet vpn_v240_preclone_quarantine
-add chain inet vpn_v240_preclone_quarantine output_deny { type filter hook output priority -310; policy drop; }
-add chain inet vpn_v240_preclone_quarantine forward_deny { type filter hook forward priority -310; policy drop; }
-add table bridge vpn_v240_preclone_bridge
-add chain bridge vpn_v240_preclone_bridge forward_deny { type filter hook forward priority -310; policy drop; }
+add table inet mvc_preclone_quarantine
+add chain inet mvc_preclone_quarantine output_deny { type filter hook output priority -310; policy drop; }
+add chain inet mvc_preclone_quarantine forward_deny { type filter hook forward priority -310; policy drop; }
+add table bridge mvc_preclone_bridge
+add chain bridge mvc_preclone_bridge forward_deny { type filter hook forward priority -310; policy drop; }
