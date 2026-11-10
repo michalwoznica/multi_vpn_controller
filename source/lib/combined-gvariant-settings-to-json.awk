@@ -1,4 +1,4 @@
-# UBS VPN Controller v2.4.0 - bounded, read-only GVariant GetSettings decoder.
+# Multi VPN Controller 2.4.x - bounded, read-only GVariant GetSettings decoder.
 # AWK is a standard POSIX tool; no code execution or shell evaluation of input.
 # Only a typed, non-secret a{sa{sv}} subset is accepted. Unknown signatures fail closed.
 # Diagnostics reveal only static grammar categories, never actual network values.

@@ -57,7 +57,7 @@ mvc24gc16_observe_locked() {
        $route1 == "$expected_route" &&
        $route1 == "${MVC24GC6_ROUTE_SNAPSHOT:-}" ]] || return 1
     [[ $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c16.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c16.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' -- "$scratch") == 700:2 ]] || return 1
     first=$scratch/first.json second=$scratch/second.json

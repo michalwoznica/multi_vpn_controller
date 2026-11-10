@@ -215,7 +215,7 @@ mvc24ga3_prepare_once() {
     mvc24ga3_reset
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch success=1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-a3.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-a3.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     MVC24GA3_SCRATCH=$scratch

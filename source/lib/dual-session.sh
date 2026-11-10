@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 - Phase A (development library)
+# Multi VPN Controller 2.4.x - Phase A (development library)
 # This file does not run any NetworkManager or nftables commands.
 # Load with: source lib/dual-session.sh
 # Sets MVC24_COMMAND / MVC24_MODE / MVC24_PRIMARY_PROFILE / MVC24_OVPN_PROFILE.
@@ -121,7 +121,7 @@ mvc24_write_combined_state() {
     [[ ! -e "$path" && ! -L "$path" ]] || return 1
     [[ -d "$(dirname -- "$path")" ]] || return 1
     local tmp
-    tmp=$(mktemp "$(dirname -- "$path")/.ubs-vpn-state.XXXXXXXX") || return 1
+    tmp=$(mktemp "$(dirname -- "$path")/.mvc-state.XXXXXXXX") || return 1
     chmod 600 "$tmp" || { rm -f -- "$tmp"; return 1; }
     {
         printf '%s\n' 'ubs-vpn-state-v4-draft' 'mode=combined' \

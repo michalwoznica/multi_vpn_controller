@@ -315,7 +315,7 @@ mvc24gc19_execute_once() {
     [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
        $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch a b nm route success=1 expected
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c19.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c19.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     batch=$scratch/handback.nft a=$scratch/first.json b=$scratch/second.json

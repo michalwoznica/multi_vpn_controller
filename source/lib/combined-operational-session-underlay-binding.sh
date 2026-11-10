@@ -73,11 +73,11 @@ mvc24op_session_underlay_production_locked() {
     MVC24OP_SESSION_UNDERLAY_FINDING=''
     (( $# == 0 && EUID == 0 )) || return 1
     mvc24e_production_root_valid && mvc24s_lock_descriptor_verified || return 1
-    [[ ${MVC24S_LOCK_PATH:-} == /run/ubs-vpn-controller-v240/controller.lock ]] || return 1
+    [[ ${MVC24S_LOCK_PATH:-} == /run/mvc-controller/controller.lock ]] || return 1
     local first second third
     first=$(mvc24oc_read_kernel) || return 1
     second=$(mvc24oc_read_kernel) || return 1
-    mvc24op_session_underlay_prepared_locked /run/ubs-vpn-controller-v240 0 \
+    mvc24op_session_underlay_prepared_locked /run/mvc-controller 0 \
         "$first" "$second" || return 1
     third=$(mvc24oc_read_kernel) || { MVC24OP_SESSION_UNDERLAY_FINDING=''; return 1; }
     if [[ $second != "$third" ]] || ! mvc24s_lock_descriptor_verified; then
@@ -90,8 +90,8 @@ mvc24op_session_underlay_production_inspect() {
     MVC24OP_SESSION_UNDERLAY_FINDING=''
     (( $# == 0 && EUID == 0 )) || return 1
     mvc24e_production_root_valid || return 1
-    [[ -f /run/ubs-vpn-controller-v240/controller.lock ]] || return 1
-    if ! mvc24s_with_lock /run/ubs-vpn-controller-v240/controller.lock \
+    [[ -f /run/mvc-controller/controller.lock ]] || return 1
+    if ! mvc24s_with_lock /run/mvc-controller/controller.lock \
         mvc24op_session_underlay_production_locked; then
         MVC24OP_SESSION_UNDERLAY_FINDING=''
         return 1

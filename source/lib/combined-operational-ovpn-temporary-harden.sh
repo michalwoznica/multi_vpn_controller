@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller 2.4 — release Gate A2.
+# Multi VPN Controller 2.4.x — release Gate A2.
 # Real nmcli *temporary* clone-hardening primitive; NOT wired to the public
 # controller. Both authentication callbacks are permanent denials until a
 # separately audited real-host root guard + NM identity/readback binding exists.

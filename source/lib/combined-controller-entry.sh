@@ -124,12 +124,12 @@ mvc24e_dispatch() {
                     if [[ $single_kind == wireguard ]]; then
                         if mvc24pubc_connect_wireguard_protected_once "$MVC24_PRIMARY_PROFILE"; then
                             printf '%s\n' 'PASS: protected WireGuard-only session started'
-                            printf '%s\n' 'RESULT: WIREGUARD PROTECTED SESSION ACTIVE — ordinary Internet is kill-switched; use vpn-v240 disconnect for authenticated same-boot teardown'
+                            printf '%s\n' 'RESULT: WIREGUARD PROTECTED SESSION ACTIVE — ordinary Internet is kill-switched; use mvc disconnect for authenticated same-boot teardown'
                             return 0
                         fi
                     elif mvc24pubc_connect_openvpn_once "$MVC24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: protected OpenVPN-only session started'
-                        printf '%s\n' 'RESULT: OPENVPN SESSION ACTIVE — use vpn-v240 disconnect for authenticated same-boot teardown'
+                        printf '%s\n' 'RESULT: OPENVPN SESSION ACTIVE — use mvc disconnect for authenticated same-boot teardown'
                         return 0
                     fi
                     ;;
@@ -140,7 +140,7 @@ mvc24e_dispatch() {
                     mvc24e_c23aw_live_ready || { mvc24e_error 'Combined live dispatcher refused authority.'; return 78; }
                     if mvc24pubc_connect_once "$MVC24_PRIMARY_PROFILE" "$MVC24_OVPN_PROFILE"; then
                         printf '%s\n' 'PASS: protected parallel OpenVPN + WireGuard session started'
-                        printf '%s\n' 'RESULT: DUAL SESSION ACTIVE — use vpn-v240 disconnect for authenticated same-boot teardown'
+                        printf '%s\n' 'RESULT: DUAL SESSION ACTIVE — use mvc disconnect for authenticated same-boot teardown'
                         return 0
                     fi
                     ;;
@@ -157,7 +157,7 @@ mvc24e_dispatch() {
                     mvc24e_c23aw_live_ready || { mvc24e_error 'Split live dispatcher refused authority.'; return 78; }
                     if mvc24pubc_connect_wireguard_split_once "$MVC24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: WireGuard-only split session started'
-                        printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION ACTIVE — ordinary Internet remains on the physical underlay; use vpn-v240 disconnect for authenticated same-boot teardown'
+                        printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION ACTIVE — ordinary Internet remains on the physical underlay; use mvc disconnect for authenticated same-boot teardown'
                         return 0
                     fi
                     ;;
@@ -169,7 +169,7 @@ mvc24e_dispatch() {
                     printf '%s\n' 'RESULT: CONNECT FAILED — AUTHENTICATED CLEANUP COMPLETE; BASELINE RESTORED'
                     ;;
                 *)
-                    mvc24e_error "Connect failed at stage: ${MVC24PUBC_STAGE:-unverified}; authenticated state may remain. Run vpn-v240 disconnect once; if it refuses, inspect packaged recovery tools."
+                    mvc24e_error "Connect failed at stage: ${MVC24PUBC_STAGE:-unverified}; authenticated state may remain. Run mvc disconnect once; if it refuses, inspect packaged recovery tools."
                     ;;
             esac
             return 1
@@ -213,7 +213,7 @@ mvc24e_dispatch() {
             return 1
             ;;
         *)
-            mvc24e_error 'Usage: vpn-v240 {version|preflight OPENVPN|preflight WIREGUARD|preflight WIREGUARD --split|preflight WG --split OVPN|list|status|connect OPENVPN|connect WIREGUARD|connect WIREGUARD --split|connect WG --split OVPN|disconnect}'
+            mvc24e_error 'Usage: mvc {version|preflight OPENVPN|preflight WIREGUARD|preflight WIREGUARD --split|preflight WG --split OVPN|list|status|connect OPENVPN|connect WIREGUARD|connect WIREGUARD --split|connect WG --split OVPN|disconnect}'
             return 2
             ;;
     esac
@@ -273,5 +273,5 @@ mvc24e_production_root_valid() {
     perms=$(stat -c %a -- /run) || return 1
     [[ "$perms" =~ ^[0-7]{3,4}$ ]] || return 1
     (( (8#$perms & 0022) == 0 )) || return 1
-    mvc24e_runtime_root_valid /run/ubs-vpn-controller-v240 0
+    mvc24e_runtime_root_valid /run/mvc-controller 0
 }

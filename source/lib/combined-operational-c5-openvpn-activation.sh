@@ -72,7 +72,7 @@ mvc24gc5_prepared_profile_witness() {
     mvc24ga_uuid_valid "$clone" && mvc24ga_uuid_valid "$source" || return 1
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local dir item h good=1
-    dir=$(umask 077; mktemp -d /dev/shm/ubs-v240-c5.XXXXXXXX) || return 1
+    dir=$(umask 077; mktemp -d /dev/shm/mvc-c5.XXXXXXXX) || return 1
     [[ -d $dir && ! -L $dir && -O $dir && $(stat -c %a -- "$dir") == 700 ]] || return 1
     for item in source1 source2 clone1 clone2; do
         (umask 077; set -C; : > "$dir/$item.json") || { good=0; break; }

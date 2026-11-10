@@ -50,7 +50,7 @@ mvc24pubr_ensure_hold_routes(){ LOG+=(holds); return 0; }
 
 # CONNECT must route a post-intent D4 failure through partial reconciliation
 # rather than strand it as an unsupported residue state.
-T=$(mktemp -d /tmp/ubs-c23bd.XXXXXXXX)
+T=$(mktemp -d /tmp/mvc-c23bd.XXXXXXXX)
 trap 'rm -rf -- "$T"' EXIT
 TEST_D4_RUNTIME=$T/wg
 mvc24pub_wireguard_runtime_root(){ printf '%s\n' "$TEST_D4_RUNTIME"; }
@@ -94,10 +94,10 @@ mvc24pubd_disconnect_once && pass fresh-disconnect-partial-d4-succeeds || fail f
 
 
 
-# R3B-pinned core identities after the uppercase internal variable/constant rename.
-[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == 183dc11594b4d3ff594d24a22914feb0b802beeaddb2d90628ca758bcb5d397c ]] && pass r3b-d4-source-identity || fail r3b-d4-source-identity
-[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == 56ef654e061368fa16bd2ec69153ffb6710ef447fe3a1ede3231ae8b2e5d2ee4 ]] && pass r3b-gco-source-identity || fail r3b-gco-source-identity
-[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == 063d5e7e27177c2ad5abf28b3edb209e0bd59f7a267cc66d8d1104ca1bbe6e4b ]] && pass r3b-c19-source-identity || fail r3b-c19-source-identity
+# R4-pinned core identities after non-persistent literal cleanup.
+[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == 1375aec949e2e1061c9bd3d71fc5e690e4eb53bd0219fbde1c3f5c3095d6f29a ]] && pass r4-d4-source-identity || fail r4-d4-source-identity
+[[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == 56ef654e061368fa16bd2ec69153ffb6710ef447fe3a1ede3231ae8b2e5d2ee4 ]] && pass r4-gco-source-identity || fail r4-gco-source-identity
+[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == ac5514f3bf8fb6c784eecd26934e89aabdb0234e873fb48a4dbb764aeda53eaa ]] && pass r4-c19-source-identity || fail r4-c19-source-identity
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
 (( F == 0 ))

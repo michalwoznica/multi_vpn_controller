@@ -91,7 +91,7 @@ mvc24gb4_install() {
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
     iface=$(mvc24gb4_underlay) || return 1
-    mvc24gb4_confirm 'INSTALL UBS V240 DENY ALL' || return 1
+    mvc24gb4_confirm 'INSTALL MVC DENY ALL' || return 1
     # Recheck immediately before calling the one-shot B2 transaction.
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     confirmed_iface=$(mvc24gb4_underlay) || return 1
@@ -110,7 +110,7 @@ mvc24gb4_release() {
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     mvc24gb2_reopen || return 1
     [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
-    mvc24gb4_confirm 'RELEASE UBS V240 DENY ALL' || return 1
+    mvc24gb4_confirm 'RELEASE MVC DENY ALL' || return 1
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     MVC24GB4_APPROVAL=release-once
     mvc24gb3_release_once || return 1

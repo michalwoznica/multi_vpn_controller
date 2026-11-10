@@ -73,7 +73,7 @@ mvc24v_main() {
 
     local tool_root controller dual_recovery emergency_recovery resolv_conf internet_url
     tool_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || return 1
-    controller=${MVC24V_CONTROLLER:-"$tool_root/vpn-v240"}
+    controller=${MVC24V_CONTROLLER:-"$tool_root/mvc"}
     dual_recovery=${MVC24V_DUAL_RECOVERY:-/root/mvc-dual-recovery}
     emergency_recovery=${MVC24V_EMERGENCY_RECOVERY:-/root/mvc-emergency-rollback}
     resolv_conf=${MVC24V_RESOLV_CONF:-/etc/resolv.conf}

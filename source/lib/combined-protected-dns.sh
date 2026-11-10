@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller 2.4.0: protected WireGuard endpoint resolution.
+# Multi VPN Controller 2.4.x: protected WireGuard endpoint resolution.
 # DEVELOPMENT COMPONENT ONLY: not wired to a live controller.
 # Dependencies: wireguard-peers.sh, dual-session.sh, combined-routing-guard.sh,
 # combined-preflight.sh, combined-lifecycle.sh, combined-kernel-backend.sh,

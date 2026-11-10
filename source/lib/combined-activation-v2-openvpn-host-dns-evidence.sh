@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 — direct glibc host DNS evidence.
-# OFFLINE / READ ONLY.  Not loaded by vpn-v240.  This is a bounded OPTIONAL
+# Multi VPN Controller 2.4.x — direct glibc host DNS evidence.
+# OFFLINE / READ ONLY.  Not loaded by mvc.  This is a bounded OPTIONAL
 # observation; it does NOT authorise ovpn_active, reconnect, or disarm.
 #
 # Supported contracts: strict hosts: files dns, or an exact Arch NSS rule
@@ -202,7 +202,7 @@ mvc24ag2d_observe_host_dns_files_locked() {
 }
 
 # Pinned real-host entry point for eventual read-only runtime observation;
-# still NOT called by vpn-v240 or any activation-authority callback.
+# still NOT called by mvc or any activation-authority callback.
 mvc24ag2d_observe_host_dns_locked() {
     (( $# == 6 )) || return 1
     mvc24ag2d_observe_host_dns_files_locked "$@" /etc/resolv.conf /etc/nsswitch.conf

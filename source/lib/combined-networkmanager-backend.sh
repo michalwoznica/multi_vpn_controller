@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 Phase C - NetworkManager profile backend.
+# Multi VPN Controller 2.4.x Phase C - NetworkManager profile backend.
 # DEVELOPMENT COMPONENT ONLY: Never load/install on production networking.
 # Source after dual-session.sh and combined-preflight.sh.
 # The caller is responsible for root privileges, exclusive flock, phase-order
@@ -89,7 +89,7 @@ mvc24n_render_private() {
     [[ "$mode" == wg || "$mode" == ovpn ]] || return 1
     [[ -d "${target%/*}" && ! -e "$target" && ! -L "$target" ]] || return 1
     mvc24n_validate_source "$mode" "$source" || { mvc24n_error 'Invalid source keyfile structure or conflicting routes.'; return 1; }
-    temp=$(mktemp "${target%/*}/.ubs-nm.XXXXXXXX") || return 1
+    temp=$(mktemp "${target%/*}/.mvc-nm.XXXXXXXX") || return 1
     chmod 600 "$temp" || { rm -f -- "$temp"; return 1; }
     if ! mvc24n_transform "$mode" "$source" "$@" > "$temp"; then
         rm -f -- "$temp"

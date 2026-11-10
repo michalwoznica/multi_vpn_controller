@@ -16,8 +16,8 @@ mvc24gc4_reset() {
 
 mvc24gc4_recovery_installed() {
     (( $# == 0 )) || return 1
-    local installed=/root/ubs-v240-emergency-rollback
-    local source=${MVC24GC4_SOURCE_ROOT:-}/tools/recover-v240-host-guard-local.sh
+    local installed=/root/mvc-emergency-rollback
+    local source=${MVC24GC4_SOURCE_ROOT:-}/tools/recover-mvc-host-guard-local.sh
     [[ ${MVC24GC4_SOURCE_ROOT:-} == /* && -f $source && ! -L $source &&
        -f $installed && ! -L $installed && -x $installed ]] || return 1
     [[ $(stat -c '%u:%a:%h' -- "$installed" 2>/dev/null) == '0:700:1' ]] || return 1
@@ -84,11 +84,11 @@ mvc24gc4_confirm() {
       'On failure or uncertain commit, the kill switch stays in place; no automatic rollback.' \
       'You must have a separate working local-root recovery terminal, not SSH.' \
       'Emergency rollback DISABLES the kill switch and is a manual decision.' \
-      'Type exactly: PREPARE UBS V240 GUARDED OPENVPN' > /dev/tty
+      'Type exactly: PREPARE MVC GUARDED OPENVPN' > /dev/tty
     printf '> ' > /dev/tty
     local response=
     IFS= read -r response < /dev/tty || return 1
-    [[ $response == 'PREPARE UBS V240 GUARDED OPENVPN' ]]
+    [[ $response == 'PREPARE MVC GUARDED OPENVPN' ]]
 }
 
 # Override C3 DENY ONLY from this private driver after explicit confirmation.

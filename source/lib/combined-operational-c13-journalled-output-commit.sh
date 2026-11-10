@@ -232,7 +232,7 @@ mvc24gc13_execute_once() {
        -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch first second nm_now route_now success=1
     MVC24GC13_DETAIL_STAGE=scratch-create
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c13.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c13.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     batch=$scratch/transition.nft first=$scratch/first.json second=$scratch/second.json

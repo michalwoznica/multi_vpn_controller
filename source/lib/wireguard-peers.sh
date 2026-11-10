@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller, IPv4 multi-peer parser (derived from v2.3.0): WireGuard multi-peer IPv4 endpoint parser.
+# Multi VPN Controller, IPv4 multi-peer parser (derived from v2.3.0): WireGuard multi-peer IPv4 endpoint parser.
 # Source this file from Bash. No root or network operations until functions are called.
 # No modification to the NetworkManager keyfile, nftables or VPN state.
 

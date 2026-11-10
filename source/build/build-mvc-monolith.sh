@@ -7,7 +7,7 @@ umask 077
 export LC_ALL=C
 
 MVC24_BUILD_VERSION='2.4.1'
-MVC24_BUILD_CHECKPOINT='MVC_R3B_UPPERCASE_NAMESPACE'
+MVC24_BUILD_CHECKPOINT='MVC_R4_NONPERSISTENT_LITERAL_CLEANUP'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
@@ -237,7 +237,7 @@ mvc24mon_materialize_resource() {
     base=${dest##*/}
     [[ -d $dir && ! -L $dir && -n $base ]] || return 1
     expected=$(mvc24mon_resource_sha256 "$name") || return 1
-    tmp=$dir/.${base}.ubs24-resource.$$
+    tmp=$dir/.${base}.mvc24-resource.$$
     rm -f -- "$tmp"
     case $name in
         gvariant-awk) (umask 077; mvc24mon_emit_gvariant_awk > "$tmp") || { rm -f -- "$tmp"; return 1; } ;;
@@ -460,7 +460,7 @@ mvc24mon_openvpn_source_preview() {
     mvc24op_session_nm_identity || return 1
     initial_owner=${MVC24OP_SESSION_NM_IDENTITY:-}
     [[ -n $initial_owner ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs24-monolith-saved-host.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc24-monolith-saved-host.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch && $(stat -c %a:%h -- "$scratch") == 700:2 ]] || {
         rm -rf -- "$scratch" 2>/dev/null || :
         return 1

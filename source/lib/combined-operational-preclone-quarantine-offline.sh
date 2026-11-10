@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 — Agent 4, Step 2B2C3F14.
+# Multi VPN Controller 2.4.x — Agent 4, Step 2B2C3F14.
 # NON-ADMITTING, read-only nft JSON shape checking and reference batch export.
 # No nft invocation, no firewall writes, no GetSecrets, no NM, no activation.
 # Input snapshots are supplied by a TEST. They are not authenticated kernel

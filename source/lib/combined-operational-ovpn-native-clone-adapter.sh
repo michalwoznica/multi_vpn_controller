@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gate A1 (release focus): REAL nmcli-native temporary clone adapter.
-# Not sourced/wired by vpn-v240 or its public controller. Deliberately
+# Not sourced/wired by mvc or its public controller. Deliberately
 # UNREACHABLE on a real host pending production host-guard verification.
 # Unit tests substitute both witness functions and the nmcli executable.
 # Never interpret clone success as password availability, authentication,

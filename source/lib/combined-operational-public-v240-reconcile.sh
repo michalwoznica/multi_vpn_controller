@@ -4,7 +4,7 @@
 # must already hold the genuine B2 lock and public connect/disconnect authority,
 # and must reconstruct the immutable D4 intent before using these helpers.
 #
-# Safety model mirrors recover-v240-dual-local.sh:
+# Safety model mirrors recover-mvc-dual-local.sh:
 #   * inventory exact temporary NM profile/kernel link/endpoint route/keyfile;
 #   * accept only exact C11 or exact atomic parallel guard shape;
 #   * establish exact private unreachable holds before removing WG state;
@@ -186,7 +186,7 @@ mvc24pubr_guard_inventory() {
     (( $# == 0 )) || return 1
     local scratch first second result=1
     MVC24PUBR_GUARD_STATUS=unknown
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-pubr-guard.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-pubr-guard.XXXXXXXX) || return 1
     first=$scratch/first.json second=$scratch/second.json
     if mvc24gb1_capture_nft "$first" && mvc24gb1_capture_nft "$second" && cmp -s -- "$first" "$second" &&
        mvc24gd4_foreign_policy_unchanged "$first"; then

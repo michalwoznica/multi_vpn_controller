@@ -49,7 +49,7 @@ mvc24gc15_candidate_digest_valid() {
     expected=${expected#candidate_sha=}
     mvc24gc13_sha_valid "$expected" || return 1
     [[ $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c15.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c15.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' -- "$scratch") == 700:2 ]] || return 1
     batch=$scratch/transition.nft
@@ -95,7 +95,7 @@ mvc24gc15_reconcile_locked() {
     route1=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
     expected="$MVC24GC3_IFACE|$MVC24GC3_SOURCE|$MVC24GC11_TUNNEL|$MVC24GC11_TUNNEL_SOURCE"
     [[ -n $nm1 && $route1 == "$expected" ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c15-nft.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c15-nft.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' -- "$scratch") == 700:2 ]] || return 1
     first=$scratch/first.json second=$scratch/second.json

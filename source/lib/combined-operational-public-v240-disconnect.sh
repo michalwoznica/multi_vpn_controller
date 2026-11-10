@@ -216,7 +216,7 @@ mvc24pubd_completed_foreign_policy_witness() {
     (( $# == 1 )) || return 1
     local prestate=$1 scratch first second before after good=1
     [[ -f $prestate && ! -L $prestate ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-pubd-completed.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-pubd-completed.XXXXXXXX) || return 1
     first=$scratch/first.json
     second=$scratch/second.json
     if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" || ! cmp -s -- "$first" "$second" ||
@@ -535,7 +535,7 @@ mvc24pubd_adopt_openvpn_absence_to_c1() {
        ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
        $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch a b success=1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v241-c24a-absent.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c24a-absent.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch && $(stat -c %a -- "$scratch") == 700 ]] || return 1
     batch=$scratch/handback.nft a=$scratch/first.json b=$scratch/second.json
     if ! (umask 077; set -C; : > "$batch") ||

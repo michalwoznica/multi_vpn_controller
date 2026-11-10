@@ -65,7 +65,7 @@ mvc24gc1_batch_valid() {
     (( $# == 5 )) || return 1
     local expected=$5 scratch
     [[ -f $expected && ! -L $expected ]] || return 1
-    scratch=$(mktemp "$(dirname -- "$expected")/.ubs-v240-c1-verify.XXXXXXXX") || return 1
+    scratch=$(mktemp "$(dirname -- "$expected")/.mvc-c1-verify.XXXXXXXX") || return 1
     chmod 600 "$scratch" || { rm -f "$scratch"; return 1; }
     mvc24gc1_write_batch "$1" "$2" "$3" "$4" "$scratch" || { rm -f "$scratch"; return 1; }
     cmp -s "$scratch" "$expected"

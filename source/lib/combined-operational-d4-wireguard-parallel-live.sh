@@ -2,7 +2,7 @@
 # C23AI D4 — PRIVATE operational WireGuard stage layered on the physically
 # proven C23AE OpenVPN protected-running state.
 #
-# This is NOT part of the public vpn-v240 CLI. Authority is admitted only by
+# This is NOT part of the public mvc CLI. Authority is admitted only by
 # the dedicated local-console C23AI driver after C23U has established the
 # protected OpenVPN state under the genuine B2 lock.
 #
@@ -355,7 +355,7 @@ mvc24gd4_dual_active_observed() {
         target=${prefix%/*}
         mvc24gd4_route_get_json_matches "$target" "$MVC24GD4_TEMP_NAME" "$MVC24GD4_WG_SOURCE" || return 1
     done
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-observe.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c23ai-observe.XXXXXXXX) || return 1
     first=$scratch/first.json second=$scratch/second.json
     if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" ||
        ! cmp -s -- "$first" "$second" ||
@@ -472,7 +472,7 @@ mvc24gd4_extend_guard() {
     local scratch batch before1 before2 after1 after2
     mvc24gd4_authority_witness || return 1
     [[ ${MVC24GD4_STAGE:-} == owned-endpoint-route-observed ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-guard.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c23ai-guard.XXXXXXXX) || return 1
     batch=$scratch/parallel.nft before1=$scratch/before1.json before2=$scratch/before2.json after1=$scratch/after1.json after2=$scratch/after2.json
     (umask 077; : > "$batch") || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
@@ -668,7 +668,7 @@ mvc24gd4_restore_openvpn_guard() {
     local scratch batch before1 before2 after1 after2
     mvc24gd4_authority_witness || return 1
     [[ ${MVC24GD4_STAGE:-} == wireguard-down-parallel-guard-retained-private-hold ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-restore.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c23ai-restore.XXXXXXXX) || return 1
     batch=$scratch/ovpn.nft before1=$scratch/before1.json before2=$scratch/before2.json after1=$scratch/after1.json after2=$scratch/after2.json
     (umask 077; : > "$batch") || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
@@ -752,7 +752,7 @@ mvc24gd4_finish_teardown() {
     [[ ${MVC24GD4_STAGE:-} == temporary-profile-absent-pure-openvpn-protected-private-hold ]] || return 1
     route_now=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
     [[ $route_now == "${MVC24GC6_ROUTE_SNAPSHOT:-}" ]] && mvc24gd4_openvpn_default_route_observed || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-final.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c23ai-final.XXXXXXXX) || return 1
     first=$scratch/first.json second=$scratch/second.json
     if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" || ! cmp -s -- "$first" "$second" ||
        ! mvc24gc11_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" ||

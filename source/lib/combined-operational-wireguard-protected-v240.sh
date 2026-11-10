@@ -140,7 +140,7 @@ mvc24gwg_capture_guard() {
 mvc24gwg_guard_exact_now() {
     (( $# == 0 )) || return 1
     local scratch a b good=1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-protected-observe.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-protected-observe.XXXXXXXX) || return 1
     a=$scratch/a.json; b=$scratch/b.json
     if ! mvc24gwg_capture_guard "$a" || ! mvc24gwg_capture_guard "$b" || ! cmp -s -- "$a" "$b" ||
        ! mvc24gwg_guard_observation "$a" "$MVC24GD4_UNDERLAY" "$MVC24GD4_UNDERLAY_SOURCE" \
@@ -167,7 +167,7 @@ mvc24gwg_owned_tables_absent_now() {
     (( $# == 0 )) || return 1
     local scratch a b before after good=1 pre=/run/mvc-controller/prestate.json
     [[ -f $pre && ! -L $pre ]] || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-release-observe.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-release-observe.XXXXXXXX) || return 1
     a=$scratch/a.json; b=$scratch/b.json
     if ! mvc24gb1_capture_nft "$a" || ! mvc24gb1_capture_nft "$b" || ! cmp -s -- "$a" "$b" ||
        ! mvc24gc23t_owned_tables_absent "$a" || ! mvc24gc23t_owned_tables_absent "$b"; then
@@ -287,7 +287,7 @@ mvc24gwg_extend_guard() {
     local scratch batch before1 before2 after1 after2
     [[ ${MVC24GD4_STAGE:-} == owned-endpoint-route-observed && ${MVC24GWG_STAGE:-} == b2-quarantine-observed ]] || return 1
     mvc24gd4_authority_witness || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-protected-guard.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-protected-guard.XXXXXXXX) || return 1
     batch=$scratch/protected.nft; before1=$scratch/before1.json; before2=$scratch/before2.json; after1=$scratch/after1.json; after2=$scratch/after2.json
     : > "$batch" || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
@@ -429,7 +429,7 @@ mvc24gwg_controller_topology_restored() {
     (( $# == 0 )) || return 1
     local dir scratch links r4 r6 ok=1
     dir=$(mvc24gb2_runtime) || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-topology.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-topology.XXXXXXXX) || return 1
     links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
     if ! mvc24gb1_capture_links "$links" || ! mvc24gb1_capture_routes4 "$r4" || ! mvc24gb1_capture_routes6 "$r6"; then
         ok=0

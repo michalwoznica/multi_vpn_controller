@@ -1,5 +1,5 @@
 #!/usr/bin/nft -f
-# UBS VPN Controller v2.4.0 — F14, QUARANTINE CONTRACT ONLY.
+# Multi VPN Controller 2.4.x — F14, QUARANTINE CONTRACT ONLY.
 # NOT a production installer. Do not execute on a host: it intentionally drops
 # ALL local IP OUTPUT, all IP FORWARD, and all Linux bridge FORWARD traffic.
 # No exemptions for DNS, loopback IP, existing connections or VPN endpoints.

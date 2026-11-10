@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 — init-independent, read-only GDBus primitive adapter.
+# Multi VPN Controller 2.4.x — init-independent, read-only GDBus primitive adapter.
 # OFFLINE MIGRATION WORK: not wired to the operational controller.
 # Dependency: gdbus (GLib/GIO), Bash. Does not require systemd or busctl.
 # Intentionally supports only simple, security-relevant typed properties/calls.

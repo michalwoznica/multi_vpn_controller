@@ -126,7 +126,7 @@ mvc24gc2_endpoint_witness() {
     # copied into persistent logs or the B2 runtime; all readbacks are fresh.
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch success=1 item hash1 hash2 selected
-    scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c2.XXXXXXXX) || return 1
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c2.XXXXXXXX) || return 1
     if [[ ! -d $scratch || -L $scratch || ! -O $scratch ||
           $(stat -c %a -- "$scratch") != 700 ]]; then return 1; fi
     for item in source1 source2 clone1 clone2; do

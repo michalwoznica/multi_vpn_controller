@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 - Phase B (OFFLINE DEVELOPMENT LIBRARY).
+# Multi VPN Controller 2.4.x - Phase B (OFFLINE DEVELOPMENT LIBRARY).
 # Source into tests or a future integration; no commands here change networking.
 # IPv4 transport only. No eval, no arbitrary nftables input interpolation.
 # Requires the companion Phase A library dual-session.sh to be sourced.

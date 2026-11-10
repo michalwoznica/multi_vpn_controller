@@ -101,7 +101,7 @@ mvc24gc8_preflight_locked() {
     mvc24op_session_nm_identity || return 1
     owner_before=$MVC24OP_SESSION_NM_IDENTITY
     [[ $owner_before == *'|0' ]] || return 1
-    path=$(umask 077; mktemp -d /dev/shm/ubs-v240-c8.XXXXXXXX) || return 1
+    path=$(umask 077; mktemp -d /dev/shm/mvc-c8.XXXXXXXX) || return 1
     [[ -d $path && ! -L $path && -O $path && $(stat -c %a -- "$path") == 700 ]] || return 1
     for item in source1 source2 clone1 clone2; do
         if ! (umask 077; set -C; : > "$path/$item.json"); then success=0; break; fi

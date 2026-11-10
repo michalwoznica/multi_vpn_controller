@@ -325,7 +325,7 @@ mvc24spf_main() {
     mvc24_valid_uuid "$uuid" || mvc24spf_fail 'invalid profile UUID format'
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] ||
         mvc24spf_fail 'private tmpfs /dev/shm required'
-    _MVC24SPF_PRIVATE=$(mktemp -d /dev/shm/ubs24-saved-host.XXXXXXXX) ||
+    _MVC24SPF_PRIVATE=$(mktemp -d /dev/shm/mvc24-saved-host.XXXXXXXX) ||
         mvc24spf_fail 'cannot create private scratch'
     trap 'mvc24spf_cleanup' EXIT
     [[ -d $_MVC24SPF_PRIVATE && ! -L $_MVC24SPF_PRIVATE && -O $_MVC24SPF_PRIVATE &&

@@ -36,7 +36,7 @@ if $A --help | grep -Fq 'public identity release candidate'; then ok 'current ge
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=MVC_R3B_UPPERCASE_NAMESPACE" <<< "$info" &&
+if grep -Fxq "checkpoint=MVC_R4_NONPERSISTENT_LITERAL_CLEANUP" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'

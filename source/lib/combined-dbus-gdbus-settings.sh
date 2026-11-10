@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 — optional read-only GDBus GetSettings capture.
+# Multi VPN Controller 2.4.x — optional read-only GDBus GetSettings capture.
 # Uses Bash, GDBus, standard awk, jq; no systemd utilities, no Python.
 # The bounded decoder accepts only unambiguous typed GVariant forms. It never
 # evaluates D-Bus strings. Unrecognised forms fail, rather than lose type data.

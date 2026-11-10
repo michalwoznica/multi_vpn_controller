@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0 — minimal public production loader.
-# Source this file from tools/vpn-v240 only. Sourcing defines functions; it
+# Multi VPN Controller 2.4.x — minimal public production loader.
+# Source this file from tools/mvc only. Sourcing defines functions; it
 # does not call live backends or mutate networking.
 #
 # The physically grounded lifecycle composition is loaded first. The public

@@ -20,6 +20,7 @@ TESTS=(
   test-public-tree-sanitization.sh
   test-public-identity.sh
   test-runtime-identity.sh
+  test-nonpersistent-literal-cleanup.sh
 )
 
 passed=0
