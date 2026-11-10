@@ -242,7 +242,7 @@ mvc24pubd_disconnect_once && pass disconnect-prepared-live-c7-reconciles || fail
 [[ $MVC24PUBD_STAGE == public-incomplete-openvpn-start-clean-baseline-restored ]] && pass disconnect-prepared-live-c7-final-state || fail disconnect-prepared-live-c7-final-state
 
 # Frozen physical core remains unchanged.
-[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == 1375aec949e2e1061c9bd3d71fc5e690e4eb53bd0219fbde1c3f5c3095d6f29a ]] && pass r4-d4-source-identity || fail r4-d4-source-identity
+[[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == fd2e61c0b0433a96040fcc95719d4a90dcadef17986586a919e16ae60fae17e9 ]] && pass r5c-d4-source-identity || fail r5c-d4-source-identity
 [[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == 56ef654e061368fa16bd2ec69153ffb6710ef447fe3a1ede3231ae8b2e5d2ee4 ]] && pass r4-gco-source-identity || fail r4-gco-source-identity
 [[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == ac5514f3bf8fb6c784eecd26934e89aabdb0234e873fb48a4dbb764aeda53eaa ]] && pass r4-c19-source-identity || fail r4-c19-source-identity
 

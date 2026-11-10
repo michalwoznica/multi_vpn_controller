@@ -126,7 +126,7 @@ mvc24gd4_publish_intent() {
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.intent.XXXXXXXX") || return 1
     if ! printf '%s\n' \
-        ubs-v240-c23ai-wireguard-intent-v1 \
+        mvc-c23ai-wireguard-intent-v1 \
         state=prepared-no-wireguard-mutation-yet \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "source_uuid=$MVC24GD4_SOURCE_UUID" "source_sha=$MVC24GD4_SOURCE_SHA" \

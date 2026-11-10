@@ -77,11 +77,11 @@ remaining=$(cd "$ROOT" && rg -o --no-filename \
   source/lib source/tools source/build source/nftables | sort -u)
 remaining_sha=$(printf '%s\n' "$remaining" | sha256sum | awk '{print $1}')
 remaining_count=$(printf '%s\n' "$remaining" | sed '/^$/d' | wc -l)
-if [[ $remaining_count == 10 && $remaining_sha == 657dcc54a28acdb91c68272823d741b87eb37b62ae48b2d62466f46af65c7e94 ]]; then
-  pass 'R5C-R5E and dormant legacy record magics remain frozen'
+if [[ $remaining_count == 8 && $remaining_sha == 28199457b95cf4c65800ae407676c02de047617c0a186076b900e24b80e61b8b ]]; then
+  pass 'R5D-R5E and dormant legacy record magics remain frozen'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'R5C-R5E and dormant legacy record magics remain frozen'
+  fail 'R5D-R5E and dormant legacy record magics remain frozen'
 fi
 
 printf 'RESULT: MVC-R5B preclone/early record namespace %d/%d checks passed\n' "$P" "$((P+F))"

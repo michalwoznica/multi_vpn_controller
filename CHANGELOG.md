@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2.4.1
+- Migrate the D4 WireGuard ownership intent and protected-WG release record to version-independent `mvc-...-v1` magic, updating normal disconnect and the independent dual-recovery consumer atomically.
+
 - Migrate the public preclone / early OpenVPN reconciliation record family to version-independent `mvc-...-v1` magic, including dynamically generated stop and clone-delete records, without changing record fields or lifecycle behavior.
 
 - Migrate the first authenticated same-boot record chain (B2/C1/C7/C13) to version-independent `mvc-...-v1` record magic while preserving field schemas and downstream behavior.

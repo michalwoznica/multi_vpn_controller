@@ -199,7 +199,7 @@ mvc24gwg_publish_release_intent() {
     tmp=$runtime/.protected-release-intent.tmp
     : > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-wireguard-protected-release-v1 \
+    printf '%s\n' mvc-wireguard-protected-release-v1 \
       state=nft-delete-attempted-once-outcome-uncertain "boot=$boot" \
       "d4_intent=$intent_sha" "controller_prepare=$prepare_sha" \
       "batch=$(mvc24gd4_hash_file "$batch")" > "$tmp" || return 1
@@ -215,7 +215,7 @@ mvc24gwg_release_intent_valid() {
     mapfile -t rows < "$runtime/protected-release-intent" || return 1
     (( ${#rows[@]} == 6 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
-    [[ ${rows[0]} == ubs-v240-wireguard-protected-release-v1 &&
+    [[ ${rows[0]} == mvc-wireguard-protected-release-v1 &&
        ${rows[1]} == state=nft-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" &&
        ${rows[3]} == "d4_intent=$(mvc24gd4_hash_file "$runtime/intent")" &&

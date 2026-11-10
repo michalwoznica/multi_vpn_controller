@@ -146,7 +146,7 @@ read_intent() {
     [[ -f $INTENT && ! -L $INTENT && $(stat -c '%u:%a:%h' -- "$INTENT") == '0:400:1' ]] || return 1
     mapfile -t lines < "$INTENT"
     (( ${#lines[@]} == 14 )) || return 1
-    [[ ${lines[0]} == ubs-v240-c23ai-wireguard-intent-v1 &&
+    [[ ${lines[0]} == mvc-c23ai-wireguard-intent-v1 &&
        ${lines[1]} == state=prepared-no-wireguard-mutation-yet ]] || return 1
     [[ ${lines[2]} == boot=* && ${lines[3]} == userns=* && ${lines[4]} == netns=* && ${lines[5]} == mntns=* &&
        ${lines[6]} == source_uuid=* && ${lines[7]} == source_sha=* &&

@@ -386,7 +386,7 @@ mvc24pubd_load_d4_intent() {
        -f $file && ! -L $file && $(stat -c '%u:%a:%h' "$file") == '0:400:1' ]] || return 1
     mapfile -t rows < "$file" || return 1
     (( ${#rows[@]} == 14 )) || return 1
-    [[ ${rows[0]} == ubs-v240-c23ai-wireguard-intent-v1 &&
+    [[ ${rows[0]} == mvc-c23ai-wireguard-intent-v1 &&
        ${rows[1]} == state=prepared-no-wireguard-mutation-yet &&
        ${rows[2]} == boot=* && ${rows[3]} == userns=* && ${rows[4]} == netns=* && ${rows[5]} == mntns=* &&
        ${rows[6]} == source_uuid=* && ${rows[7]} == source_sha=* &&
