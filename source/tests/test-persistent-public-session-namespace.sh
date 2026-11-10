@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export LC_ALL=C
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+P=0 F=0
+pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
+fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
+
+CONN=$ROOT/source/lib/combined-operational-public-v240-connect.sh
+DISC=$ROOT/source/lib/combined-operational-public-v240-disconnect.sh
+DORMANT='ubs-vpn-state-v4-draft'
+
+# Central ownership records move as one trust domain: producer and every current
+# live/completed-session consumer must agree on the same schema magic.
+if [[ $(rg -F 'mvc-public-transaction-v1' "$CONN" | wc -l) -ge 1 ]] &&
+   [[ $(rg -F 'mvc-public-transaction-v1' "$DISC" | wc -l) -ge 2 ]]; then
+  pass 'public transaction producer and disconnect consumers use MVC magic'
+else
+  fail 'public transaction producer and disconnect consumers use MVC magic'
+fi
+
+if [[ $(rg -F 'mvc-public-active-v1' "$CONN" | wc -l) -ge 3 ]] &&
+   [[ $(rg -F 'mvc-public-active-v1' "$DISC" | wc -l) -ge 2 ]]; then
+  pass 'public active producer/finalizer and disconnect consumers use MVC magic'
+else
+  fail 'public active producer/finalizer and disconnect consumers use MVC magic'
+fi
+
+if ! rg -F 'ubs-v240-public-transaction-v1' "$ROOT/source/lib" "$ROOT/source/tools" >/dev/null &&
+   ! rg -F 'ubs-v240-public-active-v1' "$ROOT/source/lib" "$ROOT/source/tools" >/dev/null; then
+  pass 'retired central public-session UBS magic absent from production source'
+else
+  fail 'retired central public-session UBS magic absent from production source'
+fi
+
+# Exercise the real transaction parser with the new schema and prove exact old
+# magic is rejected. The prepared state avoids any dependency on live tunnel journals.
+export MVC24E_CODE_ROOT=$ROOT/source
+source "$ROOT/source/lib/combined-operational-public-v240-composition.sh"
+T=$(mktemp -d /tmp/mvc-r5e.XXXXXXXX)
+trap 'rm -rf -- "$T"' EXIT
+TEST_RUNTIME=$T/public
+mkdir -m 700 "$TEST_RUNTIME"
+mvc24pub_session_runtime_root(){ printf '%s\n' "$TEST_RUNTIME"; }
+boot=$(cat /proc/sys/kernel/random/boot_id)
+userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt)
+write_tx(){
+  local magic=$1
+  cat > "$TEST_RUNTIME/transaction" <<EOF2
+$magic
+state=prepared-before-mutation
+boot=$boot
+userns=$userns
+netns=$netns
+mntns=$mntns
+ovpn_source_uuid=11111111-1111-4111-8111-111111111111
+ovpn_clone_uuid=-
+wg_source_uuid=22222222-2222-4222-8222-222222222222
+wg_temp_uuid=33333333-3333-4333-8333-333333333333
+underlay=f15ra
+controller_prepare_sha=-
+controller_transition_sha=-
+activation_sha=-
+output_sha=-
+d4_intent_sha=-
+EOF2
+  chmod 400 "$TEST_RUNTIME/transaction"
+}
+write_tx mvc-public-transaction-v1
+mvc24pubd_reset
+if mvc24pubd_parse_transaction_marker && [[ $MVC24PUBD_TRANSACTION_STATE == prepared-before-mutation ]]; then
+  pass 'real transaction parser accepts MVC public transaction magic'
+else
+  fail 'real transaction parser accepts MVC public transaction magic'
+fi
+write_tx ubs-v240-public-transaction-v1
+mvc24pubd_reset
+if ! mvc24pubd_parse_transaction_marker; then
+  pass 'real transaction parser rejects retired UBS public transaction magic'
+else
+  fail 'real transaction parser rejects retired UBS public transaction magic'
+fi
+
+# R5E intentionally leaves only the dormant combined-state draft legacy magic.
+remaining=$(cd "$ROOT" && rg -o --no-filename \
+  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
+  source/lib source/tools source/build source/nftables | sort -u)
+if [[ $remaining == "$DORMANT" ]]; then
+  pass 'only dormant combined-state legacy magic remains in production source'
+else
+  printf '%s\n' "$remaining" >&2
+  fail 'only dormant combined-state legacy magic remains in production source'
+fi
+
+# The dormant API is deliberately outside R5E and remains byte-visible for later cleanup.
+if [[ $(rg -F "$DORMANT" "$ROOT/source/lib/dual-session.sh" | wc -l) -eq 2 ]]; then
+  pass 'dormant combined-state draft remains frozen for later dead-code cleanup'
+else
+  fail 'dormant combined-state draft remains frozen for later dead-code cleanup'
+fi
+
+printf 'RESULT: MVC-R5E public-session record namespace %d/%d checks passed\n' "$P" "$((P+F))"
+(( F == 0 ))

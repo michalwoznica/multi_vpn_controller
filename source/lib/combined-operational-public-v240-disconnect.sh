@@ -53,7 +53,7 @@ mvc24pubd_parse_transaction_marker() {
     mapfile -d '' -t entries < <(find "$runtime" -mindepth 1 -maxdepth 1 -print0) || return 1
     mapfile -t rows < "$file" || return 1
     (( ${#rows[@]} == 16 )) || return 1
-    [[ ${rows[0]} == ubs-v240-public-transaction-v1 && ${rows[1]} == state=* &&
+    [[ ${rows[0]} == mvc-public-transaction-v1 && ${rows[1]} == state=* &&
        ${rows[2]} == boot=* && ${rows[3]} == userns=* && ${rows[4]} == netns=* && ${rows[5]} == mntns=* &&
        ${rows[6]} == ovpn_source_uuid=* && ${rows[7]} == ovpn_clone_uuid=* &&
        ${rows[8]} == wg_source_uuid=* && ${rows[9]} == wg_temp_uuid=* && ${rows[10]} == underlay=* &&
@@ -176,7 +176,7 @@ mvc24pubd_parse_active_marker() {
     mapfile -d '' -t entries < <(find "$runtime" -mindepth 1 -maxdepth 1 -print0) || return 1
     mapfile -t rows < "$file" || return 1
     (( ${#rows[@]} == 16 )) || return 1
-    [[ ${rows[0]} == ubs-v240-public-active-v1 && ${rows[1]} == state=dual-active-published &&
+    [[ ${rows[0]} == mvc-public-active-v1 && ${rows[1]} == state=dual-active-published &&
        ${rows[2]} == boot=* && ${rows[3]} == userns=* && ${rows[4]} == netns=* && ${rows[5]} == mntns=* &&
        ${rows[6]} == ovpn_source_uuid=* && ${rows[7]} == ovpn_clone_uuid=* &&
        ${rows[8]} == wg_source_uuid=* && ${rows[9]} == wg_temp_uuid=* && ${rows[10]} == underlay=* &&
@@ -251,10 +251,10 @@ mvc24pubd_parse_completed_session_marker() {
     mapfile -t rows < "$file" || return 1
     (( ${#rows[@]} == 16 )) || return 1
     if [[ $entry == active ]]; then
-        [[ ${rows[0]} == ubs-v240-public-active-v1 && ${rows[1]} == state=dual-active-published ]] || return 1
+        [[ ${rows[0]} == mvc-public-active-v1 && ${rows[1]} == state=dual-active-published ]] || return 1
         state=dual-active-observed
     else
-        [[ ${rows[0]} == ubs-v240-public-transaction-v1 && ${rows[1]} == state=* ]] || return 1
+        [[ ${rows[0]} == mvc-public-transaction-v1 && ${rows[1]} == state=* ]] || return 1
         state=${rows[1]#state=}
         case $state in openvpn-protected|dual-active-observed) ;; *) return 1 ;; esac
     fi

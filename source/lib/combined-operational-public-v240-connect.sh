@@ -438,7 +438,7 @@ mvc24pubc_transaction_write() {
     : > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     printf '%s\n' \
-      'ubs-v240-public-transaction-v1' \
+      'mvc-public-transaction-v1' \
       "state=$state" \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "ovpn_source_uuid=$MVC24PUBC_OVPN_UUID" "ovpn_clone_uuid=$clone" \
@@ -488,7 +488,7 @@ mvc24pubc_transaction_finalize_after_completion() {
             [[ ${MVC24PUBC_ACTIVE_MARKER_PUBLISHED_THIS_PROCESS:-no} == yes &&
                -f $active && ! -L $active &&
                $(stat -c '%u:%a:%h' -- "$active" 2>/dev/null) == '0:400:1' &&
-               $(sed -n '1p' -- "$active") == ubs-v240-public-active-v1 &&
+               $(sed -n '1p' -- "$active") == mvc-public-active-v1 &&
                $(sed -n '2p' -- "$active") == state=dual-active-published ]] || return 1
             ;;
           *) return 1 ;;
@@ -544,7 +544,7 @@ mvc24pubc_publish_active_session() {
     : > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     printf '%s\n' \
-      'ubs-v240-public-active-v1' \
+      'mvc-public-active-v1' \
       'state=dual-active-published' \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "ovpn_source_uuid=$MVC24PUBC_OVPN_UUID" "ovpn_clone_uuid=$MVC24GC7_CLONE_UUID" \
@@ -561,7 +561,7 @@ mvc24pubc_publish_active_session() {
         [[ ! -e $tmp && ! -L $tmp ]] || return 1
         if [[ -f $runtime/active && ! -L $runtime/active &&
               $(stat -c '%u:%a:%h' -- "$runtime/active" 2>/dev/null) == '0:400:1' &&
-              $(sed -n '1p' -- "$runtime/active") == ubs-v240-public-active-v1 &&
+              $(sed -n '1p' -- "$runtime/active") == mvc-public-active-v1 &&
               $(sed -n '2p' -- "$runtime/active") == state=dual-active-published ]]; then
             MVC24PUBC_ACTIVE_MARKER_PUBLISHED_THIS_PROCESS=yes
         fi

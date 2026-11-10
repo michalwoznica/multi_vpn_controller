@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2.4.1
+- Migrate the central public transaction and active ownership markers to version-independent `mvc-...-v1` magic, keeping the dormant combined-state draft deferred.
+
 - Migrate the C19 normal/already-absent OpenVPN-stop records and the C23T release/clone-delete/archive-plan completion chain to version-independent `mvc-...-v1` magic without changing record fields or lifecycle behavior.
 
 - Migrate the D4 WireGuard ownership intent and protected-WG release record to version-independent `mvc-...-v1` magic, updating normal disconnect and the independent dual-recovery consumer atomically.

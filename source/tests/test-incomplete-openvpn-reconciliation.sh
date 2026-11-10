@@ -22,7 +22,7 @@ mvc24pub_session_runtime_root(){ printf '%s\n' "$TEST_RUNTIME"; }
 boot=$(cat /proc/sys/kernel/random/boot_id)
 userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt)
 cat > "$TEST_RUNTIME/transaction" <<EOF2
-ubs-v240-public-transaction-v1
+mvc-public-transaction-v1
 state=prepared-before-mutation
 boot=$boot
 userns=$userns

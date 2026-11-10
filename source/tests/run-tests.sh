@@ -25,6 +25,7 @@ TESTS=(
   test-persistent-preclone-early-namespace.sh
   test-persistent-wireguard-recovery-namespace.sh
   test-persistent-disconnect-finalization-namespace.sh
+  test-persistent-public-session-namespace.sh
 )
 
 passed=0

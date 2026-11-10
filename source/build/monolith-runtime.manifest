@@ -48,8 +48,8 @@ MODULE|043|f8286a89fcb6a40a2d3ed39d5cb2c4a31cef5b2d7633e8312952137de515c249|sour
 MODULE|044|e29efa877a9d34cde9efb2c6471b21e5b5ce9b84780749eadd67af4c2193d6fc|source/lib/combined-operational-public-v240-reconcile.sh|ordered-runtime-module
 MODULE|045|57043b37209e28f7815486b484087c3d670dfe6cc7dfcd741ebfc89b72f0321a|source/lib/combined-operational-public-v240-openvpn-early-reconcile.sh|ordered-runtime-module
 MODULE|046|5a7828c14a8a851256a38c9dd29d9067a8859eb42d3c40a9caf234f097ba5de1|source/lib/combined-operational-public-v240-readonly.sh|ordered-runtime-module
-MODULE|047|c91441c03326f18facd71affc388c311156135a0cc5ad4133c404bda9c44051d|source/lib/combined-operational-public-v240-connect.sh|ordered-runtime-module
-MODULE|048|3ae46a363e5a5e3748db42788d64995660d1c741700fb4620828289078d91d9d|source/lib/combined-operational-public-v240-disconnect.sh|ordered-runtime-module
+MODULE|047|7ed2907833dbe37be223b549e111519961c23cd56a5fe586ac9037bdb69111b5|source/lib/combined-operational-public-v240-connect.sh|ordered-runtime-module
+MODULE|048|91ad84d170af2eb14402161bd718c0b299516a6621902c44dac5fa28ef946808|source/lib/combined-operational-public-v240-disconnect.sh|ordered-runtime-module
 MODULE|049|c9a2c5f8ea0c8a335a8743e6349c57e654b1a3b3016550728a1067b2ebabfc9b|source/lib/combined-controller-entry.sh|ordered-runtime-module
 ASSET|gvariant-awk|6b454021a543afb9593d9f06bdb8d5e15ee119f4ade30b776af6ad70ed718ac1|source/lib/combined-gvariant-settings-to-json.awk|embed-as-deterministic-runtime-resource
 ASSET|b4-bootstrap-nft|15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23|source/nftables/vpn-v240-preclone-quarantine-offline.nft|embed-as-deterministic-runtime-resource

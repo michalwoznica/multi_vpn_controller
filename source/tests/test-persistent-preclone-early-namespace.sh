@@ -75,13 +75,11 @@ done
 remaining=$(cd "$ROOT" && rg -o --no-filename \
   'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
   source/lib source/tools source/build source/nftables | sort -u)
-remaining_sha=$(printf '%s\n' "$remaining" | sha256sum | awk '{print $1}')
-remaining_count=$(printf '%s\n' "$remaining" | sed '/^$/d' | wc -l)
-if [[ $remaining_count == 3 && $remaining_sha == 68e834457ee1d2a1ab9af588e3961cabcf505dd80c54f69556ac9d58401843cb ]]; then
-  pass 'R5E and dormant legacy record magics remain frozen'
+if [[ $remaining == 'ubs-vpn-state-v4-draft' ]]; then
+  pass 'only dormant combined-state legacy magic remains frozen'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'R5E and dormant legacy record magics remain frozen'
+  fail 'only dormant combined-state legacy magic remains frozen'
 fi
 
 printf 'RESULT: MVC-R5B preclone/early record namespace %d/%d checks passed\n' "$P" "$((P+F))"
