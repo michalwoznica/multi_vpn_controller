@@ -4,14 +4,14 @@ umask 077
 export LC_ALL=C
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
-A=$ROOT/dist/ubs-vpn
+A=$ROOT/dist/mvc
 PASS=0; FAIL=0
 ok(){ printf 'PASS: %s\n' "$1"; PASS=$((PASS+1)); }
 bad(){ printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
 TMP=$(mktemp -d); trap 'rm -rf -- "$TMP"' EXIT
 sed '$d' "$A" > "$TMP/body"
 
-[[ $($A version) == 'UBS VPN Controller 2.4.1' ]] && ok 'generated candidate reports v2.4.1' || bad 'generated candidate reports v2.4.1'
+[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'generated candidate reports v2.4.1' || bad 'generated candidate reports v2.4.1'
 
 BODY=$TMP/body bash -s <<'CHECK' && ok 'generated candidate contains both authenticated dropout reconciler families' || bad 'generated candidate contains both authenticated dropout reconciler families'
 set -euo pipefail

@@ -4,7 +4,7 @@
 # IPv4 transport only. No eval, no arbitrary nftables input interpolation.
 # Requires the companion Phase A library dual-session.sh to be sourced.
 
-ubs24b_error() { printf 'UBS combined-guard: %s\n' "$*" >&2; return 1; }
+ubs24b_error() { printf 'MVC combined-guard: %s\n' "$*" >&2; return 1; }
 
 # Canonical numeric ports avoid nftables pretty-printing/normalisation
 # diverging from the state used for exact integrity comparisons.

@@ -6,7 +6,7 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
-BUILDER=$ROOT/source/build/build-v240-monolith.sh
+BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 PROBE=$ROOT/source/tools/check-v240-live-saved-ovpn-readonly.sh
 PASS=0
 FAIL=0
@@ -16,14 +16,14 @@ bad(){ printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
 TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/a" "$TMP/b"
-"$BUILDER" "$TMP/a/ubs-vpn" >/dev/null
-"$BUILDER" "$TMP/b/ubs-vpn" >/dev/null
-A=$TMP/a/ubs-vpn
-B=$TMP/b/ubs-vpn
+"$BUILDER" "$TMP/a/mvc" >/dev/null
+"$BUILDER" "$TMP/b/mvc" >/dev/null
+A=$TMP/a/mvc
+B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3A independent builds are byte-identical' || bad 'Stage-3A independent builds are byte-identical'
-[[ $($A version) == 'UBS VPN Controller 2.4.1' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
-$A --help | grep -Fq 'C24A Stage 3 operational candidate' && ok 'current help identifies v2.4.1 candidate' || bad 'current help identifies v2.4.1 candidate'
+[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
+$A --help | grep -Fq 'public identity release candidate' && ok 'current help identifies v2.4.1 candidate' || bad 'current help identifies v2.4.1 candidate'
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
    grep -Fq 'ubs24e_dispatch "$@"' "$A"; then
     ok 'v2.4.1 wrapper delegates lifecycle verbs to audited dispatcher'
@@ -64,12 +64,12 @@ ubs24mon_runtime_assets_cleanup
 
 # Recovery identity is now source-tree independent: strict metadata + embedded SHA.
 recovery=$TMP/emergency-recovery
-cp -- "$ROOT/source/tools/recover-v240-host-guard-local.sh" "$recovery"
+cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 700 -- "$recovery"
 ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256" && ok 'embedded emergency recovery SHA authenticates exact file' || bad 'embedded emergency recovery SHA authenticates exact file'
 printf '\n# drift\n' >> "$recovery"
 if ! ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects content drift'; else bad 'recovery identity rejects content drift'; fi
-cp -- "$ROOT/source/tools/recover-v240-host-guard-local.sh" "$recovery"
+cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 755 -- "$recovery"
 if ! ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects wrong mode'; else bad 'recovery identity rejects wrong mode'; fi
 

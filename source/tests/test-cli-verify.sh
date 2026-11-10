@@ -6,9 +6,9 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
-BUILDER=$ROOT/source/build/build-v240-monolith.sh
+BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
-VERIFY_SOURCE=$ROOT/source/tools/verify-v240-state-readonly.sh
+VERIFY_SOURCE=$ROOT/source/tools/verify-mvc-state-readonly.sh
 PASS=0
 FAIL=0
 ok(){ printf 'PASS: %s\n' "$1"; PASS=$((PASS+1)); }
@@ -17,20 +17,20 @@ bad(){ printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
 TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/a" "$TMP/b" "$TMP/bin"
-"$BUILDER" "$TMP/a/ubs-vpn" >/dev/null
-"$BUILDER" "$TMP/b/ubs-vpn" >/dev/null
-A=$TMP/a/ubs-vpn
-B=$TMP/b/ubs-vpn
+"$BUILDER" "$TMP/a/mvc" >/dev/null
+"$BUILDER" "$TMP/b/mvc" >/dev/null
+A=$TMP/a/mvc
+B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3B independent builds are byte-identical' || bad 'Stage-3B independent builds are byte-identical'
-[[ $($A version) == 'UBS VPN Controller 2.4.1' ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
+[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
 
 verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=V241_PUBLIC_RC1' <<<"$verbose" &&
-   grep -Fxq 'authority=audited-dispatch-v241-candidate-physical-pending' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_R1_PUBLIC_IDENTITY' <<<"$verbose" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
    grep -Fxq "verify_source_sha256=$verify_sha" <<<"$verbose"; then
@@ -48,8 +48,8 @@ if grep -Fq 'connect OPENVPN_PROFILE' <<<"$help" &&
 else
     bad 'help documents all four v2.4 daily modes'
 fi
-if grep -Fq '/root/ubs-v240-emergency-rollback' <<<"$help" &&
-   grep -Fq '/root/ubs-v240-dual-recovery' <<<"$help"; then
+if grep -Fq '/root/mvc-emergency-rollback' <<<"$help" &&
+   grep -Fq '/root/mvc-dual-recovery' <<<"$help"; then
     ok 'help documents both independent recovery paths'
 else
     bad 'help documents both independent recovery paths'
@@ -59,7 +59,7 @@ if grep -Fq 'diagnostic only' <<<"$help" && grep -Fq 'physical proof' <<<"$help"
 else
     bad 'help separates diagnostic verify and states v2.4.1 physical boundary'
 fi
-if $A verify --help | grep -Fq 'Usage: sudo ubs-vpn verify [--no-internet-check]'; then
+if $A verify --help | grep -Fq 'Usage: sudo mvc verify [--no-internet-check]'; then
     ok 'verify help uses monolith-native CLI syntax'
 else
     bad 'verify help uses monolith-native CLI syntax'

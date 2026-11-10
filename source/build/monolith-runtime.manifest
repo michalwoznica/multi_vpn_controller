@@ -1,13 +1,13 @@
-# UBS VPN Controller 2.4.x monolith runtime manifest
+# Multi VPN Controller 2.4.x monolith runtime manifest
 # Authoritative ordered input contract for the deterministic release builder.
 # Format: KIND|ORDER_OR_NAME|SHA256|PATH|DETAIL
 # MODULE order is security/runtime significant; later Bash definitions intentionally override earlier ones.
-MODULE|001|30c7b70c0cddac1c2dec0e953f7302f0843477096114f98073c18d348104d533|source/lib/dual-session.sh|ordered-runtime-module
+MODULE|001|5f2289ca850d51fc10a3e9c24cc4229ef015347cd497db4e53112abcef47b352|source/lib/dual-session.sh|ordered-runtime-module
 MODULE|002|2a4adf0f94209b58f90e8b37b997ab9dc884e5a089d87ab28b00d07b60339c1b|source/lib/wireguard-peers.sh|ordered-runtime-module
-MODULE|003|609ef05dd14a6e2c9330fe742abaf0fc2ce1bc93fa8e259812be452ef23a2171|source/lib/combined-routing-guard.sh|ordered-runtime-module
+MODULE|003|970f967e895d86331c2979ad4a17bd32cd60a9cf6fba56fd537d5ffac491d4ef|source/lib/combined-routing-guard.sh|ordered-runtime-module
 MODULE|004|4a34e117915d1e9c226af9b442f32a654ce4cde984ca2b1e8a735d87cafc73a2|source/lib/combined-dbus-gdbus-portable.sh|ordered-runtime-module
 MODULE|005|2ef69052afac4e0bf0819432aecd7d8d7e2f95ae3e08dd1df1a78ad8b2eca740|source/lib/combined-dbus-gdbus-settings.sh|ordered-runtime-module
-MODULE|006|99a1ddf840252a912234d1caffd9449e506c126376a274abd0aab6aa30a9e3b7|source/lib/combined-protected-dns.sh|ordered-runtime-module
+MODULE|006|25fc1d887f82789d365e1fa5561dddf51ba001e93e168129da1e0f420a75312f|source/lib/combined-protected-dns.sh|ordered-runtime-module
 MODULE|007|676c4bba21a10bd7eb2b826dc68a60a015a0457d763e1ca0b0908e4a6511090f|source/lib/combined-activation-v2-openvpn-host-dns-evidence.sh|ordered-runtime-module
 MODULE|008|5cbc0347d0ef3e16c69f9b0b5add263f837f722196261dc40a2272a0b596b2d6|source/lib/combined-operational-nm-owner-identity.sh|ordered-runtime-module
 MODULE|009|3c89fa01e8ec05b767d363fef8482adfe0d6d14ab1cc25027c5944e751394d02|source/lib/combined-operational-ovpn-remote-candidate-plan.sh|ordered-runtime-module
@@ -37,8 +37,8 @@ MODULE|032|891b414cf04699b17d867a65734bcffeea2c89049ada76fe1d6dfdca23f8df4e|sour
 MODULE|033|71b0a5e3828cf8c0a1f49bfd2ffbfc0c50c260360e207d4038634be060056d3e|source/lib/combined-operational-c19-protected-openvpn-stop.sh|ordered-runtime-module
 MODULE|034|18a767ff9ccc68276769b805f4cdb10ce54589de5bf1e4444240c8eca8d7be35|source/lib/combined-operational-c23t-session-finalize.sh|ordered-runtime-module
 MODULE|035|15b234c2d4f0f9a8a5e25f3235e5b50053d7b5bc6c1f1469d9367f42ecf62159|source/lib/combined-operational-c4-local-admission.sh|ordered-runtime-module
-MODULE|036|8f7b6bcd8a5902f4247c7ddda44927a7c757132fd7835f8cea7ce113772a25b6|source/lib/combined-preflight.sh|ordered-runtime-module
-MODULE|037|5a6024224573691c3f700c6fef946369177bb6a03e64f6363fcc5149bd9596ed|source/lib/combined-networkmanager-backend.sh|ordered-runtime-module
+MODULE|036|e1c312dcbf5c0951e539428d51077f3bf92a2150fb9143f4356698a9481b65d4|source/lib/combined-preflight.sh|ordered-runtime-module
+MODULE|037|716cf38c8bf6632df8c6dc947d9700c915cc32ad44c391868bd4b2055b47ada2|source/lib/combined-networkmanager-backend.sh|ordered-runtime-module
 MODULE|038|b48ea8023298263d6c376847f459b9ea26e36e691e7850d0a22d0ec82df5bb26|source/lib/combined-operational-openvpn-composition.sh|ordered-runtime-module
 MODULE|039|1db1afff28be77d656ad77e2cde11c94b215bdaf92778e925954577092c79075|source/lib/combined-operational-d2-wireguard-semantic-readonly.sh|ordered-runtime-module
 MODULE|040|156d3d787f2f5be2951d97353230f7a4cf42e697854bef1a5915aee012df6316|source/lib/combined-operational-d3-wireguard-parallel-plan.sh|ordered-runtime-module
@@ -50,12 +50,12 @@ MODULE|045|726cdf488be0d3f97e822c9b5737fbe2994c1bb9b3ed33bdbde89974a1048808|sour
 MODULE|046|6253f08d632abab806a5921ef7892bd8294c541a33d8b09ea2ae72e521ed94eb|source/lib/combined-operational-public-v240-readonly.sh|ordered-runtime-module
 MODULE|047|36de50d07fa587691286261c2847d6bd07a78de0e58f95869e1327c6c8f5341e|source/lib/combined-operational-public-v240-connect.sh|ordered-runtime-module
 MODULE|048|74b12da94e5481373a8dd18c2d3daf5e8a6107889c965cb26d7ec8cf5e55c972|source/lib/combined-operational-public-v240-disconnect.sh|ordered-runtime-module
-MODULE|049|2246f3adcefa78fcad7a92bbf0b85ad009edffe8e593518314a8e7104c6ef45a|source/lib/combined-controller-entry.sh|ordered-runtime-module
+MODULE|049|62e507c64a886b175e9bfc38b6263fa48606497fc8715a4d1d74840d4dbf9cc8|source/lib/combined-controller-entry.sh|ordered-runtime-module
 ASSET|gvariant-awk|2d97bca7af683709cd7a114ea21006c85ceeab8d928226f43e985857fdc2b9ba|source/lib/combined-gvariant-settings-to-json.awk|embed-as-deterministic-runtime-resource
 ASSET|b4-bootstrap-nft|b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03|source/nftables/vpn-v240-preclone-quarantine-offline.nft|embed-as-deterministic-runtime-resource
 INTEGRATE|openvpn-source-preview|b3d490443686a0e11b48cea50f3c4f5d824e4815d1bab08be4d4f0b6cb721b3b|source/tools/check-v240-live-saved-ovpn-readonly.sh|internalize-only-controller-required-preview-derivative-path;do-not-bundle-unused-diagnostic-actions
-INTEGRATE|verify|ec966b899c44762e765f9cb03bd3fb13faf7bd606fe31c1eda29c7d314f23e2f|source/tools/verify-v240-state-readonly.sh|integrate-as-main-verify-subcommand;diagnostic-only
-EXTERNAL_RECOVERY|emergency|e2de136ccdc43f70aebb83778c5ff09ee706e870d6ad4a7d0770aabcec3af8f9|source/tools/recover-v240-host-guard-local.sh|installed=/root/ubs-v240-emergency-rollback;remain-independent;main-help-must-document
-EXTERNAL_RECOVERY|dual|a6222f917c8b4ecd8284887ec1a0895774c877ca985ebb575608f73ecce8a15a|source/tools/recover-v240-dual-local.sh|installed=/root/ubs-v240-dual-recovery;remain-independent;main-help-must-document
+INTEGRATE|verify|b48088a2104c416deb4053c73a5f607c2892271203e23f98e4fb997d77351bc3|source/tools/verify-mvc-state-readonly.sh|integrate-as-main-verify-subcommand;diagnostic-only
+EXTERNAL_RECOVERY|emergency|1e9bc4a19064a0c034d279bb23ac620b2f74062070b1aee3f830939b9c304fbb|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
+EXTERNAL_RECOVERY|dual|81d9d4b89272eb27367f4faca69a26c944c73dd3af3e9906a5424073e9a6abd1|source/tools/recover-mvc-dual-local.sh|installed=/root/mvc-dual-recovery;remain-independent;main-help-must-document
 EXCLUDE|loader|40b55557b4fa57b0dd1150ff65c697e4e21d6f4635838ae5786470cac2b4bebc|source/lib/combined-controller-wiring.sh|loader-only;must-not-appear-in-monolith-body
 EXCLUDE|loader|8600568ac6a95ddf3549d732a619e0d640acc71efe0b8c504463a296ee7613af|source/lib/combined-operational-public-v240-composition.sh|loader-only;must-not-appear-in-monolith-body

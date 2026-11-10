@@ -6,7 +6,7 @@
 # combined-networkmanager-backend.sh.
 # This module never mutates NM, ip routes or nftables.
 
-ubs24d_error() { printf 'UBS protected DNS: %s\n' "$*" >&2; return 1; }
+ubs24d_error() { printf 'MVC protected DNS: %s\n' "$*" >&2; return 1; }
 
 # Treat every outgoing DNS destination as untrusted. Verify the selected route
 # really uses OpenVPN, and bind dig to the corresponding tunnel source IP.

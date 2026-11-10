@@ -6,7 +6,7 @@
 # State helpers here are an evolving development schema, not a replacement
 # for the stable v2.3.0 state format. Do NOT point them at /run/vpnks/state.
 
-ubs24_error() { printf 'UBS VPN Controller: %s\n' "$*" >&2; return 1; }
+ubs24_error() { printf 'Multi VPN Controller: %s\n' "$*" >&2; return 1; }
 
 ubs24_valid_name() {
     local name=$1

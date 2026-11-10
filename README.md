@@ -1,14 +1,14 @@
-# UBS VPN Controller
+# Multi VPN Controller
 
-UBS VPN Controller 2.4.x is a Bash-based NetworkManager controller for fail-closed OpenVPN and WireGuard sessions on Linux.
+Multi VPN Controller (MVC) 2.4.x is a Bash-based NetworkManager controller for fail-closed OpenVPN and WireGuard sessions on Linux.
 
 ## Supported modes
 
 ```bash
-sudo ubs-vpn connect <openvpn-profile>
-sudo ubs-vpn connect <wireguard-profile>
-sudo ubs-vpn connect <wireguard-profile> --split
-sudo ubs-vpn connect <wireguard-profile> --split <openvpn-profile>
+sudo mvc connect <openvpn-profile>
+sudo mvc connect <wireguard-profile>
+sudo mvc connect <wireguard-profile> --split
+sudo mvc connect <wireguard-profile> --split <openvpn-profile>
 ```
 
 The four modes are:
@@ -18,14 +18,14 @@ The four modes are:
 - **Split WireGuard only** — WireGuard AllowedIPs use WireGuard while ordinary Internet remains on the physical connection.
 - **Combined** — ordinary Internet and DNS use OpenVPN while WireGuard AllowedIPs use WireGuard in parallel.
 
-IPv6 Internet traffic is blocked during protected sessions. The controller uses nftables and authenticated same-boot runtime state to avoid silently falling back to an unprotected path.
+IPv6 Internet traffic is blocked during protected sessions. MVC uses nftables and authenticated same-boot runtime state to avoid silently falling back to an unprotected path.
 
 ## Source and release model
 
-The maintainable implementation lives under `source/`. `dist/ubs-vpn` is generated deterministically and is intentionally ignored by Git. Build it with:
+The maintainable implementation lives under `source/`. `dist/mvc` is generated deterministically and is intentionally ignored by Git. Build it with:
 
 ```bash
-./source/build/build-v240-monolith.sh ./dist/ubs-vpn
+./source/build/build-mvc-monolith.sh ./dist/mvc
 ```
 
 See [BUILDING.md](BUILDING.md) for the build and release workflow.
@@ -35,12 +35,12 @@ See [BUILDING.md](BUILDING.md) for the build and release workflow.
 See [INSTALL.md](INSTALL.md). The release installer manages:
 
 ```text
-/usr/local/sbin/ubs-vpn
-/root/ubs-v240-emergency-rollback
-/root/ubs-v240-dual-recovery
+/usr/local/sbin/mvc
+/root/mvc-emergency-rollback
+/root/mvc-dual-recovery
 ```
 
-The recovery tools are independent of the main executable and are intentionally retained as separate files.
+The recovery tools remain independent of the main executable.
 
 ## Operations
 
@@ -59,3 +59,7 @@ Run the curated public regression suite from the repository root:
 ```
 
 The suite is hermetic and does not require live VPN activation.
+
+## Internal compatibility names
+
+The public project identity is **Multi VPN Controller** and the command is `mvc`. Some audited 2.4.x internal Bash symbols, runtime-state identifiers and module filenames still retain legacy implementation names. They are not public API and are intentionally left unchanged in this identity-only refactor.

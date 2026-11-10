@@ -18,6 +18,7 @@ TESTS=(
   test-generated-dropout-disconnect.sh
   test-installer.sh
   test-public-tree-sanitization.sh
+  test-public-identity.sh
 )
 
 passed=0

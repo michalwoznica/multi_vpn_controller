@@ -6,7 +6,7 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
-BUILDER=$ROOT/source/build/build-v240-monolith.sh
+BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 PASS=0
 FAIL=0
@@ -19,10 +19,10 @@ TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/a" "$TMP/b" "$TMP/resources"
 
-"$BUILDER" "$TMP/a/ubs-vpn" >/dev/null
-"$BUILDER" "$TMP/b/ubs-vpn" >/dev/null
-A=$TMP/a/ubs-vpn
-B=$TMP/b/ubs-vpn
+"$BUILDER" "$TMP/a/mvc" >/dev/null
+"$BUILDER" "$TMP/b/mvc" >/dev/null
+A=$TMP/a/mvc
+B=$TMP/b/mvc
 
 if cmp -s -- "$A" "$B"; then ok 'independent builds are byte-identical'; else bad 'independent builds are byte-identical'; fi
 sha_a=$(sha256sum -- "$A" | awk '{print $1}')
@@ -31,12 +31,12 @@ if [[ $sha_a == "$sha_b" ]]; then ok 'independent build SHA-256 values are ident
 if [[ $(stat -c %a -- "$A") == 755 ]]; then ok 'generated artifact mode is 0755'; else bad 'generated artifact mode is 0755'; fi
 if bash -n "$A"; then ok 'generated artifact passes bash -n'; else bad 'generated artifact passes bash -n'; fi
 
-if [[ $($A version) == 'UBS VPN Controller 2.4.1' ]]; then ok 'generated version identity is exact'; else bad 'generated version identity is exact'; fi
-if $A --help | grep -Fq 'C24A Stage 3 operational candidate'; then ok 'current generated help identifies v2.4.1 candidate'; else bad 'current generated help identifies v2.4.1 candidate'; fi
+if [[ $($A version) == 'Multi VPN Controller 2.4.1' ]]; then ok 'generated version identity is exact'; else bad 'generated version identity is exact'; fi
+if $A --help | grep -Fq 'public identity release candidate'; then ok 'current generated help identifies v2.4.1 candidate'; else bad 'current generated help identifies v2.4.1 candidate'; fi
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=V241_PUBLIC_RC1" <<< "$info" &&
+if grep -Fxq "checkpoint=MVC_R1_PUBLIC_IDENTITY" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'
@@ -97,7 +97,7 @@ fi
 # is never modified. Each case restores its mutation before the next one.
 COPY=$TMP/project-copy
 cp -a -- "$ROOT" "$COPY"
-CB=$COPY/source/build/build-v240-monolith.sh
+CB=$COPY/source/build/build-mvc-monolith.sh
 CM=$COPY/source/build/monolith-runtime.manifest
 ORIG_MANIFEST=$TMP/original.manifest
 cp -- "$CM" "$ORIG_MANIFEST"

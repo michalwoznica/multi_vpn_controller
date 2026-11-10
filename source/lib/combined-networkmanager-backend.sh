@@ -6,7 +6,7 @@
 # verification, guarded DNS resolution, and failure-safe recovery.
 # This module NEVER unhooks nftables or changes IP routes.
 
-ubs24n_error() { printf 'UBS NetworkManager backend: %s\n' "$*" >&2; return 1; }
+ubs24n_error() { printf 'MVC NetworkManager backend: %s\n' "$*" >&2; return 1; }
 
 ubs24n_safe_path() {
     local path=${1:-}

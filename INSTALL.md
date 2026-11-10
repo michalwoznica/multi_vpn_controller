@@ -3,42 +3,42 @@
 Build the controller first:
 
 ```bash
-./source/build/build-v240-monolith.sh ./dist/ubs-vpn
+./source/build/build-mvc-monolith.sh ./dist/mvc
 ```
 
-For 2.4.1, use the release installer:
+Install MVC:
 
 ```bash
-sudo ./source/tools/install-v241-monolith.sh install
+sudo ./source/tools/install-mvc.sh install
 ```
 
-To update an already recognized UBS 2.4.x installation:
+Update an already recognized installation:
 
 ```bash
-sudo ./source/tools/install-v241-monolith.sh update
+sudo ./source/tools/install-mvc.sh update
 ```
 
 Verify the installed file set:
 
 ```bash
-sudo ./source/tools/install-v241-monolith.sh verify
-sudo /usr/local/sbin/ubs-vpn version --verbose
+sudo ./source/tools/install-mvc.sh verify
+sudo /usr/local/sbin/mvc version --verbose
 ```
 
 Remove the managed file set:
 
 ```bash
-sudo ./source/tools/install-v241-monolith.sh uninstall
+sudo ./source/tools/install-mvc.sh uninstall
 ```
 
-The installer refuses package maintenance while UBS-managed runtime state or managed VPN links are present. Disconnect the active session first.
+The installer refuses package maintenance while MVC-managed runtime state or managed VPN links are present. Disconnect the active session first.
 
 The installed files are:
 
 ```text
-/usr/local/sbin/ubs-vpn
-/root/ubs-v240-emergency-rollback
-/root/ubs-v240-dual-recovery
+/usr/local/sbin/mvc
+/root/mvc-emergency-rollback
+/root/mvc-dual-recovery
 ```
 
-The `v240` names of the independent recovery tools are retained for compatibility across the 2.4.x series.
+The installer also recognizes the exact approved pre-MVC 2.4.0 file set and can migrate it to the MVC filenames during a controlled update. Unrecognized existing files are never overwritten.

@@ -1,4 +1,4 @@
-# Building UBS VPN Controller
+# Building Multi VPN Controller
 
 ## Rebuild the current source
 
@@ -6,7 +6,7 @@ From the repository root:
 
 ```bash
 mkdir -p dist
-./source/build/build-v240-monolith.sh ./dist/ubs-vpn
+./source/build/build-mvc-monolith.sh ./dist/mvc
 ```
 
 The builder validates every declared runtime input against `source/build/monolith-runtime.manifest`, embeds the required resources, and emits one readable Bash executable.
@@ -14,15 +14,15 @@ The builder validates every declared runtime input against `source/build/monolit
 A second build from the same source should be byte-for-byte identical:
 
 ```bash
-./source/build/build-v240-monolith.sh /tmp/ubs-vpn.a
-./source/build/build-v240-monolith.sh /tmp/ubs-vpn.b
-cmp /tmp/ubs-vpn.a /tmp/ubs-vpn.b
-sha256sum /tmp/ubs-vpn.a /tmp/ubs-vpn.b
+./source/build/build-mvc-monolith.sh /tmp/mvc.a
+./source/build/build-mvc-monolith.sh /tmp/mvc.b
+cmp /tmp/mvc.a /tmp/mvc.b
+sha256sum /tmp/mvc.a /tmp/mvc.b
 ```
 
 ## Development workflow
 
-Do not edit `dist/ubs-vpn` directly. Make changes in the modular source tree, then:
+Do not edit `dist/mvc` directly. Make changes in the modular source tree, then:
 
 1. update the SHA-256 entry for each intentionally changed manifest input;
 2. update version/provenance in the builder when producing a new release candidate;
@@ -36,6 +36,6 @@ Changing any production input creates a different release artifact. Physical val
 
 `source/build/monolith-runtime.manifest` is the authoritative ordered composition contract. Later Bash definitions may intentionally override earlier definitions; module order therefore matters and must not be casually rearranged.
 
-## Historical filenames
+## Internal compatibility names
 
-Some internal source filenames retain `v240` or older implementation identifiers for compatibility with the audited composition. They are internal names and do not indicate that the generated controller reports version 2.4.0.
+Some audited internal source filenames and Bash symbols retain legacy 2.4.x identifiers. They are implementation details and do not change the public product name, executable name, or reported version.

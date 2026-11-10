@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# UBS VPN Controller v2.4.0: final public combined-mode release.
+# Multi VPN Controller 2.4.x: public dispatcher (legacy internal namespace retained).
 # Public v2.4.0 compatibility dispatcher. Combined, OpenVPN-only and standalone
 # protected WireGuard are admitted through separately authenticated coordinators.
 # WireGuard-only --split is admitted through its standalone compatibility coordinator.
 
-ubs24e_error() { printf 'UBS VPN Controller v2.4.0: %s\n' "$*" >&2; }
+ubs24e_error() { printf 'Multi VPN Controller: %s\n' "$*" >&2; }
 
 # This constant must only be changed when the connection and disconnection
 # paths have had full activation/rollback and real-network validation. No
@@ -30,7 +30,7 @@ ubs24e_preflight_adapter() {
     ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
     if ubs24pubc_preflight_readonly "$1" "$3"; then
         printf '%s\n' 'PASS: exact public combined-mode read-only admission'
-        printf '%s\n' 'RESULT: READ-ONLY UBS VPN V2.4.0 COMBINED SESSION ELIGIBLE — NO HOST CHANGES'
+        printf '%s\n' 'RESULT: READ-ONLY MVC COMBINED SESSION ELIGIBLE — NO HOST CHANGES'
         return 0
     fi
     ubs24e_error "Preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
@@ -42,7 +42,7 @@ ubs24e_dispatch() {
     case "$verb" in
         version|--version)
             (( $# == 1 )) || return 2
-            printf '%s\n' 'UBS VPN Controller 2.4.1'
+            printf '%s\n' 'Multi VPN Controller 2.4.1'
             ;;
         preflight)
             # Explicit read-only admission verb; v2.3.0 is not involved.
@@ -58,7 +58,7 @@ ubs24e_dispatch() {
                 if [[ $single_kind == wireguard ]]; then
                     if ubs24gwg_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: exact public WireGuard-only protected read-only admission'
-                        printf '%s\n' 'RESULT: READ-ONLY UBS VPN V2.4.0 WIREGUARD PROTECTED SESSION ELIGIBLE — NO HOST CHANGES'
+                        printf '%s\n' 'RESULT: READ-ONLY MVC WIREGUARD PROTECTED SESSION ELIGIBLE — NO HOST CHANGES'
                         return 0
                     fi
                     ubs24e_error "WireGuard-only protected preflight failed at stage: ${UBS24GWG_STAGE:-unverified}"
@@ -66,7 +66,7 @@ ubs24e_dispatch() {
                 fi
                 if ubs24pubc_preflight_openvpn_readonly "$UBS24_PRIMARY_PROFILE"; then
                     printf '%s\n' 'PASS: exact public OpenVPN-only read-only admission'
-                    printf '%s\n' 'RESULT: READ-ONLY UBS VPN V2.4.0 OPENVPN SESSION ELIGIBLE — NO HOST CHANGES'
+                    printf '%s\n' 'RESULT: READ-ONLY MVC OPENVPN SESSION ELIGIBLE — NO HOST CHANGES'
                     return 0
                 fi
                 ubs24e_error "OpenVPN-only preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
@@ -84,14 +84,14 @@ ubs24e_dispatch() {
                 [[ $split_kind == wireguard ]] || { ubs24e_error '--split is supported only for WireGuard.'; return 2; }
                 if ubs24gws_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
                     printf '%s\n' 'PASS: exact public WireGuard-only split read-only admission'
-                    printf '%s\n' 'RESULT: READ-ONLY UBS VPN V2.4.0 WIREGUARD SPLIT SESSION ELIGIBLE — NO HOST CHANGES'
+                    printf '%s\n' 'RESULT: READ-ONLY MVC WIREGUARD SPLIT SESSION ELIGIBLE — NO HOST CHANGES'
                     return 0
                 fi
                 ubs24e_error "WireGuard-only split preflight failed at stage: ${UBS24GWS_STAGE:-unverified}"
                 return 1
             fi
             (( $# == 4 )) && [[ "$3" == --split ]] || {
-                ubs24e_error 'Usage: vpn-v240 preflight OPENVPN | preflight WIREGUARD | preflight WIREGUARD --split | preflight WIREGUARD --split OPENVPN'
+                ubs24e_error 'Usage: mvc preflight OPENVPN | preflight WIREGUARD | preflight WIREGUARD --split | preflight WIREGUARD --split OPENVPN'
                 return 2
             }
             ubs24_parse_command connect "$2" "$3" "$4" || return $?

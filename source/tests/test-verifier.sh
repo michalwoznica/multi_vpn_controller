@@ -3,7 +3,7 @@ set -euo pipefail
 export LC_ALL=C
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
-TOOL="$ROOT/tools/verify-v240-state-readonly.sh"
+TOOL="$ROOT/tools/verify-mvc-state-readonly.sh"
 TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/bin"

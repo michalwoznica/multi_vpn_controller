@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Multi VPN Controller 2.4.1 — public modular entrypoint.
+# Public MVC command surface with v2.4.1 partial-dropout reconciliation.
+# Legacy internal implementation identifiers are intentionally retained for this refactor.
+set -euo pipefail
+umask 077
+export LC_ALL=C
+UBS24E_CODE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P) || exit 1
+readonly UBS24E_CODE_ROOT
+# shellcheck source=../lib/combined-controller-wiring.sh
+source "$UBS24E_CODE_ROOT/lib/combined-controller-wiring.sh" || exit 1
+ubs24e_dispatch "$@"

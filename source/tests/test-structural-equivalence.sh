@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# C23BN Stage 4 — structural/runtime equivalence proof for generated dist/ubs-vpn.
+# C23BN Stage 4 — structural/runtime equivalence proof for generated dist/mvc.
 set -euo pipefail
 umask 077
 export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
-MONOLITH=$ROOT/dist/ubs-vpn
-BUILDER=$ROOT/source/build/build-v240-monolith.sh
+MONOLITH=$ROOT/dist/mvc
+BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 PASS=0
 FAIL=0
@@ -19,8 +19,8 @@ trap 'rm -rf -- "$TMP"' EXIT
 
 # The checked-in artifact must still be exactly reproducible before any
 # equivalence claim is made about it.
-"$BUILDER" "$TMP/rebuilt-ubs-vpn" >/dev/null
-if cmp -s -- "$MONOLITH" "$TMP/rebuilt-ubs-vpn"; then
+"$BUILDER" "$TMP/rebuilt-mvc" >/dev/null
+if cmp -s -- "$MONOLITH" "$TMP/rebuilt-mvc"; then
     ok 'checked-in monolith is byte-identical to a fresh deterministic build'
 else
     bad 'checked-in monolith is byte-identical to a fresh deterministic build'
@@ -124,7 +124,7 @@ ROOT="$ROOT" LIST="$COMPARE" OUT="$TMP/modular-functions" bash -c '
 ROOT="$ROOT" LIST="$COMPARE" OUT="$TMP/generated-functions" bash -c '
     set -e
     set -- --help
-    source "$ROOT/dist/ubs-vpn" >/dev/null
+    source "$ROOT/dist/mvc" >/dev/null
     while IFS= read -r fn; do
         declare -F "$fn" >/dev/null || exit 3
         declare -f "$fn" > "$OUT/$fn"
@@ -198,11 +198,11 @@ done
 # The artifact must remain usable for non-lifecycle commands when copied alone,
 # with no sibling project tree.
 mkdir -m 700 "$TMP/isolated" "$TMP/isolated/resources"
-cp -- "$MONOLITH" "$TMP/isolated/ubs-vpn"
-chmod 755 "$TMP/isolated/ubs-vpn"
-if [[ $($TMP/isolated/ubs-vpn version) == 'UBS VPN Controller 2.4.1' ]] &&
-   "$TMP/isolated/ubs-vpn" --help | grep -Fq 'WireGuard-only split' &&
-   "$TMP/isolated/ubs-vpn" --monolith-resource-selftest "$TMP/isolated/resources" >/dev/null &&
+cp -- "$MONOLITH" "$TMP/isolated/mvc"
+chmod 755 "$TMP/isolated/mvc"
+if [[ $($TMP/isolated/mvc version) == 'Multi VPN Controller 2.4.1' ]] &&
+   "$TMP/isolated/mvc" --help | grep -Fq 'WireGuard-only split' &&
+   "$TMP/isolated/mvc" --monolith-resource-selftest "$TMP/isolated/resources" >/dev/null &&
    cmp -s -- "$TMP/isolated/resources/gvariant-settings-to-json.awk" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&
    cmp -s -- "$TMP/isolated/resources/preclone-quarantine.nft" "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft"; then
     ok 'isolated monolith needs no sibling lib/tools/nftables tree for metadata/help/embedded resources'

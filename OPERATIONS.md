@@ -3,10 +3,10 @@
 ## Read-only commands
 
 ```bash
-sudo ubs-vpn list
-sudo ubs-vpn status
-sudo ubs-vpn verify
-sudo ubs-vpn verify --no-internet-check
+sudo mvc list
+sudo mvc status
+sudo mvc verify
+sudo mvc verify --no-internet-check
 ```
 
 `status` is deliberately conservative and does not grant lifecycle authority. `verify` reports observed NetworkManager state, managed links, routes, DNS, guard tables and runtime roots.
@@ -15,16 +15,16 @@ sudo ubs-vpn verify --no-internet-check
 
 ```bash
 # OpenVPN only
-sudo ubs-vpn connect <openvpn-profile>
+sudo mvc connect <openvpn-profile>
 
 # WireGuard protected
-sudo ubs-vpn connect <wireguard-profile>
+sudo mvc connect <wireguard-profile>
 
 # WireGuard split
-sudo ubs-vpn connect <wireguard-profile> --split
+sudo mvc connect <wireguard-profile> --split
 
 # Combined OpenVPN + split WireGuard
-sudo ubs-vpn connect <wireguard-profile> --split <openvpn-profile>
+sudo mvc connect <wireguard-profile> --split <openvpn-profile>
 ```
 
 Use `preflight` with the same arguments before a connection when you want a read-only admission check.
@@ -32,10 +32,10 @@ Use `preflight` with the same arguments before a connection when you want a read
 ## Disconnecting
 
 ```bash
-sudo ubs-vpn disconnect
+sudo mvc disconnect
 ```
 
-Disconnect authenticates exact same-boot ownership from the controller's runtime records before mutation.
+Disconnect authenticates exact same-boot ownership from MVC runtime records before mutation.
 
 In 2.4.1, a published combined session can also be reconciled when one tunnel has already disappeared. The intended operator workflow is:
 
@@ -48,15 +48,15 @@ No automatic reconnect or watchdog is provided.
 ## Recovery inspection
 
 ```bash
-sudo /root/ubs-v240-dual-recovery --inspect
-sudo /root/ubs-v240-emergency-rollback --inspect
+sudo /root/mvc-dual-recovery --inspect
+sudo /root/mvc-emergency-rollback --inspect
 ```
 
 Use a recovery mutation only when its inspector authenticates the corresponding owned residue. The independent recovery tools deliberately have narrower authority than the main controller.
 
 ## NetworkManager route refresh
 
-On some NetworkManager configurations a physical default route may temporarily retain a raised metric after a protected session has otherwise been retired. If all UBS-managed state is gone, NetworkManager can be asked to reevaluate connectivity:
+On some NetworkManager configurations a physical default route may temporarily retain a raised metric after a protected session has otherwise been retired. If all MVC-managed state is gone, NetworkManager can be asked to reevaluate connectivity:
 
 ```bash
 nmcli networking connectivity check

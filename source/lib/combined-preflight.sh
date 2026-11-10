@@ -2,7 +2,7 @@
 # UBS VPN Controller v2.4.0 Phase C: read-only preflight helpers.
 # NO kernel mutations, no profile modifications, no credentials printed.
 # Source lib/dual-session.sh first.
-ubs24c_error() { printf 'UBS combined preflight: %s\n' "$*" >&2; return 1; }
+ubs24c_error() { printf 'MVC combined preflight: %s\n' "$*" >&2; return 1; }
 
 ubs24c_ip_number() {
     local addr=$1 a b c d

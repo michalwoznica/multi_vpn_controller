@@ -2,11 +2,14 @@
 
 ## 2.4.1
 
+- Adopt the **Multi VPN Controller** product identity and the `mvc` command.
+- Generate the release artifact as `dist/mvc` and install it as `/usr/local/sbin/mvc`.
+- Publish independent recovery tools as `/root/mvc-emergency-rollback` and `/root/mvc-dual-recovery`.
 - Allow authenticated `disconnect` to reconcile a published combined session when OpenVPN has disappeared while WireGuard survives.
 - Allow authenticated `disconnect` to reconcile the inverse case where WireGuard has disappeared while OpenVPN remains healthy.
 - Preserve same-boot ownership authentication and fail-closed behavior; no automatic reconnect or watchdog was added.
 - Make the read-only verifier profile-driven instead of probing hard-coded private destinations.
-- Add a public-tree sanitization regression and separate private development handoff material from the Git-facing source tree.
+- Keep private development handoff material separate from the Git-facing source tree.
 
 ## 2.4.0
 
