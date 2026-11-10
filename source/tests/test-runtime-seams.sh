@@ -152,7 +152,7 @@ if ! preview_case preview-reject; then ok 'internal preview rejects unsupported 
 
 # C4 final definitions must be monolith-native and independent of source-root.
 if ! declare -f mvc24gc4_recovery_installed | grep -Eq 'MVC24GC4_SOURCE_ROOT|cmp -s'; then ok 'C4 recovery identity has no sibling source dependency'; else bad 'C4 recovery identity has no sibling source dependency'; fi
-if ! declare -f mvc24gc4_source_preview | grep -Eq 'check-v240-live-saved-ovpn-readonly|MVC24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
+if ! declare -f mvc24gc4_source_preview | grep -Eq 'check-mvc-live-saved-ovpn-readonly|MVC24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
 
 # Fresh-process initialization should prepare only embedded runtime assets and
 # leave the obsolete modular source-root binding empty.

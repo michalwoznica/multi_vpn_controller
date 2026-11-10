@@ -29,6 +29,7 @@ TESTS=(
   test-dead-combined-state-removal.sh
   test-support-resource-filenames.sh
   test-runtime-module-filenames.sh
+  test-final-legacy-compatibility-audit.sh
 )
 
 passed=0

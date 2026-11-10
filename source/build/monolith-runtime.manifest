@@ -58,4 +58,4 @@ INTEGRATE|verify|85366d00291bd462083438e9a538c684a2ec83724cf8db0cfac5926488da430
 EXTERNAL_RECOVERY|emergency|b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
 EXTERNAL_RECOVERY|dual|211b68fc610ea8e184ab5ee2f0b8a1b7d79c9389323714dceec2a7ccf05f99cc|source/tools/recover-mvc-dual-local.sh|installed=/root/mvc-dual-recovery;remain-independent;main-help-must-document
 EXCLUDE|loader|fa76a70e49a929b830b1cc6b22298151775a1c68affee20bb8cb72569588e101|source/lib/combined-controller-wiring.sh|loader-only;must-not-appear-in-monolith-body
-EXCLUDE|loader|efe2a62b2eadc2760fc5ce71a6ec995b5ee33f537f8392de8ab3a343db7d7d23|source/lib/combined-operational-public-composition.sh|loader-only;must-not-appear-in-monolith-body
+EXCLUDE|loader|a1c6a95b668b596972a3197747f9e6b101b2ea5d50d919b514dd19c3846b6c16|source/lib/combined-operational-public-composition.sh|loader-only;must-not-appear-in-monolith-body

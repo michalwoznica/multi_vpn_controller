@@ -65,7 +65,7 @@ mvc24pub_source_module() {
     source "$MVC24E_CODE_ROOT/lib/$module.sh"
 }
 
-# Reproduce accept-v240-dual-session-c23ar-local.sh's proven source ordering.
+# Preserve the proven public combined-session source ordering.
 # The private wrapper sources C4/preflight/NM backend immediately before the
 # final composition file, so the final composition's admission witnesses win.
 while IFS= read -r mvc24pub_module; do

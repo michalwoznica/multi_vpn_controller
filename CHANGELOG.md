@@ -1,5 +1,7 @@
 # Changelog
 
+- Complete final public-tree legacy compatibility audit; confine predecessor naming to installer migration compatibility, regression fixtures, and changelog history.
+
 ## 2.4.1
 - Rename the eight remaining `v240` runtime/loader module filenames to version-neutral names, updating only manifest/build/loader/test path references.
 
