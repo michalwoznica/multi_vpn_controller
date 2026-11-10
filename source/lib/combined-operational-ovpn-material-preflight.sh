@@ -5,29 +5,29 @@
 # are observations only, NEVER authority for clone, firewall or activation.
 
 mvc24op_material_reset() {
-    UBS24OP_MATERIAL_CA=unassessed
-    UBS24OP_MATERIAL_TLS_CRYPT=unassessed
-    UBS24OP_MATERIAL_NAME_CHECK=unassessed
-    UBS24OP_MATERIAL_SERVER_CERT=unassessed
-    UBS24OP_MATERIAL_OTHER_FLAGS=unassessed
-    UBS24OP_MATERIAL_STATE=unverified
+    MVC24OP_MATERIAL_CA=unassessed
+    MVC24OP_MATERIAL_TLS_CRYPT=unassessed
+    MVC24OP_MATERIAL_NAME_CHECK=unassessed
+    MVC24OP_MATERIAL_SERVER_CERT=unassessed
+    MVC24OP_MATERIAL_OTHER_FLAGS=unassessed
+    MVC24OP_MATERIAL_STATE=unverified
 }
 
-# Return only safe static labels in UBS24OP_MATERIAL_REF. Paths may be private
+# Return only safe static labels in MVC24OP_MATERIAL_REF. Paths may be private
 # and are kept inside this function; they are never printed or exported.
 mvc24op_material_reference() {
-    UBS24OP_MATERIAL_REF=unassessed
+    MVC24OP_MATERIAL_REF=unassessed
     (( $# == 2 )) || return 1
     local file=$1 key=$2 value
     case $key in ca|tls-crypt) ;; *) return 1 ;; esac
     if ! jq -e --arg key "$key" '.data[0].vpn.data.data | has($key)' "$file" >/dev/null 2>&1; then
-        UBS24OP_MATERIAL_REF=absent
+        MVC24OP_MATERIAL_REF=absent
         return 0
     fi
     if ! jq -e --arg key "$key" '
         .data[0].vpn.data.data[$key] | type == "string"
     ' "$file" >/dev/null 2>&1; then
-        UBS24OP_MATERIAL_REF=unsupported-reference
+        MVC24OP_MATERIAL_REF=unsupported-reference
         return 0
     fi
     value=$(jq -r --arg key "$key" '.data[0].vpn.data.data[$key]' "$file") || return 1
@@ -38,19 +38,19 @@ mvc24op_material_reference() {
         length > 0 and length <= 4096 and
         (explode | all(. >= 32 and . != 127))
     ' "$file" >/dev/null 2>&1; then
-        UBS24OP_MATERIAL_REF=unsupported-reference
+        MVC24OP_MATERIAL_REF=unsupported-reference
     elif [[ $value != /* ]]; then
-        UBS24OP_MATERIAL_REF=nonabsolute-or-inline
+        MVC24OP_MATERIAL_REF=nonabsolute-or-inline
     elif [[ -L $value ]]; then
-        UBS24OP_MATERIAL_REF=symlink-reference
+        MVC24OP_MATERIAL_REF=symlink-reference
     elif [[ ! -e $value ]]; then
-        UBS24OP_MATERIAL_REF=missing-or-inaccessible
+        MVC24OP_MATERIAL_REF=missing-or-inaccessible
     elif [[ ! -f $value ]]; then
-        UBS24OP_MATERIAL_REF=nonregular
+        MVC24OP_MATERIAL_REF=nonregular
     elif [[ -r $value ]]; then
-        UBS24OP_MATERIAL_REF=regular-readable-by-caller
+        MVC24OP_MATERIAL_REF=regular-readable-by-caller
     else
-        UBS24OP_MATERIAL_REF=regular-not-readable-by-caller
+        MVC24OP_MATERIAL_REF=regular-not-readable-by-caller
     fi
 }
 
@@ -69,9 +69,9 @@ mvc24op_material_preflight() {
     ' "$file" >/dev/null 2>&1 || return 1
 
     mvc24op_material_reference "$file" ca || return 1
-    UBS24OP_MATERIAL_CA=$UBS24OP_MATERIAL_REF
+    MVC24OP_MATERIAL_CA=$MVC24OP_MATERIAL_REF
     mvc24op_material_reference "$file" tls-crypt || return 1
-    UBS24OP_MATERIAL_TLS_CRYPT=$UBS24OP_MATERIAL_REF
+    MVC24OP_MATERIAL_TLS_CRYPT=$MVC24OP_MATERIAL_REF
 
     # Preserve all vendor options in the projection, but NEVER silently
     # interpret unknown *-flags as an available credential or clone authority.
@@ -88,7 +88,7 @@ mvc24op_material_preflight() {
         else "unmapped-unsupported-values" end
     ' "$file" 2>/dev/null) || return 1
     case $classification in
-        none|unmapped-known-bitfields|unmapped-unsupported-values) UBS24OP_MATERIAL_OTHER_FLAGS=$classification ;;
+        none|unmapped-known-bitfields|unmapped-unsupported-values) MVC24OP_MATERIAL_OTHER_FLAGS=$classification ;;
         *) return 1 ;;
     esac
     classification=$(jq -er '
@@ -97,14 +97,14 @@ mvc24op_material_preflight() {
         elif $d["remote-cert-tls"] == "server" then "server"
         else "other-or-unsupported" end
     ' "$file" 2>/dev/null) || return 1
-    case $classification in absent|server|other-or-unsupported) UBS24OP_MATERIAL_SERVER_CERT=$classification ;; *) return 1 ;; esac
+    case $classification in absent|server|other-or-unsupported) MVC24OP_MATERIAL_SERVER_CERT=$classification ;; *) return 1 ;; esac
     classification=$(jq -er '
         .data[0].vpn.data.data as $d |
         if ($d|has("verify-x509-name")) or ($d|has("tls-remote"))
            then "name-check-reference-present" else "no-name-check-reference" end
     ' "$file" 2>/dev/null) || return 1
-    case $classification in name-check-reference-present|no-name-check-reference) UBS24OP_MATERIAL_NAME_CHECK=$classification ;; *) return 1 ;; esac
-    UBS24OP_MATERIAL_STATE=metadata-only-not-admitting
+    case $classification in name-check-reference-present|no-name-check-reference) MVC24OP_MATERIAL_NAME_CHECK=$classification ;; *) return 1 ;; esac
+    MVC24OP_MATERIAL_STATE=metadata-only-not-admitting
 }
 
 mvc24op_material_authorize_nm_write() { return 1; }

@@ -9,10 +9,10 @@
 # This module has no environmental authority switches or alternate runtime path.
 
 mvc24gb2_reset() {
-    UBS24GB2_STAGE=unverified
-    UBS24GB2_AUTHORITY=none
-    UBS24GB2_FD=''
-    UBS24GB2_ATTEMPTED=no
+    MVC24GB2_STAGE=unverified
+    MVC24GB2_AUTHORITY=none
+    MVC24GB2_FD=''
+    MVC24GB2_ATTEMPTED=no
 }
 
 mvc24gb2_runtime() { printf '%s\n' /run/mvc-controller; }
@@ -51,10 +51,10 @@ mvc24gb2_runtime_shape() {
 }
 
 mvc24gb2_lock_valid() {
-    (( $# == 0 )) && [[ ${UBS24GB2_FD:-} =~ ^[0-9]+$ ]] || return 1
+    (( $# == 0 )) && [[ ${MVC24GB2_FD:-} =~ ^[0-9]+$ ]] || return 1
     local dir
     dir=$(mvc24gb2_runtime) || return 1
-    [[ $(stat -Lc '%d:%i' -- "/proc/self/fd/$UBS24GB2_FD") == \
+    [[ $(stat -Lc '%d:%i' -- "/proc/self/fd/$MVC24GB2_FD") == \
        "$(stat -c '%d:%i' -- "$dir/controller.lock")" ]]
 }
 
@@ -206,8 +206,8 @@ mvc24gb2_derive_iface() {
 # attested deny-all protection: NOT an activation-ready VPN firewall policy.
 mvc24gb2_attest() {
     (( $# == 0 )) || return 1
-    UBS24GB2_STAGE=blocked-unverified
-    UBS24GB2_AUTHORITY=none
+    MVC24GB2_STAGE=blocked-unverified
+    MVC24GB2_AUTHORITY=none
     local dir scratch first second links r4 r6 iface foreign_before foreign_after
     dir=$(mvc24gb2_runtime) || return 1
     mvc24gb2_records_valid || return 1
@@ -237,18 +237,18 @@ mvc24gb2_attest() {
     fi
     rm -f -- "$first" "$second" "$links" "$r4" "$r6" || return 1
     rmdir -- "$scratch" || return 1
-    UBS24GB2_STAGE=host-deny-all-attested-observation-only
+    MVC24GB2_STAGE=host-deny-all-attested-observation-only
 }
 
 mvc24gb2_reopen() {
     (( $# == 0 )) || return 1
-    [[ -z ${UBS24GB2_FD:-} ]] || return 1
+    [[ -z ${MVC24GB2_FD:-} ]] || return 1
     local dir fd
     dir=$(mvc24gb2_runtime) || return 1
     mvc24gb2_root_scope && mvc24gb2_runtime_shape || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
-    UBS24GB2_FD=$fd
+    MVC24GB2_FD=$fd
     if ! mvc24gb2_attest; then
         mvc24gb2_close
         return 1
@@ -256,21 +256,21 @@ mvc24gb2_reopen() {
 }
 
 mvc24gb2_close() {
-    if [[ ${UBS24GB2_FD:-} =~ ^[0-9]+$ ]]; then
-        exec {UBS24GB2_FD}>&- || :
+    if [[ ${MVC24GB2_FD:-} =~ ^[0-9]+$ ]]; then
+        exec {MVC24GB2_FD}>&- || :
     fi
-    UBS24GB2_FD=''
-    UBS24GB2_STAGE=unverified
-    UBS24GB2_AUTHORITY=none
+    MVC24GB2_FD=''
+    MVC24GB2_STAGE=unverified
+    MVC24GB2_AUTHORITY=none
 }
 
 mvc24gb2_install_once() {
     (( $# == 2 )) || return 1
     local iface=$1 base=$2 dir scratch file fd stamp first second
-    [[ ${UBS24GB2_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GB2_ATTEMPTED=yes
-    UBS24GB2_STAGE=blocked-unverified
-    UBS24GB2_AUTHORITY=none
+    [[ ${MVC24GB2_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GB2_ATTEMPTED=yes
+    MVC24GB2_STAGE=blocked-unverified
+    MVC24GB2_AUTHORITY=none
     mvc24gb2_root_scope && mvc24gb1_valid_ifname "$iface" || return 1
     dir=$(mvc24gb2_runtime) || return 1
     [[ ! -e $dir && ! -L $dir ]] || return 1
@@ -292,7 +292,7 @@ mvc24gb2_install_once() {
     (umask 077; set -C; : > "$dir/controller.lock") || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     flock -n "$fd" || return 1
-    UBS24GB2_FD=$fd
+    MVC24GB2_FD=$fd
     [[ $(stat -c '%u:%a:%h' -- "$dir/controller.lock") == '0:600:1' ]] || return 1
     # Revalidate kernel and routing while holding the exclusive lock.
     mvc24gb1_capture_nft "$scratch/locked-nft" || return 1
@@ -327,10 +327,10 @@ mvc24gb2_install_once() {
     rm -f -- "$stamp" || return 1
     mvc24gb2_records_valid || return 1
     # From here ANY error is ambiguous; NEVER retry or automatically delete.
-    UBS24GB2_STAGE=commit-attempted-uncertain
+    MVC24GB2_STAGE=commit-attempted-uncertain
     nft --file "$dir/batch.nft" >/dev/null 2>&1 || return 1
     mvc24gb2_attest || return 1
-    UBS24GB2_STAGE=host-deny-all-attested-observation-only
+    MVC24GB2_STAGE=host-deny-all-attested-observation-only
     # Scratch contains only read-only observations. No guard/journal deletion.
     for file in nft1 nft2 links1 links2 route4a route4b route6a route6b batch locked-nft locked-links locked-route4 locked-route6; do
         rm -f -- "$scratch/$file" || return 1

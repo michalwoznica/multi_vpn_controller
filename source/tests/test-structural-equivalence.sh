@@ -113,7 +113,7 @@ grep -Ev '^(mvc24gs_capture_settings|mvc24gb2_batch_valid|mvc24gc3_execute_once|
 mkdir -m 700 "$TMP/modular-functions" "$TMP/generated-functions"
 ROOT="$ROOT" LIST="$COMPARE" OUT="$TMP/modular-functions" bash -c '
     set -e
-    export UBS24E_CODE_ROOT="$ROOT/source"
+    export MVC24E_CODE_ROOT="$ROOT/source"
     source "$ROOT/source/lib/combined-operational-public-v240-composition.sh"
     source "$ROOT/source/lib/combined-controller-entry.sh"
     while IFS= read -r fn; do

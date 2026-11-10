@@ -6,7 +6,7 @@
 # Read-only: no NetworkManager, D-Bus, nftables, route, DNS or file writes.
 
 mvc24op_session_nm_identity() {
-    UBS24OP_SESSION_NM_IDENTITY=''
+    MVC24OP_SESSION_NM_IDENTITY=''
     (( $# == 0 )) || return 1
     local initial final pid_reply uid_reply owner pid uid
     local owner_re='^s "(:[0-9]+\.[0-9]+)"$'
@@ -26,5 +26,5 @@ mvc24op_session_nm_identity() {
     final=$(mvc24g_call_readonly org.freedesktop.DBus /org/freedesktop/DBus \
         org.freedesktop.DBus GetNameOwner s org.freedesktop.NetworkManager s) || return 1
     [[ $initial == "$final" ]] || return 1
-    UBS24OP_SESSION_NM_IDENTITY="$owner|$pid|$uid"
+    MVC24OP_SESSION_NM_IDENTITY="$owner|$pid|$uid"
 }

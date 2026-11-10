@@ -13,7 +13,7 @@
 # live integration; configurable paths below exist only for offline fixtures.
 
 mvc24ag2d_parse_direct_resolv() {
-    UBS24AG2D_SERVERS=()
+    MVC24AG2D_SERVERS=()
     (( $# == 1 )) || return 1
     local file=$1 line token count=0
     local -a words=() servers=()
@@ -41,7 +41,7 @@ mvc24ag2d_parse_direct_resolv() {
         esac
     done < "$file"
     (( ${#servers[@]} >= 1 )) || return 1
-    UBS24AG2D_SERVERS=("${servers[@]}")
+    MVC24AG2D_SERVERS=("${servers[@]}")
 }
 
 # Read-only, init-system-neutral evidence for the Arch NSS conditional rule.
@@ -61,7 +61,7 @@ mvc24ag2d_resolve_unavailable() {
 
 mvc24ag2d_parse_hosts_nss() {
     (( $# == 1 )) || return 1
-    UBS24AG2D_NSS_MODE=''
+    MVC24AG2D_NSS_MODE=''
     local file=$1 line count=0 hosts=0
     local -a words=()
     [[ $file == /* && -f $file && -r $file ]] || return 1
@@ -75,23 +75,23 @@ mvc24ag2d_parse_hosts_nss() {
         (( ++hosts == 1 )) || return 1
         if (( ${#words[@]} == 3 )) &&
            [[ ${words[1]} == files && ${words[2]} == dns ]]; then
-            UBS24AG2D_NSS_MODE=strict-direct
+            MVC24AG2D_NSS_MODE=strict-direct
         elif (( ${#words[@]} == 7 )) &&
              [[ ${words[1]} == mymachines && ${words[2]} == resolve &&
                 ${words[3]} == '[!UNAVAIL=return]' && ${words[4]} == files &&
                 ${words[5]} == myhostname && ${words[6]} == dns ]]; then
-            UBS24AG2D_NSS_MODE=arch-conditional
+            MVC24AG2D_NSS_MODE=arch-conditional
         else
             return 1
         fi
     done < "$file"
-    (( hosts == 1 )) && [[ -n $UBS24AG2D_NSS_MODE ]]
+    (( hosts == 1 )) && [[ -n $MVC24AG2D_NSS_MODE ]]
 }
 
 # Bind both content and resolved filesystem object identity, catching symlink
 # retargeting even if the replacement has identical contents.  No writes.
 mvc24ag2d_file_identity() {
-    UBS24AG2D_FILE_ID=''
+    MVC24AG2D_FILE_ID=''
     (( $# == 1 )) || return 1
     local file=$1 real metadata digest
     [[ $file == /* && -f $file && -r $file ]] || return 1
@@ -101,64 +101,64 @@ mvc24ag2d_file_identity() {
     digest=$(sha256sum -- "$file") || return 1
     digest=${digest%% *}
     [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
-    UBS24AG2D_FILE_ID="$real|$metadata|$digest"
+    MVC24AG2D_FILE_ID="$real|$metadata|$digest"
 }
 
 mvc24ag2d_capture_host_dns() {
-    UBS24AG2D_CAPTURE=''
-    UBS24AG2D_DETAIL_STAGE=argument-check
+    MVC24AG2D_CAPTURE=''
+    MVC24AG2D_DETAIL_STAGE=argument-check
     (( $# == 2 )) || return 1
     local resolv=$1 nss=$2 rbefore rafter nbefore nafter server
     local -a expected=() observed=()
-    UBS24AG2D_DETAIL_STAGE=dependency-check
+    MVC24AG2D_DETAIL_STAGE=dependency-check
     for server in wg23_validate_ipv4 mvc24d_get_vpn_resolver mvc24d_tunnel_source_for; do
         declare -F -- "$server" >/dev/null || return 1
     done
-    UBS24AG2D_DETAIL_STAGE=resolv-identity-before
-    mvc24ag2d_file_identity "$resolv" || return 1; rbefore=$UBS24AG2D_FILE_ID
-    UBS24AG2D_DETAIL_STAGE=nss-identity-before
-    mvc24ag2d_file_identity "$nss" || return 1; nbefore=$UBS24AG2D_FILE_ID
-    UBS24AG2D_DETAIL_STAGE=nss-parse
+    MVC24AG2D_DETAIL_STAGE=resolv-identity-before
+    mvc24ag2d_file_identity "$resolv" || return 1; rbefore=$MVC24AG2D_FILE_ID
+    MVC24AG2D_DETAIL_STAGE=nss-identity-before
+    mvc24ag2d_file_identity "$nss" || return 1; nbefore=$MVC24AG2D_FILE_ID
+    MVC24AG2D_DETAIL_STAGE=nss-parse
     mvc24ag2d_parse_hosts_nss "$nss" || return 1
-    local mode=$UBS24AG2D_NSS_MODE
+    local mode=$MVC24AG2D_NSS_MODE
     if [[ $mode == arch-conditional ]]; then
-        UBS24AG2D_DETAIL_STAGE=resolved-unavailable-before
+        MVC24AG2D_DETAIL_STAGE=resolved-unavailable-before
         mvc24ag2d_resolve_unavailable || return 1
     fi
-    UBS24AG2D_DETAIL_STAGE=resolv-parse
+    MVC24AG2D_DETAIL_STAGE=resolv-parse
     mvc24ag2d_parse_direct_resolv "$resolv" || return 1
-    observed=("${UBS24AG2D_SERVERS[@]}")
-    UBS24AG2D_DETAIL_STAGE=vpn-dns-discovery
+    observed=("${MVC24AG2D_SERVERS[@]}")
+    MVC24AG2D_DETAIL_STAGE=vpn-dns-discovery
     mvc24d_get_vpn_resolver || return 1
-    expected=("${UBS24D_VPN_DNS[@]}")
-    UBS24AG2D_DETAIL_STAGE=dns-count-match
+    expected=("${MVC24D_VPN_DNS[@]}")
+    MVC24AG2D_DETAIL_STAGE=dns-count-match
     (( ${#expected[@]} >= 1 && ${#expected[@]} <= 3 &&
        ${#observed[@]} == ${#expected[@]} )) || return 1
     for ((server=0; server<${#expected[@]}; server++)); do
-        UBS24AG2D_DETAIL_STAGE="dns-value-match-$((server + 1))"
+        MVC24AG2D_DETAIL_STAGE="dns-value-match-$((server + 1))"
         [[ ${expected[server]} == "${observed[server]}" ]] || return 1
-        UBS24AG2D_DETAIL_STAGE="dns-route-verify-$((server + 1))"
+        MVC24AG2D_DETAIL_STAGE="dns-route-verify-$((server + 1))"
         mvc24d_tunnel_source_for "${expected[server]}" || return 1
     done
-    UBS24AG2D_DETAIL_STAGE=resolv-identity-after
-    mvc24ag2d_file_identity "$resolv" || return 1; rafter=$UBS24AG2D_FILE_ID
-    UBS24AG2D_DETAIL_STAGE=nss-identity-after
-    mvc24ag2d_file_identity "$nss" || return 1; nafter=$UBS24AG2D_FILE_ID
+    MVC24AG2D_DETAIL_STAGE=resolv-identity-after
+    mvc24ag2d_file_identity "$resolv" || return 1; rafter=$MVC24AG2D_FILE_ID
+    MVC24AG2D_DETAIL_STAGE=nss-identity-after
+    mvc24ag2d_file_identity "$nss" || return 1; nafter=$MVC24AG2D_FILE_ID
     if [[ $mode == arch-conditional ]]; then
-        UBS24AG2D_DETAIL_STAGE=resolved-unavailable-after
+        MVC24AG2D_DETAIL_STAGE=resolved-unavailable-after
         mvc24ag2d_resolve_unavailable || return 1
     fi
-    UBS24AG2D_DETAIL_STAGE=file-identity-stability
+    MVC24AG2D_DETAIL_STAGE=file-identity-stability
     [[ $rbefore == "$rafter" && $nbefore == "$nafter" ]] || return 1
-    UBS24AG2D_DETAIL_STAGE=complete
-    UBS24AG2D_CAPTURE="$rbefore|$nbefore|$mode|${expected[*]}"
+    MVC24AG2D_DETAIL_STAGE=complete
+    MVC24AG2D_CAPTURE="$rbefore|$nbefore|$mode|${expected[*]}"
 }
 
 mvc24ag2d_observe_host_dns_impl() {
     (( $# == 8 )) || return 1
     local session=$1 state=$2 captures=$3 proc=$4 plugin=$5 openvpn=$6 resolv=$7 nss=$8
     local before state_before owner_before manifest_before
-    [[ ${UBS24S_LOCK_HELD:-} == 1 && $session == /* && $state == /* &&
+    [[ ${MVC24S_LOCK_HELD:-} == 1 && $session == /* && $state == /* &&
        $captures == /* && $proc == /* && $plugin == /* && $openvpn == /* &&
        $resolv == /* && $nss == /* ]] || return 1
     declare -F mvc24ag2s_observe_openvpn_socket_locked >/dev/null || return 1
@@ -168,36 +168,36 @@ mvc24ag2d_observe_host_dns_impl() {
     owner_before=$(sha256sum -- "$session/ownership") || return 1
     manifest_before=$(sha256sum -- "$session/ovpn-effective.json") || return 1
     mvc24ag2d_capture_host_dns "$resolv" "$nss" || return 1
-    before=$UBS24AG2D_CAPTURE
+    before=$MVC24AG2D_CAPTURE
     mvc24ag2s_observe_openvpn_socket_locked "$session" "$state" "$captures" "$proc" "$plugin" "$openvpn" || return 1
-    [[ ${UBS24AG2S_OBSERVED:-} == partial-openvpn-udp-socket-and-nm-route-dns-only ]] || return 1
+    [[ ${MVC24AG2S_OBSERVED:-} == partial-openvpn-udp-socket-and-nm-route-dns-only ]] || return 1
     mvc24ag2d_capture_host_dns "$resolv" "$nss" || return 1
-    [[ $UBS24AG2D_CAPTURE == "$before" ]] || return 1
+    [[ $MVC24AG2D_CAPTURE == "$before" ]] || return 1
     [[ $(sha256sum -- "$state") == "$state_before" &&
        $(sha256sum -- "$session/ownership") == "$owner_before" &&
        $(sha256sum -- "$session/ovpn-effective.json") == "$manifest_before" ]] || return 1
     # The conditional mode is deliberately distinguishable from the strict
     # glibc-only path and NEVER provides activation authority.
-    if [[ $UBS24AG2D_NSS_MODE == arch-conditional ]]; then
-        UBS24AG2D_OBSERVED=partial-conditional-arch-nss-and-openvpn-udp-socket-only
+    if [[ $MVC24AG2D_NSS_MODE == arch-conditional ]]; then
+        MVC24AG2D_OBSERVED=partial-conditional-arch-nss-and-openvpn-udp-socket-only
     else
-        UBS24AG2D_OBSERVED=partial-direct-glibc-dns-and-openvpn-udp-socket-only
+        MVC24AG2D_OBSERVED=partial-direct-glibc-dns-and-openvpn-udp-socket-only
     fi
 }
 
 mvc24ag2d_observe_host_dns_files_locked() {
-    UBS24AG2D_OBSERVED=''
-    UBS24AG2D_CAPTURE=''
-    UBS24AG2D_SERVERS=()
-    UBS24AG2D_NSS_MODE=''
+    MVC24AG2D_OBSERVED=''
+    MVC24AG2D_CAPTURE=''
+    MVC24AG2D_SERVERS=()
+    MVC24AG2D_NSS_MODE=''
     if mvc24ag2d_observe_host_dns_impl "$@"; then return 0; fi
-    UBS24AG2D_OBSERVED=''
-    UBS24AG2D_CAPTURE=''
-    UBS24AG2D_SERVERS=()
-    UBS24AG2D_NSS_MODE=''
-    UBS24AG2S_OBSERVED=''
-    UBS24AG2P_OBSERVED=''
-    UBS24AG2_OBSERVED=''
+    MVC24AG2D_OBSERVED=''
+    MVC24AG2D_CAPTURE=''
+    MVC24AG2D_SERVERS=()
+    MVC24AG2D_NSS_MODE=''
+    MVC24AG2S_OBSERVED=''
+    MVC24AG2P_OBSERVED=''
+    MVC24AG2_OBSERVED=''
     return 1
 }
 

@@ -7,12 +7,12 @@
 # No automatic retry, no rollback that could remove the restrictive guard.
 
 mvc24gc13_reset() {
-    UBS24GC13_ATTEMPTED=no
-    UBS24GC13_STAGE=unverified
-    UBS24GC13_DETAIL_STAGE=unverified
-    UBS24GC13_AUTHORITY=none
-    UBS24GC13_NFT_COMMIT_RC=
-    UBS24GC13_DIAGNOSTIC_FILE=
+    MVC24GC13_ATTEMPTED=no
+    MVC24GC13_STAGE=unverified
+    MVC24GC13_DETAIL_STAGE=unverified
+    MVC24GC13_AUTHORITY=none
+    MVC24GC13_NFT_COMMIT_RC=
+    MVC24GC13_DIAGNOSTIC_FILE=
 }
 mvc24gc13_admission_witness() { return 1; }
 mvc24gc13_authorize_public_activation() { return 1; }
@@ -40,7 +40,7 @@ mvc24gc13_publish_failure_diagnostic() {
     local root file tmp boot userns netns mntns clone attempt_sha
     local expected_nm observed_nm expected_route observed_route expected_dns observed_dns
     [[ -f /run/mvc-output-transition/attempt && ! -L /run/mvc-output-transition/attempt ]] || return 1
-    clone=${UBS24GC7_CLONE_UUID:-}
+    clone=${MVC24GC7_CLONE_UUID:-}
     mvc24ga_uuid_valid "$clone" || return 1
     root=$(mvc24gc13_diagnostic_root) || return 1
     [[ $root == /* && $(stat -f -c %T /run) == tmpfs ]] || return 1
@@ -57,29 +57,29 @@ mvc24gc13_publish_failure_diagnostic() {
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     attempt_sha=$(mvc24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
-    expected_nm=$(mvc24gc13_diag_hash_value "${UBS24GC18_NM_FINGERPRINT:-}") || return 1
-    observed_nm=$(mvc24gc13_diag_hash_value "${UBS24GC18_OBS_NM_FINGERPRINT:-}") || return 1
-    expected_route=$(mvc24gc13_diag_hash_value "${UBS24GC18_ROUTE_FINGERPRINT:-}") || return 1
-    observed_route=$(mvc24gc13_diag_hash_value "${UBS24GC18_OBS_ROUTE_FINGERPRINT:-}") || return 1
-    expected_dns=$(mvc24gc13_diag_hash_value "${UBS24GC18_DNS_FINGERPRINT:-}") || return 1
-    observed_dns=$(mvc24gc13_diag_hash_value "${UBS24GC18_OBS_DNS_FINGERPRINT:-}") || return 1
+    expected_nm=$(mvc24gc13_diag_hash_value "${MVC24GC18_NM_FINGERPRINT:-}") || return 1
+    observed_nm=$(mvc24gc13_diag_hash_value "${MVC24GC18_OBS_NM_FINGERPRINT:-}") || return 1
+    expected_route=$(mvc24gc13_diag_hash_value "${MVC24GC18_ROUTE_FINGERPRINT:-}") || return 1
+    observed_route=$(mvc24gc13_diag_hash_value "${MVC24GC18_OBS_ROUTE_FINGERPRINT:-}") || return 1
+    expected_dns=$(mvc24gc13_diag_hash_value "${MVC24GC18_DNS_FINGERPRINT:-}") || return 1
+    observed_dns=$(mvc24gc13_diag_hash_value "${MVC24GC18_OBS_DNS_FINGERPRINT:-}") || return 1
     if ! printf '%s\n' \
       ubs-v240-c13-diagnostic-v1 \
       authority=none-non-authoritative-diagnostic-only \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "clone_uuid=$clone" "c13_attempt_sha=$attempt_sha" \
-      "c13_stage=${UBS24GC13_STAGE:-unknown}" \
-      "c13_detail_stage=${UBS24GC13_DETAIL_STAGE:-unknown}" \
-      "nft_commit_rc=${UBS24GC13_NFT_COMMIT_RC:--}" \
-      "c18_stage=${UBS24GC18_STAGE:-unknown}" \
-      "c18_detail_stage=${UBS24GC18_DETAIL_STAGE:-unknown}" \
-      "c18_recheck_failure=${UBS24GC18_RECHECK_FAILURE:-none}" \
-      "c18_dns_capture_detail=${UBS24GC18_DNS_CAPTURE_DETAIL:--}" \
+      "c13_stage=${MVC24GC13_STAGE:-unknown}" \
+      "c13_detail_stage=${MVC24GC13_DETAIL_STAGE:-unknown}" \
+      "nft_commit_rc=${MVC24GC13_NFT_COMMIT_RC:--}" \
+      "c18_stage=${MVC24GC18_STAGE:-unknown}" \
+      "c18_detail_stage=${MVC24GC18_DETAIL_STAGE:-unknown}" \
+      "c18_recheck_failure=${MVC24GC18_RECHECK_FAILURE:-none}" \
+      "c18_dns_capture_detail=${MVC24GC18_DNS_CAPTURE_DETAIL:--}" \
       "expected_nm_sha=$expected_nm" "observed_nm_sha=$observed_nm" \
       "expected_route_sha=$expected_route" "observed_route_sha=$observed_route" \
       "expected_dns_sha=$expected_dns" "observed_dns_sha=$observed_dns" \
-      "expected_nss_mode=${UBS24GC18_NSS_MODE:--}" \
-      "observed_nss_mode=${UBS24GC18_OBS_NSS_MODE:--}" > "$tmp"; then
+      "expected_nss_mode=${MVC24GC18_NSS_MODE:--}" \
+      "observed_nss_mode=${MVC24GC18_OBS_NSS_MODE:--}" > "$tmp"; then
         rm -f -- "$tmp" >/dev/null 2>&1 || :
         return 1
     fi
@@ -89,7 +89,7 @@ mvc24gc13_publish_failure_diagnostic() {
         return 1
     fi
     [[ $(stat -c '%u:%a:%h' -- "$file") == 0:400:1 ]] || return 1
-    UBS24GC13_DIAGNOSTIC_FILE=$file
+    MVC24GC13_DIAGNOSTIC_FILE=$file
 }
 mvc24gc13_hash_file() {
     (( $# == 1 )) || return 1
@@ -131,13 +131,13 @@ mvc24gc13_intent_valid() {
        ${records[6]} == "c7=$c7" &&
        ${records[7]} == "c1=$c1" &&
        ${records[8]} == candidate_sha=* &&
-       ${records[9]} == "tunnel=${UBS24GC11_TUNNEL:-}|source=${UBS24GC11_TUNNEL_SOURCE:-}" &&
-       ${records[10]} == "nm_owner=${UBS24GC7_NM_OWNER:-}" ]] || return 1
+       ${records[9]} == "tunnel=${MVC24GC11_TUNNEL:-}|source=${MVC24GC11_TUNNEL_SOURCE:-}" &&
+       ${records[10]} == "nm_owner=${MVC24GC7_NM_OWNER:-}" ]] || return 1
     candidate=${records[8]#candidate_sha=}
     mvc24gc13_sha_valid "$candidate" &&
-      mvc24gc11_valid_tunnel_ifname "${UBS24GC11_TUNNEL:-}" &&
-      mvc24gc1_ipv4 "${UBS24GC11_TUNNEL_SOURCE:-}" &&
-      mvc24gc7_nm_owner_valid "${UBS24GC7_NM_OWNER:-}"
+      mvc24gc11_valid_tunnel_ifname "${MVC24GC11_TUNNEL:-}" &&
+      mvc24gc1_ipv4 "${MVC24GC11_TUNNEL_SOURCE:-}" &&
+      mvc24gc7_nm_owner_valid "${MVC24GC7_NM_OWNER:-}"
 }
 
 # Bind the immutable attempt to the exact prospective nft batch immediately
@@ -178,8 +178,8 @@ mvc24gc13_publish_intent() {
         state=nft-commit-attempted-outcome-uncertain \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c7=$c7" "c1=$c1" "candidate_sha=$hash" \
-        "tunnel=$UBS24GC11_TUNNEL|source=$UBS24GC11_TUNNEL_SOURCE" \
-        "nm_owner=$UBS24GC7_NM_OWNER" > "$tmp"; then return 1; fi
+        "tunnel=$MVC24GC11_TUNNEL|source=$MVC24GC11_TUNNEL_SOURCE" \
+        "nm_owner=$MVC24GC7_NM_OWNER" > "$tmp"; then return 1; fi
     chmod 400 -- "$tmp" || return 1
     [[ ! -e $dir/attempt && ! -L $dir/attempt ]] || return 1
     mv -T -- "$tmp" "$dir/attempt" || return 1
@@ -195,10 +195,10 @@ mvc24gc13_observe_postcommit() {
     cmp -s -- "$first" "$second" || return 1
     mvc24gc13_intent_valid && mvc24gb2_root_scope && mvc24gb2_lock_valid &&
       mvc24gc3_transition_records_valid || return 1
-    mvc24gc11_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-      "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" &&
-    mvc24gc11_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-      "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" || return 1
+    mvc24gc11_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+      "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" &&
+    mvc24gc11_postshape_observation "$second" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+      "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" || return 1
     pre=$(mvc24gb2_runtime) || return 1
     [[ $pre == /run/mvc-controller ]] || return 1
     foreign1=$(mvc24gb2_foreign_projection "$pre/prestate.json") || return 1
@@ -212,116 +212,116 @@ mvc24gc13_observe_postcommit() {
 # secret custody, prompt controls, DNS and recovery are independently proven.
 mvc24gc13_execute_once() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GC13_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC13_ATTEMPTED=yes
-    UBS24GC13_STAGE=refused-or-unverified
-    UBS24GC13_DETAIL_STAGE=admission-witness
-    UBS24GC13_AUTHORITY=none
+    [[ ${MVC24GC13_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC13_ATTEMPTED=yes
+    MVC24GC13_STAGE=refused-or-unverified
+    MVC24GC13_DETAIL_STAGE=admission-witness
+    MVC24GC13_AUTHORITY=none
     mvc24gc13_admission_witness || return 1
-    UBS24GC13_DETAIL_STAGE=upstream-stage-contract
-    [[ ${UBS24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
-       ${UBS24GC9_AUTHORITY:-} == none &&
-       ${UBS24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
-       ${UBS24GC7_AUTHORITY:-} == none ]] || return 1
-    UBS24GC13_DETAIL_STAGE=controller-and-c1-witness
+    MVC24GC13_DETAIL_STAGE=upstream-stage-contract
+    [[ ${MVC24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
+       ${MVC24GC9_AUTHORITY:-} == none &&
+       ${MVC24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
+       ${MVC24GC7_AUTHORITY:-} == none ]] || return 1
+    MVC24GC13_DETAIL_STAGE=controller-and-c1-witness
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
       mvc24gc3_transition_records_valid && mvc24gc5_guard_witness &&
       mvc24gc7_read_intent || return 1
-    UBS24GC13_DETAIL_STAGE=runtime-scratch-prerequisites
+    MVC24GC13_DETAIL_STAGE=runtime-scratch-prerequisites
     [[ ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition &&
        -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch batch first second nm_now route_now success=1
-    UBS24GC13_DETAIL_STAGE=scratch-create
+    MVC24GC13_DETAIL_STAGE=scratch-create
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c13.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     batch=$scratch/transition.nft first=$scratch/first.json second=$scratch/second.json
     (umask 077; set -C; : > "$batch") || return 1
     chmod 600 -- "$batch" || return 1
-    UBS24GC13_DETAIL_STAGE=c11-candidate-generation
+    MVC24GC13_DETAIL_STAGE=c11-candidate-generation
     if ! mvc24gc11_candidate_after_c9 "$batch"; then
         success=0
-    elif [[ ${UBS24GC11_STAGE:-} != prospective-ipv4-host-tunnel-output-only-no-commit-authority ||
-            ${UBS24GC11_AUTHORITY:-} != none ]]; then
-        UBS24GC13_DETAIL_STAGE=c11-candidate-contract
+    elif [[ ${MVC24GC11_STAGE:-} != prospective-ipv4-host-tunnel-output-only-no-commit-authority ||
+            ${MVC24GC11_AUTHORITY:-} != none ]]; then
+        MVC24GC13_DETAIL_STAGE=c11-candidate-contract
         success=0
     else
-        UBS24GC13_DETAIL_STAGE=nft-check
+        MVC24GC13_DETAIL_STAGE=nft-check
         nft --check --file "$batch" >/dev/null 2>&1 || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=c1-guard-revalidate
+        MVC24GC13_DETAIL_STAGE=c1-guard-revalidate
         mvc24gc5_guard_witness || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=c7-intent-revalidate
+        MVC24GC13_DETAIL_STAGE=c7-intent-revalidate
         mvc24gc7_read_intent || success=0
     fi
     # Re-read NM and both kernel route selections immediately before intent.
     # An unchanged nft guard does not by itself attest the tunnel still exists.
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=nm-snapshot-recheck
-        nm_now=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || success=0
+        MVC24GC13_DETAIL_STAGE=nm-snapshot-recheck
+        nm_now=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=kernel-route-recheck
-        route_now=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || success=0
+        MVC24GC13_DETAIL_STAGE=kernel-route-recheck
+        route_now=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=nm-route-snapshot-compare
-        [[ ${nm_now:-} == "${UBS24GC6_NM_SNAPSHOT:-missing}" &&
-           ${route_now:-} == "${UBS24GC6_ROUTE_SNAPSHOT:-missing}" ]] || success=0
+        MVC24GC13_DETAIL_STAGE=nm-route-snapshot-compare
+        [[ ${nm_now:-} == "${MVC24GC6_NM_SNAPSHOT:-missing}" &&
+           ${route_now:-} == "${MVC24GC6_ROUTE_SNAPSHOT:-missing}" ]] || success=0
     fi
     # No unrestricted tunnel-bound OUTPUT until DNS is observed twice
     # under the still-active, endpoint-only C1 guard. This is a read-only
     # witness, not proof that DNS will stay immutable after the commit.
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=c18-precommit-dns
+        MVC24GC13_DETAIL_STAGE=c18-precommit-dns
         mvc24gc18_precommit_locked &&
-          [[ ${UBS24GC18_STAGE:-} == precommit-dns-and-c1-quarantine-observed-no-authority &&
-             ${UBS24GC18_AUTHORITY:-} == none ]] || success=0
+          [[ ${MVC24GC18_STAGE:-} == precommit-dns-and-c1-quarantine-observed-no-authority &&
+             ${MVC24GC18_AUTHORITY:-} == none ]] || success=0
     fi
     if (( success == 1 )); then
         # After this succeeds, a lost nft reply MUST remain ambiguous.
-        UBS24GC13_DETAIL_STAGE=publish-intent
+        MVC24GC13_DETAIL_STAGE=publish-intent
         mvc24gc13_publish_intent "$batch" &&
           mvc24gc13_candidate_matches_intent "$batch" || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=c18-post-intent-recheck
+        MVC24GC13_DETAIL_STAGE=c18-post-intent-recheck
         # Recheck the identical DNS/NM/route evidence and C1 guard after
         # intent sealing, immediately before the SINGLE atomic commit.
         mvc24gc18_recheck_locked &&
-          [[ ${UBS24GC18_STAGE:-} == precommit-dns-rechecked-under-c1-no-authority &&
-             ${UBS24GC18_AUTHORITY:-} == none ]] || success=0
+          [[ ${MVC24GC18_STAGE:-} == precommit-dns-rechecked-under-c1-no-authority &&
+             ${MVC24GC18_AUTHORITY:-} == none ]] || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=nft-commit
-        UBS24GC13_STAGE=atomic-commit-attempted-uncertain
+        MVC24GC13_DETAIL_STAGE=nft-commit
+        MVC24GC13_STAGE=atomic-commit-attempted-uncertain
         if nft --file "$batch" >/dev/null 2>&1; then
-            UBS24GC13_NFT_COMMIT_RC=0
+            MVC24GC13_NFT_COMMIT_RC=0
         else
-            UBS24GC13_NFT_COMMIT_RC=$?
+            MVC24GC13_NFT_COMMIT_RC=$?
             success=0
         fi
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=postcommit-observation
+        MVC24GC13_DETAIL_STAGE=postcommit-observation
         mvc24gb1_capture_nft "$first" && mvc24gb1_capture_nft "$second" &&
           mvc24gc13_observe_postcommit "$first" "$second" || success=0
     fi
     if ! rm -f -- "$batch" "$first" "$second"; then
-        UBS24GC13_DETAIL_STAGE=scratch-cleanup
+        MVC24GC13_DETAIL_STAGE=scratch-cleanup
         success=0
     fi
     if ! rmdir -- "$scratch"; then
-        UBS24GC13_DETAIL_STAGE=scratch-cleanup
+        MVC24GC13_DETAIL_STAGE=scratch-cleanup
         success=0
     fi
     if (( success == 1 )); then
-        UBS24GC13_DETAIL_STAGE=complete
-        UBS24GC13_STAGE=atomic-ipv4-tunnel-output-observed-dns-unverified
-        UBS24GC13_AUTHORITY=none
+        MVC24GC13_DETAIL_STAGE=complete
+        MVC24GC13_STAGE=atomic-ipv4-tunnel-output-observed-dns-unverified
+        MVC24GC13_AUTHORITY=none
         return 0
     fi
     # Best-effort Stage-9 evidence only. Failure to publish diagnostics MUST

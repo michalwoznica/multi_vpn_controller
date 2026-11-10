@@ -5,10 +5,10 @@
 # Requires dual-session.sh / combined-routing-guard.sh for strict endpoints.
 
 mvc24op_candidate_reset() {
-    UBS24OP_CANDIDATE_ENDPOINT=''
-    UBS24OP_CANDIDATE_PROTO=''
-    UBS24OP_CANDIDATE_COUNT=0
-    UBS24OP_CANDIDATE_INDEX=0
+    MVC24OP_CANDIDATE_ENDPOINT=''
+    MVC24OP_CANDIDATE_PROTO=''
+    MVC24OP_CANDIDATE_COUNT=0
+    MVC24OP_CANDIDATE_INDEX=0
 }
 
 # Args: typed GetSettings JSON, 1-based source-order index.
@@ -60,8 +60,8 @@ mvc24op_candidate_plan() {
         [[ $entry =~ ^([0-9.]+):([1-9][0-9]{0,4})$ ]] &&
             mvc24b_canonical_endpoint "$entry" || return 1
     done
-    UBS24OP_CANDIDATE_ENDPOINT=${entries[index-1]}
-    UBS24OP_CANDIDATE_PROTO=tcp
-    UBS24OP_CANDIDATE_COUNT=${#entries[@]}
-    UBS24OP_CANDIDATE_INDEX=$index
+    MVC24OP_CANDIDATE_ENDPOINT=${entries[index-1]}
+    MVC24OP_CANDIDATE_PROTO=tcp
+    MVC24OP_CANDIDATE_COUNT=${#entries[@]}
+    MVC24OP_CANDIDATE_INDEX=$index
 }

@@ -6,7 +6,7 @@ set -uo pipefail
 umask 077
 export LC_ALL=C
 
-# UBS24_MONOLITH_VERIFY_FUNCTIONS_BEGIN
+# MVC24_MONOLITH_VERIFY_FUNCTIONS_BEGIN
 mvc24v_usage() {
     cat <<'USAGE'
 Usage: sudo ./source/tools/verify-mvc-state-readonly.sh [--no-internet-check]
@@ -73,11 +73,11 @@ mvc24v_main() {
 
     local tool_root controller dual_recovery emergency_recovery resolv_conf internet_url
     tool_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || return 1
-    controller=${UBS24V_CONTROLLER:-"$tool_root/vpn-v240"}
-    dual_recovery=${UBS24V_DUAL_RECOVERY:-/root/mvc-dual-recovery}
-    emergency_recovery=${UBS24V_EMERGENCY_RECOVERY:-/root/mvc-emergency-rollback}
-    resolv_conf=${UBS24V_RESOLV_CONF:-/etc/resolv.conf}
-    internet_url=${UBS24V_INTERNET_URL:-https://api.ipify.org}
+    controller=${MVC24V_CONTROLLER:-"$tool_root/vpn-v240"}
+    dual_recovery=${MVC24V_DUAL_RECOVERY:-/root/mvc-dual-recovery}
+    emergency_recovery=${MVC24V_EMERGENCY_RECOVERY:-/root/mvc-emergency-rollback}
+    resolv_conf=${MVC24V_RESOLV_CONF:-/etc/resolv.conf}
+    internet_url=${MVC24V_INTERNET_URL:-https://api.ipify.org}
 
     local active_rows saved_rows nft_rows active_rc saved_rc nft_rc
     if active_rows=$(nmcli --wait 10 --colors no -t -f TYPE,UUID,NAME,DEVICE connection show --active 2>&1); then
@@ -267,6 +267,6 @@ mvc24v_main() {
     printf 'internet_check=%s\n' "$internet_result"
     echo 'RESULT: READ-ONLY STATE REPORT COMPLETE — NO LIFECYCLE AUTHORITY GRANTED'
 }
-# UBS24_MONOLITH_VERIFY_FUNCTIONS_END
+# MVC24_MONOLITH_VERIFY_FUNCTIONS_END
 
 mvc24v_main "$@"

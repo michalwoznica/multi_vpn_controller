@@ -9,9 +9,9 @@
 # safe DNS, FORWARD/WG support or permission for production application traffic.
 
 mvc24gc17_reset() {
-    UBS24GC17_ATTEMPTED=no
-    UBS24GC17_STAGE=unverified
-    UBS24GC17_AUTHORITY=none
+    MVC24GC17_ATTEMPTED=no
+    MVC24GC17_STAGE=unverified
+    MVC24GC17_AUTHORITY=none
 }
 mvc24gc17_admission_witness() { return 1; }
 mvc24gc17_authorize_public_activation() { return 1; }
@@ -24,10 +24,10 @@ mvc24gc17_authorize_secret_export() { return 1; }
 
 mvc24gc17_execute_once() {
     (( $# == 2 )) || return 1
-    [[ ${UBS24GC17_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC17_ATTEMPTED=yes
-    UBS24GC17_STAGE=refused-before-activation
-    UBS24GC17_AUTHORITY=none
+    [[ ${MVC24GC17_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC17_ATTEMPTED=yes
+    MVC24GC17_STAGE=refused-before-activation
+    MVC24GC17_AUTHORITY=none
     local source_uuid=$1 underlay=$2
 
     # Intentional non-admission: a real host cannot invoke the mutation path.
@@ -38,43 +38,43 @@ mvc24gc17_execute_once() {
         mvc24gb2_root_scope || return 1
     # The B2 flock is ACQUIRED BY C3 inside C9. It must not be required
     # before the cold-start sequence begins.
-    [[ ${UBS24GC9_ATTEMPTED:-no} == no &&
-       ${UBS24GC13_ATTEMPTED:-no} == no &&
+    [[ ${MVC24GC9_ATTEMPTED:-no} == no &&
+       ${MVC24GC13_ATTEMPTED:-no} == no &&
        ! -e /run/mvc-activation && ! -L /run/mvc-activation &&
        ! -e /run/mvc-output-transition && ! -L /run/mvc-output-transition ]] || return 1
 
     # The same held B2 flock and process context span all three operations.
     # No controller crash or failed stage triggers a retry or firewall release.
-    UBS24GC17_STAGE=bootstrap-or-activation-outcome-uncertain
+    MVC24GC17_STAGE=bootstrap-or-activation-outcome-uncertain
     mvc24gc9_execute_once "$source_uuid" "$underlay" || return 1
-    [[ ${UBS24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
-       ${UBS24GC9_AUTHORITY:-} == none &&
-       ${UBS24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
-       ${UBS24GC7_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
+       ${MVC24GC9_AUTHORITY:-} == none &&
+       ${MVC24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
+       ${MVC24GC7_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
         mvc24gc3_transition_records_valid && mvc24gc7_read_intent || return 1
 
-    UBS24GC17_STAGE=firewall-transition-outcome-uncertain
+    MVC24GC17_STAGE=firewall-transition-outcome-uncertain
     mvc24gc13_execute_once || return 1
-    [[ ${UBS24GC13_STAGE:-} == atomic-ipv4-tunnel-output-observed-dns-unverified &&
-       ${UBS24GC13_AUTHORITY:-} == none &&
-       ${UBS24GC18_STAGE:-} == precommit-dns-rechecked-under-c1-no-authority &&
-       ${UBS24GC18_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GC13_STAGE:-} == atomic-ipv4-tunnel-output-observed-dns-unverified &&
+       ${MVC24GC13_AUTHORITY:-} == none &&
+       ${MVC24GC18_STAGE:-} == precommit-dns-rechecked-under-c1-no-authority &&
+       ${MVC24GC18_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
         mvc24gc3_transition_records_valid && mvc24gc13_intent_valid || return 1
 
-    UBS24GC17_STAGE=dns-observation-unverified
+    MVC24GC17_STAGE=dns-observation-unverified
     mvc24gc16_observe_locked || return 1
-    case ${UBS24GC16_STAGE:-} in
+    case ${MVC24GC16_STAGE:-} in
         direct-glibc-vpn-dns-observed-no-traffic-authority| \
         conditional-arch-nss-vpn-dns-observed-no-traffic-authority) ;;
         *) return 1 ;;
     esac
-    [[ ${UBS24GC16_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GC16_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
         mvc24gc3_transition_records_valid && mvc24gc13_intent_valid || return 1
 
-    UBS24GC17_STAGE=protected-ovpn-stages-observed-no-operational-authority
-    UBS24GC17_AUTHORITY=none
+    MVC24GC17_STAGE=protected-ovpn-stages-observed-no-operational-authority
+    MVC24GC17_AUTHORITY=none
     return 0
 }

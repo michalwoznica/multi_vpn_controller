@@ -6,10 +6,10 @@
 # No host or public driver imports this file. No NM, nft or route writes.
 
 mvc24gc6_reset() {
-    UBS24GC6_STAGE=unverified
-    UBS24GC6_AUTHORITY=none
-    UBS24GC6_NM_SNAPSHOT=
-    UBS24GC6_ROUTE_SNAPSHOT=
+    MVC24GC6_STAGE=unverified
+    MVC24GC6_AUTHORITY=none
+    MVC24GC6_NM_SNAPSHOT=
+    MVC24GC6_ROUTE_SNAPSHOT=
 }
 
 mvc24gc6_authorize_activation() { return 1; }
@@ -109,25 +109,25 @@ mvc24gc6_kernel_ipv4_snapshot() {
 
 mvc24gc6_observe_active_once() {
     (( $# == 0 )) || return 1
-    UBS24GC6_STAGE=unverified
-    UBS24GC6_AUTHORITY=none
-    UBS24GC6_NM_SNAPSHOT= UBS24GC6_ROUTE_SNAPSHOT=
-    [[ ${UBS24GC5_STAGE:-} == nm-openvpn-active-and-bootstrap-guard-observed-no-traffic-authority &&
-       ${UBS24GC5_AUTHORITY:-} == none && ${UBS24GC5_ATTEMPTED:-} == yes &&
-       ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
-       ${UBS24GC3_AUTHORITY:-} == none &&
-       -n ${UBS24GA3_PREPARED_CLONE_UUID:-} &&
-       -n ${UBS24GC5_NM_OWNER:-} ]] || return 1
+    MVC24GC6_STAGE=unverified
+    MVC24GC6_AUTHORITY=none
+    MVC24GC6_NM_SNAPSHOT= MVC24GC6_ROUTE_SNAPSHOT=
+    [[ ${MVC24GC5_STAGE:-} == nm-openvpn-active-and-bootstrap-guard-observed-no-traffic-authority &&
+       ${MVC24GC5_AUTHORITY:-} == none && ${MVC24GC5_ATTEMPTED:-} == yes &&
+       ${MVC24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
+       ${MVC24GC3_AUTHORITY:-} == none &&
+       -n ${MVC24GA3_PREPARED_CLONE_UUID:-} &&
+       -n ${MVC24GC5_NM_OWNER:-} ]] || return 1
     local nm_first nm_second route_first route_second
     mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
-    nm_first=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GA3_PREPARED_CLONE_UUID" "$UBS24GC5_NM_OWNER") || return 1
-    route_first=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    route_second=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    nm_second=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GA3_PREPARED_CLONE_UUID" "$UBS24GC5_NM_OWNER") || return 1
+    nm_first=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GA3_PREPARED_CLONE_UUID" "$MVC24GC5_NM_OWNER") || return 1
+    route_first=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
+    route_second=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
+    nm_second=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GA3_PREPARED_CLONE_UUID" "$MVC24GC5_NM_OWNER") || return 1
     [[ -n $nm_first && $nm_first == "$nm_second" &&
        -n $route_first && $route_first == "$route_second" ]] || return 1
     mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
-    UBS24GC6_NM_SNAPSHOT=$nm_first
-    UBS24GC6_ROUTE_SNAPSHOT=$route_first
-    UBS24GC6_STAGE=nm-active-and-selected-ipv4-tun-observed-no-traffic-authority
+    MVC24GC6_NM_SNAPSHOT=$nm_first
+    MVC24GC6_ROUTE_SNAPSHOT=$route_first
+    MVC24GC6_STAGE=nm-active-and-selected-ipv4-tun-observed-no-traffic-authority
 }

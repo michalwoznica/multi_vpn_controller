@@ -16,10 +16,10 @@
 # to connect and MUST remain under independently attested strict quarantine.
 
 mvc24ga_reset() {
-    UBS24GA_STATE=unverified
-    UBS24GA_CLONE_UUID=
-    UBS24GA_CLONE_NAME=
-    UBS24GA_AUTHORITY=none
+    MVC24GA_STATE=unverified
+    MVC24GA_CLONE_UUID=
+    MVC24GA_CLONE_NAME=
+    MVC24GA_AUTHORITY=none
 }
 
 # These intentionally deny until connected to the authenticated root guard,
@@ -44,12 +44,12 @@ mvc24ga_uuid_valid() {
 # On any ambiguous write/readback result, leave the guard installed. Never
 # retry after nmcli clone has been attempted; do not blindly delete a clone.
 mvc24ga_clone_temporary_once() {
-    UBS24GA_STATE=blocked
-    UBS24GA_AUTHORITY=none
-    UBS24GA_CLONE_UUID=
-    UBS24GA_CLONE_NAME=
+    MVC24GA_STATE=blocked
+    MVC24GA_AUTHORITY=none
+    MVC24GA_CLONE_UUID=
+    MVC24GA_CLONE_NAME=
     (( $# == 1 )) && mvc24ga_uuid_valid "$1" || return 1
-    [[ ${UBS24GA_ATTEMPTED:-no} == no ]] || return 1
+    [[ ${MVC24GA_ATTEMPTED:-no} == no ]] || return 1
     declare -F mvc24ga_live_guard_witness >/dev/null || return 1
     declare -F mvc24ga_nm_source_witness >/dev/null || return 1
     command -v nmcli >/dev/null 2>&1 || return 1
@@ -70,8 +70,8 @@ mvc24ga_clone_temporary_once() {
     # hook failure aborts before the first possible NetworkManager write.
     mvc24ga_preclone_intent_hook "$source_uuid" "$new_name" || return 1
     # Mark the attempt before the first possible NetworkManager write.
-    UBS24GA_ATTEMPTED=yes
-    UBS24GA_STATE=clone-attempted-not-admitted
+    MVC24GA_ATTEMPTED=yes
+    MVC24GA_STATE=clone-attempted-not-admitted
     if ! nmcli --wait 10 connection clone --temporary uuid "$source_uuid" "$new_name" >/dev/null 2>&1; then
         return 1
     fi
@@ -87,9 +87,9 @@ mvc24ga_clone_temporary_once() {
     # Once NM returns a stable UUID, public composition may durably bind it
     # before A2 changes connection.id from the random raw-clone name.
     mvc24ga_postclone_identity_hook "$source_uuid" "$new_name" "$new_uuid" || return 1
-    UBS24GA_CLONE_UUID=$new_uuid
-    UBS24GA_CLONE_NAME=$new_name
-    UBS24GA_STATE=raw-temporary-clone-quarantined-needs-hardening
+    MVC24GA_CLONE_UUID=$new_uuid
+    MVC24GA_CLONE_NAME=$new_name
+    MVC24GA_STATE=raw-temporary-clone-quarantined-needs-hardening
     return 0
 }
 

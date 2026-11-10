@@ -4,9 +4,9 @@
 # This is NOT an active VPN firewall transition and grants NO A3 authority.
 
 mvc24gb4_reset() {
-    UBS24GB4_OPERATION=none
-    UBS24GB4_APPROVAL=none
-    UBS24GB4_ATTEMPTED=no
+    MVC24GB4_OPERATION=none
+    MVC24GB4_APPROVAL=none
+    MVC24GB4_ATTEMPTED=no
 }
 
 mvc24gb4_scope() {
@@ -75,18 +75,18 @@ mvc24gb4_confirm() {
 # B3 calls this exactly once before disarm, with an already-held B2 lock.
 mvc24gb4_disarm_witness() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GB4_OPERATION:-} == release &&
-       ${UBS24GB4_APPROVAL:-} == release-once ]] || return 1
-    UBS24GB4_APPROVAL=consumed
+    [[ ${MVC24GB4_OPERATION:-} == release &&
+       ${MVC24GB4_APPROVAL:-} == release-once ]] || return 1
+    MVC24GB4_APPROVAL=consumed
     mvc24gb4_scope && mvc24gb4_no_active_vpn && mvc24gb2_lock_valid
 }
 
 mvc24gb4_install() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GB4_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GB4_ATTEMPTED=yes
-    UBS24GB4_OPERATION=install
-    UBS24GB4_APPROVAL=none
+    [[ ${MVC24GB4_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GB4_ATTEMPTED=yes
+    MVC24GB4_OPERATION=install
+    MVC24GB4_APPROVAL=none
     local iface confirmed_iface
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
@@ -96,33 +96,33 @@ mvc24gb4_install() {
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     confirmed_iface=$(mvc24gb4_underlay) || return 1
     [[ $iface == "$confirmed_iface" ]] || return 1
-    mvc24gb2_install_once "$iface" "$UBS24GB4_POLICY" || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only &&
-       ${UBS24GB2_AUTHORITY:-} == none ]] || return 1
+    mvc24gb2_install_once "$iface" "$MVC24GB4_POLICY" || return 1
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only &&
+       ${MVC24GB2_AUTHORITY:-} == none ]] || return 1
 }
 
 mvc24gb4_release() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GB4_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GB4_ATTEMPTED=yes
-    UBS24GB4_OPERATION=release
-    UBS24GB4_APPROVAL=none
+    [[ ${MVC24GB4_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GB4_ATTEMPTED=yes
+    MVC24GB4_OPERATION=release
+    MVC24GB4_APPROVAL=none
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     mvc24gb2_reopen || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
     mvc24gb4_confirm 'RELEASE UBS V240 DENY ALL' || return 1
     mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
-    UBS24GB4_APPROVAL=release-once
+    MVC24GB4_APPROVAL=release-once
     mvc24gb3_release_once || return 1
-    [[ ${UBS24GB3_STAGE:-} == explicit-disarm-verified-owned-runtime-retired &&
-       ${UBS24GB3_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GB3_STAGE:-} == explicit-disarm-verified-owned-runtime-retired &&
+       ${MVC24GB3_AUTHORITY:-} == none ]] || return 1
 }
 
 mvc24gb4_status() {
     (( $# == 0 )) || return 1
     mvc24gb2_root_scope || return 1
     mvc24gb2_reopen || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
 }
 
 # B4 does not authorise any tunnel activity or guard policy transition.

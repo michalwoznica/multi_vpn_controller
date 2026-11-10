@@ -4,8 +4,8 @@
 # No host/public tool sources this module. It cannot commit/retry/disarm.
 
 mvc24gc15_reset() {
-    UBS24GC15_STAGE=unverified-ambiguous-manual-review
-    UBS24GC15_AUTHORITY=none
+    MVC24GC15_STAGE=unverified-ambiguous-manual-review
+    MVC24GC15_AUTHORITY=none
 }
 mvc24gc15_authorize_retry() { return 1; }
 mvc24gc15_authorize_traffic() { return 1; }
@@ -29,11 +29,11 @@ mvc24gc15_load_bound_intent() {
     address=${BASH_REMATCH[2]}
     mvc24gc11_valid_tunnel_ifname "$tunnel" &&
        mvc24gc1_ipv4 "$address" || return 1
-    UBS24GC11_TUNNEL=$tunnel
-    UBS24GC11_TUNNEL_SOURCE=$address
+    MVC24GC11_TUNNEL=$tunnel
+    MVC24GC11_TUNNEL_SOURCE=$address
     mvc24gc13_intent_valid || return 1
     owner=$(sed -n '11p' -- "$dir/attempt") || return 1
-    [[ $owner == "nm_owner=$UBS24GC7_NM_OWNER" ]] || return 1
+    [[ $owner == "nm_owner=$MVC24GC7_NM_OWNER" ]] || return 1
 }
 
 # Regenerate the four-statement prospective C11 batch and bind its digest
@@ -55,9 +55,9 @@ mvc24gc15_candidate_digest_valid() {
     batch=$scratch/transition.nft
     if (umask 077; set -C; : > "$batch") &&
        [[ $(stat -c '%a:%h' -- "$batch") == 600:1 ]] &&
-       mvc24gc11_write_candidate "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-           "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" \
-           "$UBS24GC11_TUNNEL_SOURCE" "$batch"; then
+       mvc24gc11_write_candidate "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+           "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" \
+           "$MVC24GC11_TUNNEL_SOURCE" "$batch"; then
         actual=$(mvc24gc13_hash_file "$batch") || actual=''
         [[ $actual == "$expected" ]] && result=0
     fi
@@ -79,21 +79,21 @@ mvc24gc15_reconcile_locked() {
     local scratch first second pre=0 post=0 result=1
     # Restores A3 nonsecret witness inputs only from the C7 bound same-boot
     # record; no credential fields or secret flags are retrieved here.
-    UBS24GA3_PREPARED_SOURCE_UUID=$UBS24GC7_SOURCE_UUID
-    UBS24GA3_PREPARED_CLONE_UUID=$UBS24GC7_CLONE_UUID
-    UBS24GA3_SOURCE_SHA256=$UBS24GC7_SOURCE_SHA
-    UBS24GA3_DERIVATIVE_SHA256=$UBS24GC7_CLONE_SHA
-    UBS24GA_CLONE_UUID=$UBS24GC7_CLONE_UUID
-    UBS24GA3_STAGE=prepared-nonsecret-parity-only
-    UBS24GA3_AUTHORITY=none
-    UBS24GA2_STATE=quarantined-exact-nonsecret-settings-verified
-    local UBS24S_LOCK_HELD=1
+    MVC24GA3_PREPARED_SOURCE_UUID=$MVC24GC7_SOURCE_UUID
+    MVC24GA3_PREPARED_CLONE_UUID=$MVC24GC7_CLONE_UUID
+    MVC24GA3_SOURCE_SHA256=$MVC24GC7_SOURCE_SHA
+    MVC24GA3_DERIVATIVE_SHA256=$MVC24GC7_CLONE_SHA
+    MVC24GA_CLONE_UUID=$MVC24GC7_CLONE_UUID
+    MVC24GA3_STAGE=prepared-nonsecret-parity-only
+    MVC24GA3_AUTHORITY=none
+    MVC24GA2_STATE=quarantined-exact-nonsecret-settings-verified
+    local MVC24S_LOCK_HELD=1
     mvc24gc5_prepared_profile_witness &&
        mvc24op_session_nm_identity &&
-       [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24GC7_NM_OWNER" ]] || return 1
-    nm1=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
-    route1=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    expected="$UBS24GC3_IFACE|$UBS24GC3_SOURCE|$UBS24GC11_TUNNEL|$UBS24GC11_TUNNEL_SOURCE"
+       [[ $MVC24OP_SESSION_NM_IDENTITY == "$MVC24GC7_NM_OWNER" ]] || return 1
+    nm1=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || return 1
+    route1=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
+    expected="$MVC24GC3_IFACE|$MVC24GC3_SOURCE|$MVC24GC11_TUNNEL|$MVC24GC11_TUNNEL_SOURCE"
     [[ -n $nm1 && $route1 == "$expected" ]] || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c15-nft.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
@@ -103,12 +103,12 @@ mvc24gc15_reconcile_locked() {
        cmp -s -- "$first" "$second"; then
         # Exactly one of these states may match. Do not use C5's precommit
         # guard witness here: it rejects a correctly committed C11 policy.
-        if mvc24gc1_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" &&
-           mvc24gc1_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT"; then
+        if mvc24gc1_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" &&
+           mvc24gc1_postshape_observation "$second" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT"; then
             pre=1
         fi
-        if mvc24gc11_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" &&
-           mvc24gc11_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE"; then
+        if mvc24gc11_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" &&
+           mvc24gc11_postshape_observation "$second" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE"; then
             post=1
         fi
         if (( pre + post == 1 )); then
@@ -120,8 +120,8 @@ mvc24gc15_reconcile_locked() {
     fi
     # Repeat independent NM and route witnesses AFTER the kernel snapshots.
     if (( result == 0 )); then
-        nm2=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || result=1
-        route2=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || result=1
+        nm2=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || result=1
+        route2=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || result=1
         [[ ${nm2:-} == "$nm1" && ${route2:-} == "$expected" ]] || result=1
         mvc24gc13_intent_valid && mvc24gb2_lock_valid &&
           mvc24gc3_transition_records_valid || result=1
@@ -130,9 +130,9 @@ mvc24gc15_reconcile_locked() {
     rmdir -- "$scratch" || result=1
     if (( result == 0 )); then
         if (( pre == 1 )); then
-            UBS24GC15_STAGE=c13-intent-present-bootstrap-policy-reobserved-no-authority
+            MVC24GC15_STAGE=c13-intent-present-bootstrap-policy-reobserved-no-authority
         else
-            UBS24GC15_STAGE=c13-intent-present-tunnel-output-policy-reobserved-dns-unverified
+            MVC24GC15_STAGE=c13-intent-present-tunnel-output-policy-reobserved-dns-unverified
         fi
         return 0
     fi
@@ -145,17 +145,17 @@ mvc24gc15_reconcile_locked() {
 mvc24gc15_reconcile_readonly() {
     (( $# == 0 )) || return 1
     mvc24gc15_reset
-    [[ -z ${UBS24GB2_FD:-} ]] && mvc24gb2_root_scope &&
+    [[ -z ${MVC24GB2_FD:-} ]] && mvc24gb2_root_scope &&
         mvc24gb2_runtime_shape || return 1
     local dir fd result=1 stage
     dir=$(mvc24gb2_runtime) || return 1
     [[ $dir == /run/mvc-controller ]] || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
-    UBS24GB2_FD=$fd
+    MVC24GB2_FD=$fd
     if mvc24gc15_reconcile_locked; then result=0; fi
-    stage=$UBS24GC15_STAGE
+    stage=$MVC24GC15_STAGE
     mvc24gb2_close
-    UBS24GC15_STAGE=$stage
+    MVC24GC15_STAGE=$stage
     (( result == 0 ))
 }

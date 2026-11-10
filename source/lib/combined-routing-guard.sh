@@ -26,14 +26,14 @@ mvc24b_valid_ifname() {
 # A fresh call invalidates any previously prepared WireGuard endpoint data.
 mvc24b_prepare_openvpn() {
     local iface=${1:-} proto=${2:-} ovpn=${3:-}
-    UBS24B_IFACE='' UBS24B_OVPN_PROTO='' UBS24B_OVPN_PAIR=''
-    UBS24B_WG_PAIRS=() UBS24B_WG_IPS=()
+    MVC24B_IFACE='' MVC24B_OVPN_PROTO='' MVC24B_OVPN_PAIR=''
+    MVC24B_WG_PAIRS=() MVC24B_WG_IPS=()
     (( $# == 3 )) || return 1
     mvc24b_valid_ifname "$iface" || { mvc24b_error 'Invalid physical interface.'; return 1; }
     [[ "$proto" == udp || "$proto" == tcp ]] || { mvc24b_error 'Invalid OpenVPN transport.'; return 1; }
     mvc24b_canonical_endpoint "$ovpn" || { mvc24b_error 'Invalid OpenVPN endpoint.'; return 1; }
-    UBS24B_IFACE=$iface UBS24B_OVPN_PROTO=$proto
-    UBS24B_OVPN_PAIR="${ovpn%:*} . ${ovpn##*:}"
+    MVC24B_IFACE=$iface MVC24B_OVPN_PROTO=$proto
+    MVC24B_OVPN_PAIR="${ovpn%:*} . ${ovpn##*:}"
 }
 
 # AFTER the OpenVPN stage is already protected, resolve and pin WireGuard
@@ -42,7 +42,7 @@ mvc24b_prepare_openvpn() {
 mvc24b_prepare_wireguard() {
     local endpoint ip port
     local -a pairs=() ips=()
-    UBS24B_WG_PAIRS=() UBS24B_WG_IPS=()
+    MVC24B_WG_PAIRS=() MVC24B_WG_IPS=()
     mvc24b_require_openvpn_prepared || return 1
     (( $# >= 1 && $# <= 64 )) || { mvc24b_error 'Expected 1-64 WireGuard peer endpoints.'; return 1; }
     for endpoint in "$@"; do
@@ -51,16 +51,16 @@ mvc24b_prepare_wireguard() {
         pairs+=("$ip . $port")
         ips+=("$ip")
     done
-    mapfile -t UBS24B_WG_PAIRS < <(printf '%s\n' "${pairs[@]}" | LC_ALL=C sort -u)
-    mapfile -t UBS24B_WG_IPS < <(printf '%s\n' "${ips[@]}" | LC_ALL=C sort -u)
+    mapfile -t MVC24B_WG_PAIRS < <(printf '%s\n' "${pairs[@]}" | LC_ALL=C sort -u)
+    mapfile -t MVC24B_WG_IPS < <(printf '%s\n' "${ips[@]}" | LC_ALL=C sort -u)
 }
 
 # Backwards-compatible convenience API for existing offline test fixtures.
 # A real combined connection must use the staged preparation functions above.
 mvc24b_prepare() {
     if (( $# < 4 )); then
-        UBS24B_IFACE='' UBS24B_OVPN_PROTO='' UBS24B_OVPN_PAIR=''
-        UBS24B_WG_PAIRS=() UBS24B_WG_IPS=()
+        MVC24B_IFACE='' MVC24B_OVPN_PROTO='' MVC24B_OVPN_PAIR=''
+        MVC24B_WG_PAIRS=() MVC24B_WG_IPS=()
         return 1
     fi
     mvc24b_prepare_openvpn "$1" "$2" "$3" || return 1
@@ -69,13 +69,13 @@ mvc24b_prepare() {
 }
 
 mvc24b_require_openvpn_prepared() {
-    mvc24b_valid_ifname "${UBS24B_IFACE:-}" &&
-        [[ "${UBS24B_OVPN_PROTO:-}" == udp || "${UBS24B_OVPN_PROTO:-}" == tcp ]] &&
-        [[ -n "${UBS24B_OVPN_PAIR:-}" ]]
+    mvc24b_valid_ifname "${MVC24B_IFACE:-}" &&
+        [[ "${MVC24B_OVPN_PROTO:-}" == udp || "${MVC24B_OVPN_PROTO:-}" == tcp ]] &&
+        [[ -n "${MVC24B_OVPN_PAIR:-}" ]]
 }
 mvc24b_require_prepared() {
     mvc24b_require_openvpn_prepared &&
-        (( ${#UBS24B_WG_PAIRS[@]} >= 1 && ${#UBS24B_WG_PAIRS[@]} <= 64 ))
+        (( ${#MVC24B_WG_PAIRS[@]} >= 1 && ${#MVC24B_WG_PAIRS[@]} <= 64 ))
 }
 
 # Proposed v2.4 guard includes the v2.3 legacy sets (for standalone VPNs)
@@ -86,7 +86,7 @@ mvc24b_require_prepared() {
 mvc24b_render_openvpn_stage() {
     mvc24b_require_openvpn_prepared || return 1
     local ovpn_set=direct_ovpn_udp
-    [[ "$UBS24B_OVPN_PROTO" == tcp ]] && ovpn_set=direct_ovpn_tcp
+    [[ "$MVC24B_OVPN_PROTO" == tcp ]] && ovpn_set=direct_ovpn_tcp
     cat <<'NFT'
 flush set inet vpn_guard tunnel_interfaces
 flush set inet vpn_guard udp_endpoints
@@ -97,7 +97,7 @@ flush set inet vpn_guard direct_ovpn_tcp
 add element inet vpn_guard tunnel_interfaces { "tun-vpnks" }
 NFT
     printf 'add element inet vpn_guard %s { "%s" . %s }\n' \
-        "$ovpn_set" "$UBS24B_IFACE" "$UBS24B_OVPN_PAIR"
+        "$ovpn_set" "$MVC24B_IFACE" "$MVC24B_OVPN_PAIR"
     cat <<'NFT'
 add chain inet vpn_guard active_output { type filter hook output priority -10; policy accept; }
 add rule inet vpn_guard active_output jump restricted_output
@@ -112,9 +112,9 @@ mvc24b_render_add_wireguard_stage() {
     mvc24b_require_prepared || return 1
     local pair
     printf '%s\n' 'flush set inet vpn_guard direct_wg_udp'
-    for pair in "${UBS24B_WG_PAIRS[@]}"; do
+    for pair in "${MVC24B_WG_PAIRS[@]}"; do
         printf 'add element inet vpn_guard direct_wg_udp { "%s" . %s }\n' \
-            "$UBS24B_IFACE" "$pair"
+            "$MVC24B_IFACE" "$pair"
     done
     printf '%s\n' 'add element inet vpn_guard tunnel_interfaces { "vpnks-wg" }'
 }
@@ -127,13 +127,13 @@ mvc24b_render_add_wireguard_stage() {
 # Arguments: ENDPOINT_IP PHYSICAL_IFACE GATEWAY_OR_- SOURCE_IP
 mvc24b_route_add_argv() {
     local dest=${1:-} iface=${2:-} via=${3:-} source=${4:-}
-    UBS24B_ROUTE_ARGV=()
+    MVC24B_ROUTE_ARGV=()
     mvc24_valid_ip "$dest" && mvc24b_valid_ifname "$iface" &&
         mvc24_valid_ip "$source" || return 1
     [[ "$via" == '-' ]] || mvc24_valid_ip "$via" || return 1
-    UBS24B_ROUTE_ARGV=(-4 route add "$dest/32")
-    [[ "$via" == '-' ]] || UBS24B_ROUTE_ARGV+=(via "$via")
-    UBS24B_ROUTE_ARGV+=(dev "$iface" src "$source" proto 186 metric 4240)
+    MVC24B_ROUTE_ARGV=(-4 route add "$dest/32")
+    [[ "$via" == '-' ]] || MVC24B_ROUTE_ARGV+=(via "$via")
+    MVC24B_ROUTE_ARGV+=(dev "$iface" src "$source" proto 186 metric 4240)
 }
 
 # Validate an exact /32 route returned from "ip -4 route show exact X/32
@@ -234,7 +234,7 @@ mvc24b_reject_default_allowedips() {
 # Exact checks must pass before Phase C permits a live state transition.
 mvc24b_nft_chain_body() {
     local name=$1
-    nft -n -s -y list chain inet "${UBS24B_TABLE:-vpn_guard}" "$name" | awk -v name="$name" '
+    nft -n -s -y list chain inet "${MVC24B_TABLE:-vpn_guard}" "$name" | awk -v name="$name" '
         $1 == "chain" && $2 == name && $3 == "{" {inside=1; next}
         inside && $1 == "}" {exit}
         inside {sub(/^[[:space:]]+/, ""); sub(/[[:space:]]+$/, "");
@@ -243,7 +243,7 @@ mvc24b_nft_chain_body() {
 }
 mvc24b_nft_set_body() {
     local name=$1
-    nft -n list set inet "${UBS24B_TABLE:-vpn_guard}" "$name" | awk -v name="$name" '
+    nft -n list set inet "${MVC24B_TABLE:-vpn_guard}" "$name" | awk -v name="$name" '
         $1 == "set" && $2 == name && $3 == "{" {inside=1; next}
         inside && $1 == "}" {exit}
         inside {sub(/^[[:space:]]+/, ""); sub(/[[:space:]]+$/, "");
@@ -315,15 +315,15 @@ RULES
 )" ]] || return 1
     active=$(mvc24b_nft_chain_body active_output) || return 1
     [[ "$active" == $'type filter hook output priority -10; policy accept;\njump restricted_output' ]] || return 1
-    names=$(nft -n list table inet "${UBS24B_TABLE:-vpn_guard}" | awk '$1 == "chain" {print $2}' | LC_ALL=C sort) || return 1
-    if [[ "${UBS24PI_GUARD_MODE:-}" == private_ipv4_v1 || "${UBS24PI_GUARD_MODE:-}" == private_ipv4_v2 ]]; then
+    names=$(nft -n list table inet "${MVC24B_TABLE:-vpn_guard}" | awk '$1 == "chain" {print $2}' | LC_ALL=C sort) || return 1
+    if [[ "${MVC24PI_GUARD_MODE:-}" == private_ipv4_v1 || "${MVC24PI_GUARD_MODE:-}" == private_ipv4_v2 ]]; then
         [[ "$names" == $'active_output\nprivate_wg_output\nrestricted_output' ]] || return 1
     else
-        [[ -z "${UBS24PI_GUARD_MODE:-}" ]] || return 1
+        [[ -z "${MVC24PI_GUARD_MODE:-}" ]] || return 1
         [[ "$names" == $'active_output\nrestricted_output' ]] || return 1
     fi
-    set_names=$(nft -n list table inet "${UBS24B_TABLE:-vpn_guard}" | awk '$1 == "set" {print $2}' | LC_ALL=C sort) || return 1
-    if [[ "${UBS24PI_GUARD_MODE:-}" == private_ipv4_v1 || "${UBS24PI_GUARD_MODE:-}" == private_ipv4_v2 ]]; then
+    set_names=$(nft -n list table inet "${MVC24B_TABLE:-vpn_guard}" | awk '$1 == "set" {print $2}' | LC_ALL=C sort) || return 1
+    if [[ "${MVC24PI_GUARD_MODE:-}" == private_ipv4_v1 || "${MVC24PI_GUARD_MODE:-}" == private_ipv4_v2 ]]; then
         [[ "$set_names" == $'direct_ovpn_tcp\ndirect_ovpn_udp\ndirect_wg_udp\nprivate_wg_ipv4\ntcp_endpoints\ntunnel_interfaces\nudp_endpoints' ]] || return 1
         declare -F mvc24pi_verify_private_active >/dev/null || return 1
         mvc24pi_verify_private_active || return 1
@@ -343,8 +343,8 @@ RULES
     fi
     ovpn_udp=$(mvc24b_nft_triples direct_ovpn_udp) || return 1
     ovpn_tcp=$(mvc24b_nft_triples direct_ovpn_tcp) || return 1
-    pair="$UBS24B_IFACE . $UBS24B_OVPN_PAIR"
-    if [[ "$UBS24B_OVPN_PROTO" == udp ]]; then
+    pair="$MVC24B_IFACE . $MVC24B_OVPN_PAIR"
+    if [[ "$MVC24B_OVPN_PROTO" == udp ]]; then
         [[ "$ovpn_udp" == "$pair" && -z "$ovpn_tcp" ]] || return 1
     else
         [[ "$ovpn_tcp" == "$pair" && -z "$ovpn_udp" ]] || return 1
@@ -354,8 +354,8 @@ RULES
         [[ -z "$wg" ]] || return 1
     else
         expected=''
-        for pair in "${UBS24B_WG_PAIRS[@]}"; do
-            expected+="${UBS24B_IFACE} . $pair"$'\n'
+        for pair in "${MVC24B_WG_PAIRS[@]}"; do
+            expected+="${MVC24B_IFACE} . $pair"$'\n'
         done
         expected=${expected%$'\n'}
         [[ "$wg" == "$expected" ]]

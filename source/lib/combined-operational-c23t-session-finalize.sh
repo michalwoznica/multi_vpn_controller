@@ -16,16 +16,16 @@
 # the saved source profile.
 
 mvc24gc23t_reset() {
-    UBS24GC23T_ATTEMPTED=no
-    UBS24GC23T_STAGE=unverified
-    UBS24GC23T_AUTHORITY=none
-    UBS24GC23T_SOURCE_UUID=
-    UBS24GC23T_CLONE_UUID=
-    UBS24GC23T_NM_OWNER=
-    UBS24GC23T_ARCHIVE=
-    UBS24GC23T_CONVERGENCE_DETAIL=unverified
-    UBS24GC23T_ROUTE4_EQUIVALENCE=unverified
-    UBS24GC23T_RECOVERY_DETAIL=unverified
+    MVC24GC23T_ATTEMPTED=no
+    MVC24GC23T_STAGE=unverified
+    MVC24GC23T_AUTHORITY=none
+    MVC24GC23T_SOURCE_UUID=
+    MVC24GC23T_CLONE_UUID=
+    MVC24GC23T_NM_OWNER=
+    MVC24GC23T_ARCHIVE=
+    MVC24GC23T_CONVERGENCE_DETAIL=unverified
+    MVC24GC23T_ROUTE4_EQUIVALENCE=unverified
+    MVC24GC23T_RECOVERY_DETAIL=unverified
 }
 mvc24gc23t_admission_witness() { return 1; }
 mvc24gc23t_authorize_public_release() { return 1; }
@@ -85,17 +85,17 @@ mvc24gc23t_recover_locked_session() {
     dir=$(mvc24gb2_runtime) || return 1
     [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || return 1
     if ! mvc24gb2_lock_valid >/dev/null 2>&1; then
-        [[ -z ${UBS24GB2_FD:-} && -f $dir/controller.lock && ! -L $dir/controller.lock ]] || return 1
+        [[ -z ${MVC24GB2_FD:-} && -f $dir/controller.lock && ! -L $dir/controller.lock ]] || return 1
         exec {fd}< "$dir/controller.lock" || return 1
         if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
-        UBS24GB2_FD=$fd
+        MVC24GB2_FD=$fd
     fi
     if ! mvc24gc3_transition_records_valid; then
-        UBS24GC23T_RECOVERY_DETAIL=c3-session-journal-unverified
+        MVC24GC23T_RECOVERY_DETAIL=c3-session-journal-unverified
         return 1
     fi
     if ! mvc24gc7_read_intent; then
-        UBS24GC23T_RECOVERY_DETAIL=c7-activation-journal-unverified
+        MVC24GC23T_RECOVERY_DETAIL=c7-activation-journal-unverified
         return 1
     fi
     # Fresh-process completion recovery has no C11 shell state. Reconstruct
@@ -103,21 +103,21 @@ mvc24gc23t_recover_locked_session() {
     # the existing C15 loader, which then invokes C13's full same-boot/hash/
     # namespace validator. C19 validation depends on these fields.
     if ! mvc24gc15_load_bound_intent; then
-        UBS24GC23T_RECOVERY_DETAIL=c13-bound-tunnel-source-unverified
+        MVC24GC23T_RECOVERY_DETAIL=c13-bound-tunnel-source-unverified
         return 1
     fi
     if ! mvc24gc19_intent_valid; then
-        UBS24GC23T_RECOVERY_DETAIL=c19-stop-journal-unverified
+        MVC24GC23T_RECOVERY_DETAIL=c19-stop-journal-unverified
         return 1
     fi
-    UBS24GC23T_RECOVERY_DETAIL=locked-session-reconstructed
-    UBS24GC23T_SOURCE_UUID=$UBS24GC7_SOURCE_UUID
-    UBS24GC23T_CLONE_UUID=$UBS24GC7_CLONE_UUID
-    UBS24GC23T_NM_OWNER=$UBS24GC7_NM_OWNER
-    mvc24ga_uuid_valid "$UBS24GC23T_SOURCE_UUID" &&
-      mvc24ga_uuid_valid "$UBS24GC23T_CLONE_UUID" &&
-      [[ $UBS24GC23T_SOURCE_UUID != "$UBS24GC23T_CLONE_UUID" ]] &&
-      mvc24gc7_nm_owner_valid "$UBS24GC23T_NM_OWNER" &&
+    MVC24GC23T_RECOVERY_DETAIL=locked-session-reconstructed
+    MVC24GC23T_SOURCE_UUID=$MVC24GC7_SOURCE_UUID
+    MVC24GC23T_CLONE_UUID=$MVC24GC7_CLONE_UUID
+    MVC24GC23T_NM_OWNER=$MVC24GC7_NM_OWNER
+    mvc24ga_uuid_valid "$MVC24GC23T_SOURCE_UUID" &&
+      mvc24ga_uuid_valid "$MVC24GC23T_CLONE_UUID" &&
+      [[ $MVC24GC23T_SOURCE_UUID != "$MVC24GC23T_CLONE_UUID" ]] &&
+      mvc24gc7_nm_owner_valid "$MVC24GC23T_NM_OWNER" &&
       mvc24gb2_lock_valid
 }
 
@@ -190,15 +190,15 @@ mvc24gc23t_b2_topology_witness() {
     (( $# == 0 )) || return 1
     local dir scratch links r4 r6 good=1
     dir=$(mvc24gb2_runtime) || {
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-runtime-unavailable
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-unavailable
         return 1
     }
     [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || {
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-runtime-invalid
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-invalid
         return 1
     }
     scratch=$(umask 077; mktemp -d /run/mvc-c23t-topology.XXXXXXXX) || {
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-scratch-create-failed
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-scratch-create-failed
         return 1
     }
     links=$scratch/links.json
@@ -207,41 +207,41 @@ mvc24gc23t_b2_topology_witness() {
     if ! mvc24gb1_capture_links "$links" ||
        ! mvc24gb1_capture_routes4 "$r4" ||
        ! mvc24gb1_capture_routes6 "$r6"; then
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-capture-failed
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-capture-failed
         good=0
     elif ! cmp -s -- "$links" "$dir/links.json"; then
-        UBS24GC23T_CONVERGENCE_DETAIL=links-not-restored
+        MVC24GC23T_CONVERGENCE_DETAIL=links-not-restored
         good=0
     elif ! cmp -s -- "$r4" "$dir/routes4.json"; then
         if mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$dir/routes4.json" "$r4"; then
-            UBS24GC23T_ROUTE4_EQUIVALENCE=nm-connectivity-penalty-plus-20000
+            MVC24GC23T_ROUTE4_EQUIVALENCE=nm-connectivity-penalty-plus-20000
         else
-            UBS24GC23T_ROUTE4_EQUIVALENCE=not-equivalent
-            UBS24GC23T_CONVERGENCE_DETAIL=routes4-not-restored
+            MVC24GC23T_ROUTE4_EQUIVALENCE=not-equivalent
+            MVC24GC23T_CONVERGENCE_DETAIL=routes4-not-restored
             good=0
         fi
     else
-        UBS24GC23T_ROUTE4_EQUIVALENCE=exact
+        MVC24GC23T_ROUTE4_EQUIVALENCE=exact
     fi
     if (( good == 1 )); then
         if ! cmp -s -- "$r6" "$dir/routes6.json"; then
-            UBS24GC23T_CONVERGENCE_DETAIL=routes6-not-restored
+            MVC24GC23T_CONVERGENCE_DETAIL=routes6-not-restored
             good=0
         elif ! mvc24gc3_transition_records_valid; then
-            UBS24GC23T_CONVERGENCE_DETAIL=topology-session-journal-changed
+            MVC24GC23T_CONVERGENCE_DETAIL=topology-session-journal-changed
             good=0
-        elif [[ $UBS24GC23T_ROUTE4_EQUIVALENCE == nm-connectivity-penalty-plus-20000 ]]; then
-            UBS24GC23T_CONVERGENCE_DETAIL=topology-restored-nm-connectivity-penalty-equivalent
+        elif [[ $MVC24GC23T_ROUTE4_EQUIVALENCE == nm-connectivity-penalty-plus-20000 ]]; then
+            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored-nm-connectivity-penalty-equivalent
         else
-            UBS24GC23T_CONVERGENCE_DETAIL=topology-restored
+            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored
         fi
     fi
     rm -f -- "$links" "$r4" "$r6" || {
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-scratch-cleanup-failed
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-scratch-cleanup-failed
         good=0
     }
     rmdir -- "$scratch" || {
-        UBS24GC23T_CONVERGENCE_DETAIL=topology-scratch-cleanup-failed
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-scratch-cleanup-failed
         good=0
     }
     (( good == 1 ))
@@ -249,35 +249,35 @@ mvc24gc23t_b2_topology_witness() {
 
 mvc24gc23t_c1_witness_once() {
     (( $# == 0 )) || return 1
-    UBS24GC23T_CONVERGENCE_DETAIL=session-reconstruction
+    MVC24GC23T_CONVERGENCE_DETAIL=session-reconstruction
     if ! mvc24gc23t_recover_locked_session; then
-        UBS24GC23T_STAGE=post-stop-session-journal-or-lock-unverified
+        MVC24GC23T_STAGE=post-stop-session-journal-or-lock-unverified
         return 1
     fi
-    UBS24GC23T_CONVERGENCE_DETAIL=no-active-vpn-before-c1
+    MVC24GC23T_CONVERGENCE_DETAIL=no-active-vpn-before-c1
     if ! mvc24gb4_no_active_vpn; then
-        UBS24GC23T_STAGE=post-stop-vpn-inactivity-unverified
+        MVC24GC23T_STAGE=post-stop-vpn-inactivity-unverified
         return 1
     fi
-    UBS24GC23T_CONVERGENCE_DETAIL=c1-firewall-and-foreign-policy
+    MVC24GC23T_CONVERGENCE_DETAIL=c1-firewall-and-foreign-policy
     if ! mvc24gc23t_c1_firewall_witness; then
-        UBS24GC23T_STAGE=post-stop-c1-firewall-or-foreign-policy-unverified
+        MVC24GC23T_STAGE=post-stop-c1-firewall-or-foreign-policy-unverified
         return 1
     fi
     if ! mvc24gc23t_b2_topology_witness; then
         return 1
     fi
-    UBS24GC23T_CONVERGENCE_DETAIL=no-active-vpn-after-topology
+    MVC24GC23T_CONVERGENCE_DETAIL=no-active-vpn-after-topology
     if ! mvc24gb4_no_active_vpn; then
-        UBS24GC23T_STAGE=post-stop-vpn-inactivity-unverified
+        MVC24GC23T_STAGE=post-stop-vpn-inactivity-unverified
         return 1
     fi
-    UBS24GC23T_CONVERGENCE_DETAIL=final-lock
+    MVC24GC23T_CONVERGENCE_DETAIL=final-lock
     if ! mvc24gb2_lock_valid; then
-        UBS24GC23T_STAGE=post-stop-session-journal-or-lock-unverified
+        MVC24GC23T_STAGE=post-stop-session-journal-or-lock-unverified
         return 1
     fi
-    UBS24GC23T_CONVERGENCE_DETAIL=verified
+    MVC24GC23T_CONVERGENCE_DETAIL=verified
     return 0
 }
 
@@ -293,19 +293,19 @@ mvc24gc23t_c1_witness() {
         if mvc24gc23t_c1_witness_once; then
             return 0
         fi
-        case ${UBS24GC23T_CONVERGENCE_DETAIL:-} in
+        case ${MVC24GC23T_CONVERGENCE_DETAIL:-} in
             links-not-restored|routes4-not-restored|routes6-not-restored) ;;
             *) return 1 ;;
         esac
         if (( attempt < max_attempts )); then
-            UBS24GC23T_STAGE=waiting-post-stop-b2-topology-convergence
+            MVC24GC23T_STAGE=waiting-post-stop-b2-topology-convergence
             mvc24gc23t_convergence_pause || {
-                UBS24GC23T_STAGE=post-stop-convergence-pause-failed
+                MVC24GC23T_STAGE=post-stop-convergence-pause-failed
                 return 1
             }
         fi
     done
-    UBS24GC23T_STAGE=post-stop-b2-topology-not-converged
+    MVC24GC23T_STAGE=post-stop-b2-topology-not-converged
     return 1
 }
 
@@ -317,7 +317,7 @@ mvc24gc23t_release_post_witness() {
         local dir clone root
         dir=$(mvc24gc23t_runtime) || return 1
         if [[ -f $dir/archive-plan ]]; then
-            UBS24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$dir/archive-plan") || return 1
+            MVC24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$dir/archive-plan") || return 1
         clone=$(sed -n '7s/^clone=//p' "$dir/archive-plan") || return 1
             root=$(mvc24gc23t_archive_root) || return 1
             prestate="$root/$clone/controller/prestate.json"
@@ -362,9 +362,9 @@ mvc24gc23t_release_intent_valid() {
        ${rows[1]} == state=nft-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "c19=$c19" &&
        ${rows[4]} == "c1=$c1" && ${rows[5]} == "batch=$batch" &&
-       ${rows[6]} == "source=${UBS24GC23T_SOURCE_UUID:-}" &&
+       ${rows[6]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
        ${rows[7]} == clone=* && ${rows[8]} == nm_owner=* ]] || return 1
-    mvc24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "$clone" && mvc24gc7_nm_owner_valid "$owner" &&
+    mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "$clone" && mvc24gc7_nm_owner_valid "$owner" &&
       mvc24gc23t_release_batch_valid "$dir/release.nft"
 }
 
@@ -389,8 +389,8 @@ mvc24gc23t_publish_release_intent() {
     printf '%s\n' ubs-v240-c23t-release-intent-v1 \
       state=nft-delete-attempted-once-outcome-uncertain "boot=$boot" \
       "c19=$c19" "c1=$c1" "batch=$batch" \
-      "source=$UBS24GC23T_SOURCE_UUID" "clone=$UBS24GC23T_CLONE_UUID" \
-      "nm_owner=$UBS24GC23T_NM_OWNER" > "$tmp" || return 1
+      "source=$MVC24GC23T_SOURCE_UUID" "clone=$MVC24GC23T_CLONE_UUID" \
+      "nm_owner=$MVC24GC23T_NM_OWNER" > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     mv -T -- "$tmp" "$dir/release-intent" || return 1
     mvc24gc23t_release_intent_valid
@@ -410,7 +410,7 @@ mvc24gc23t_uuid_inventory() {
     while IFS= read -r line || [[ -n $line ]]; do
         [[ -n $line ]] || continue
         mvc24ga_uuid_valid "$line" || return 1
-        [[ $line == "${UBS24GC23T_SOURCE_UUID:-}" ]] && source_count=$((source_count + 1))
+        [[ $line == "${MVC24GC23T_SOURCE_UUID:-}" ]] && source_count=$((source_count + 1))
     done < "$out"
     (( source_count == 1 ))
 }
@@ -426,7 +426,7 @@ mvc24gc23t_clone_inventory_count() {
 }
 
 mvc24gc23t_clone_present() {
-    (( $# == 1 )) && mvc24ga_uuid_valid "$1" && mvc24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" || return 1
+    (( $# == 1 )) && mvc24ga_uuid_valid "$1" && mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" || return 1
     local tmp count
     tmp=$(umask 077; mktemp /run/mvc-c23t-nm.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || return 1
@@ -437,7 +437,7 @@ mvc24gc23t_clone_present() {
 }
 
 mvc24gc23t_clone_absent() {
-    (( $# == 1 )) && mvc24ga_uuid_valid "$1" && mvc24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" || return 1
+    (( $# == 1 )) && mvc24ga_uuid_valid "$1" && mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" || return 1
     local tmp count
     tmp=$(umask 077; mktemp /run/mvc-c23t-nm.XXXXXXXX) || return 1
     chmod 600 -- "$tmp" || return 1
@@ -462,16 +462,16 @@ mvc24gc23t_clone_delete_intent_valid() {
     [[ ${rows[0]} == ubs-v240-c23t-clone-delete-intent-v1 &&
        ${rows[1]} == state=nm-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "release=$release" &&
-       ${rows[4]} == "source=${UBS24GC23T_SOURCE_UUID:-}" &&
+       ${rows[4]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
        ${rows[5]} == clone=* && ${rows[6]} == nm_owner=* ]] || return 1
-    mvc24ga_uuid_valid "${UBS24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "$clone" && mvc24gc7_nm_owner_valid "$owner"
+    mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "$clone" && mvc24gc7_nm_owner_valid "$owner"
 }
 
 mvc24gc23t_publish_clone_delete_intent() {
     (( $# == 0 )) || return 1
     local dir tmp boot release
     mvc24gc23t_release_intent_valid && mvc24gc23t_release_post_witness || return 1
-    mvc24gc23t_clone_present "$UBS24GC23T_CLONE_UUID" || return 1
+    mvc24gc23t_clone_present "$MVC24GC23T_CLONE_UUID" || return 1
     dir=$(mvc24gc23t_runtime) || return 1
     [[ ! -e $dir/clone-delete-intent && ! -L $dir/clone-delete-intent ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
@@ -479,8 +479,8 @@ mvc24gc23t_publish_clone_delete_intent() {
     tmp=$(umask 077; mktemp "$dir/.clone-delete.XXXXXXXX") || return 1
     printf '%s\n' ubs-v240-c23t-clone-delete-intent-v1 \
       state=nm-delete-attempted-once-outcome-uncertain "boot=$boot" \
-      "release=$release" "source=$UBS24GC23T_SOURCE_UUID" \
-      "clone=$UBS24GC23T_CLONE_UUID" "nm_owner=$UBS24GC23T_NM_OWNER" > "$tmp" || return 1
+      "release=$release" "source=$MVC24GC23T_SOURCE_UUID" \
+      "clone=$MVC24GC23T_CLONE_UUID" "nm_owner=$MVC24GC23T_NM_OWNER" > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     mv -T -- "$tmp" "$dir/clone-delete-intent" || return 1
     mvc24gc23t_clone_delete_intent_valid
@@ -520,8 +520,8 @@ mvc24gc23t_archive_plan_valid() {
        ${rows[6]} == clone=* && ${rows[7]} == "archive=$expected" &&
        $archive == "$expected" ]] || return 1
     mvc24ga_uuid_valid "$source" && mvc24ga_uuid_valid "$clone" && [[ $source != "$clone" ]] || return 1
-    UBS24GC23T_SOURCE_UUID=$source
-    UBS24GC23T_CLONE_UUID=$clone
+    MVC24GC23T_SOURCE_UUID=$source
+    MVC24GC23T_CLONE_UUID=$clone
     return 0
 }
 
@@ -530,10 +530,10 @@ mvc24gc23t_publish_archive_plan() {
     local dir root archive tmp boot release del
     mvc24gc23t_clone_delete_intent_valid &&
       mvc24gc23t_release_post_witness &&
-      mvc24gc23t_clone_absent "$UBS24GC23T_CLONE_UUID" || return 1
+      mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID" || return 1
     dir=$(mvc24gc23t_runtime) || return 1
     root=$(mvc24gc23t_archive_root) || return 1
-    archive="$root/$UBS24GC23T_CLONE_UUID"
+    archive="$root/$MVC24GC23T_CLONE_UUID"
     [[ ! -e $dir/archive-plan && ! -L $dir/archive-plan &&
        ! -e $archive && ! -L $archive ]] || return 1
     if [[ ! -e $root ]]; then (umask 077; mkdir -m 700 -- "$root") || return 1; fi
@@ -544,8 +544,8 @@ mvc24gc23t_publish_archive_plan() {
     tmp=$(umask 077; mktemp "$dir/.archive.XXXXXXXX") || return 1
     printf '%s\n' ubs-v240-c23t-archive-plan-v1 \
       state=completed-session-archive-pending "boot=$boot" \
-      "release=$release" "delete=$del" "source=$UBS24GC23T_SOURCE_UUID" \
-      "clone=$UBS24GC23T_CLONE_UUID" "archive=$archive" > "$tmp" || return 1
+      "release=$release" "delete=$del" "source=$MVC24GC23T_SOURCE_UUID" \
+      "clone=$MVC24GC23T_CLONE_UUID" "archive=$archive" > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     mv -T -- "$tmp" "$dir/archive-plan" || return 1
     mvc24gc23t_archive_plan_valid
@@ -558,17 +558,17 @@ mvc24gc23t_archive_continue() {
     root=$(mvc24gc23t_archive_root) || return 1
     if [[ -d $completion && ! -L $completion ]]; then
         mvc24gc23t_archive_plan_valid || return 1
-        UBS24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$completion/archive-plan") || return 1
+        MVC24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$completion/archive-plan") || return 1
         clone=$(sed -n '7s/^clone=//p' "$completion/archive-plan") || return 1
         archive="$root/$clone"
     else
         # Completion was already moved last; identify the sole matching archive
         # from the session clone retained in memory by normal execution.
-        clone=${UBS24GC23T_CLONE_UUID:-}
+        clone=${MVC24GC23T_CLONE_UUID:-}
         mvc24ga_uuid_valid "$clone" || return 1
         archive="$root/$clone"
         [[ -d $archive/completion && ! -L $archive/completion ]] || return 1
-        UBS24GC23T_ARCHIVE=$archive
+        MVC24GC23T_ARCHIVE=$archive
         mvc24gb2_close
         return 0
     fi
@@ -605,7 +605,7 @@ mvc24gc23t_archive_continue() {
        ! -e /run/mvc-controller && ! -e /run/mvc-activation &&
        ! -e /run/mvc-output-transition && ! -e /run/mvc-disconnect &&
        ! -e /run/mvc-completion ]] || return 1
-    UBS24GC23T_ARCHIVE=$archive
+    MVC24GC23T_ARCHIVE=$archive
     mvc24gb2_close
     return 0
 }
@@ -614,10 +614,10 @@ mvc24gc23t_archive_continue() {
 # classified immediately by read-only post-state; it is never reissued.
 mvc24gc23t_execute_once() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GC23T_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC23T_ATTEMPTED=yes
-    UBS24GC23T_STAGE=refused-or-unverified
-    UBS24GC23T_AUTHORITY=none
+    [[ ${MVC24GC23T_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC23T_ATTEMPTED=yes
+    MVC24GC23T_STAGE=refused-or-unverified
+    MVC24GC23T_AUTHORITY=none
     mvc24gc23t_admission_witness || return 1
     mvc24gc23t_c1_witness || return 1
     [[ ! -e /run/mvc-completion && ! -L /run/mvc-completion ]] || return 1
@@ -625,33 +625,33 @@ mvc24gc23t_execute_once() {
     mvc24gc23t_publish_release_intent || return 1
     mvc24gc23t_nft_check /run/mvc-completion/release.nft || return 1
     mvc24gc23t_c1_witness && mvc24gc23t_release_intent_valid || return 1
-    UBS24GC23T_STAGE=release-attempted-outcome-uncertain
+    MVC24GC23T_STAGE=release-attempted-outcome-uncertain
     local release_rc=0
     mvc24gc23t_nft_commit /run/mvc-completion/release.nft || release_rc=$?
     if ! mvc24gc23t_release_post_witness; then
-        UBS24GC23T_STAGE=release-attempt-present-poststate-unverified-no-retry
+        MVC24GC23T_STAGE=release-attempt-present-poststate-unverified-no-retry
         return 1
     fi
     # A nonzero reply is acceptable only because independent post-state proves
     # the exact owned tables are absent and foreign policy is unchanged.
     : "$release_rc"
-    UBS24GC23T_STAGE=owned-guard-release-observed-clone-delete-pending
+    MVC24GC23T_STAGE=owned-guard-release-observed-clone-delete-pending
 
     mvc24gc23t_publish_clone_delete_intent || return 1
-    UBS24GC23T_STAGE=clone-delete-attempted-outcome-uncertain
+    MVC24GC23T_STAGE=clone-delete-attempted-outcome-uncertain
     local delete_rc=0
-    mvc24gc23t_nm_delete "$UBS24GC23T_CLONE_UUID" || delete_rc=$?
-    if ! mvc24gc23t_clone_absent "$UBS24GC23T_CLONE_UUID"; then
-        UBS24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
+    mvc24gc23t_nm_delete "$MVC24GC23T_CLONE_UUID" || delete_rc=$?
+    if ! mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID"; then
+        MVC24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
         return 1
     fi
     : "$delete_rc"
-    UBS24GC23T_STAGE=clone-absence-observed-archive-pending
+    MVC24GC23T_STAGE=clone-absence-observed-archive-pending
 
     mvc24gc23t_publish_archive_plan || return 1
-    UBS24GC23T_STAGE=archive-in-progress
+    MVC24GC23T_STAGE=archive-in-progress
     mvc24gc23t_archive_continue || return 1
-    UBS24GC23T_STAGE=completed-session-archived-sameboot-ready
+    MVC24GC23T_STAGE=completed-session-archived-sameboot-ready
     return 0
 }
 
@@ -660,8 +660,8 @@ mvc24gc23t_execute_once() {
 # never retried; observation either proves completion and advances or stops.
 mvc24gc23t_reconcile_once() {
     (( $# == 0 )) || return 1
-    UBS24GC23T_STAGE=reconcile-unverified
-    UBS24GC23T_AUTHORITY=none
+    MVC24GC23T_STAGE=reconcile-unverified
+    MVC24GC23T_AUTHORITY=none
     mvc24gc23t_admission_witness || return 1
     local dir clone
     dir=$(mvc24gc23t_runtime) || return 1
@@ -675,27 +675,27 @@ mvc24gc23t_reconcile_once() {
     # on activation/output/disconnect journals remaining at fixed paths.
     if [[ -f $dir/archive-plan ]]; then
         if ! mvc24gc23t_archive_plan_valid; then
-            UBS24GC23T_STAGE=archive-plan-invalid
+            MVC24GC23T_STAGE=archive-plan-invalid
             return 1
         fi
-        UBS24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$dir/archive-plan") || return 1
+        MVC24GC23T_SOURCE_UUID=$(sed -n '6s/^source=//p' "$dir/archive-plan") || return 1
         clone=$(sed -n '7s/^clone=//p' "$dir/archive-plan") || return 1
         mvc24ga_uuid_valid "$clone" || return 1
-        UBS24GC23T_CLONE_UUID=$clone
+        MVC24GC23T_CLONE_UUID=$clone
         if ! mvc24gc23t_clone_absent "$clone"; then
-            UBS24GC23T_STAGE=archive-clone-absence-unproven
+            MVC24GC23T_STAGE=archive-clone-absence-unproven
             return 1
         fi
         if ! mvc24gc23t_release_post_witness; then
-            UBS24GC23T_STAGE=archive-release-poststate-unproven
+            MVC24GC23T_STAGE=archive-release-poststate-unproven
             return 1
         fi
-        UBS24GC23T_STAGE=archive-in-progress
+        MVC24GC23T_STAGE=archive-in-progress
         if ! mvc24gc23t_archive_continue; then
-            UBS24GC23T_STAGE=archive-continuation-failed
+            MVC24GC23T_STAGE=archive-continuation-failed
             return 1
         fi
-        UBS24GC23T_STAGE=completed-session-archived-sameboot-ready
+        MVC24GC23T_STAGE=completed-session-archived-sameboot-ready
         return 0
     fi
 
@@ -705,34 +705,34 @@ mvc24gc23t_reconcile_once() {
     [[ -f $dir/release-intent ]] || return 1
     mvc24gc23t_release_intent_valid || return 1
     if ! mvc24gc23t_release_post_witness; then
-        UBS24GC23T_STAGE=release-attempt-present-poststate-unverified-no-retry
+        MVC24GC23T_STAGE=release-attempt-present-poststate-unverified-no-retry
         return 1
     fi
 
     if [[ -f $dir/clone-delete-intent ]]; then
         mvc24gc23t_clone_delete_intent_valid || return 1
-        if ! mvc24gc23t_clone_absent "$UBS24GC23T_CLONE_UUID"; then
-            UBS24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
+        if ! mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID"; then
+            MVC24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
             return 1
         fi
     else
         # Release is proven complete and no delete was ever attempted: this is
         # continuation, not retry of an ambiguous delete.
-        mvc24gc23t_clone_present "$UBS24GC23T_CLONE_UUID" || return 1
+        mvc24gc23t_clone_present "$MVC24GC23T_CLONE_UUID" || return 1
         mvc24gc23t_publish_clone_delete_intent || return 1
-        UBS24GC23T_STAGE=clone-delete-attempted-outcome-uncertain
+        MVC24GC23T_STAGE=clone-delete-attempted-outcome-uncertain
         local rc=0
-        mvc24gc23t_nm_delete "$UBS24GC23T_CLONE_UUID" || rc=$?
-        if ! mvc24gc23t_clone_absent "$UBS24GC23T_CLONE_UUID"; then
-            UBS24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
+        mvc24gc23t_nm_delete "$MVC24GC23T_CLONE_UUID" || rc=$?
+        if ! mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID"; then
+            MVC24GC23T_STAGE=clone-delete-intent-present-absence-unproven-no-retry
             return 1
         fi
         : "$rc"
     fi
 
     mvc24gc23t_publish_archive_plan || return 1
-    UBS24GC23T_STAGE=archive-in-progress
+    MVC24GC23T_STAGE=archive-in-progress
     mvc24gc23t_archive_continue || return 1
-    UBS24GC23T_STAGE=completed-session-archived-sameboot-ready
+    MVC24GC23T_STAGE=completed-session-archived-sameboot-ready
     return 0
 }

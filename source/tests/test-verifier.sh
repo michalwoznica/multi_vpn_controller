@@ -146,10 +146,10 @@ run_case() {
         echo 'nameserver 192.168.200.1' > "$resolv"
     fi
     VERIFY_CASE=$case_name \
-    UBS24V_CONTROLLER="$TMP/controller" \
-    UBS24V_DUAL_RECOVERY="$TMP/dual" \
-    UBS24V_EMERGENCY_RECOVERY="$TMP/emergency" \
-    UBS24V_RESOLV_CONF="$resolv" \
+    MVC24V_CONTROLLER="$TMP/controller" \
+    MVC24V_DUAL_RECOVERY="$TMP/dual" \
+    MVC24V_EMERGENCY_RECOVERY="$TMP/emergency" \
+    MVC24V_RESOLV_CONF="$resolv" \
     PATH="$TMP/bin:$PATH" \
         "$TOOL" > "$output" 2>&1
     printf '%s\n' "$output"

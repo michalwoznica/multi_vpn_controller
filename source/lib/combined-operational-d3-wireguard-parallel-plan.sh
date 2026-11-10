@@ -18,18 +18,18 @@
 # combined-networkmanager-backend.sh, combined-operational-d2-...-readonly.sh.
 
 mvc24gd3_reset() {
-    UBS24GD3_STAGE=unverified
-    UBS24GD3_TEMP_NAME=vpnks-wg
-    UBS24GD3_TEMP_UUID=
-    UBS24GD3_WG_SOURCE=
-    UBS24GD3_WG_SOURCE_IP=
-    UBS24GD3_ENDPOINT_IP=
-    UBS24GD3_ENDPOINT_PORT=
-    UBS24GD3_UNDERLAY=
-    UBS24GD3_UNDERLAY_SOURCE=
-    UBS24GD3_UNDERLAY_GATEWAY=
-    UBS24GD3_ROUTE_ADD_ARGS=()
-    UBS24GD3_ROUTE_DEL_ARGS=()
+    MVC24GD3_STAGE=unverified
+    MVC24GD3_TEMP_NAME=vpnks-wg
+    MVC24GD3_TEMP_UUID=
+    MVC24GD3_WG_SOURCE=
+    MVC24GD3_WG_SOURCE_IP=
+    MVC24GD3_ENDPOINT_IP=
+    MVC24GD3_ENDPOINT_PORT=
+    MVC24GD3_UNDERLAY=
+    MVC24GD3_UNDERLAY_SOURCE=
+    MVC24GD3_UNDERLAY_GATEWAY=
+    MVC24GD3_ROUTE_ADD_ARGS=()
+    MVC24GD3_ROUTE_DEL_ARGS=()
 }
 
 mvc24gd3_valid_temp_ifname() {
@@ -57,8 +57,8 @@ mvc24gd3_keyfile_ipv4_source() {
         # NM keyfile addressN may carry an optional gateway after a comma.
         cidr=${addr%%,*}
         [[ $cidr == */* ]] || return 1
-        UBS24GD3_WG_SOURCE_IP=${cidr%/*}
-        wg23_validate_ipv4 "$UBS24GD3_WG_SOURCE_IP" || return 1
+        MVC24GD3_WG_SOURCE_IP=${cidr%/*}
+        wg23_validate_ipv4 "$MVC24GD3_WG_SOURCE_IP" || return 1
         # The local address itself need not be the network address, so validate
         # the prefix independently instead of using the canonical-subnet parser.
         local prefix=${cidr##*/}
@@ -71,8 +71,8 @@ mvc24gd3_private_ipv4_prefix() {
     (( $# == 1 )) || return 1
     local prefix=$1 network plen
     [[ $prefix != *:* ]] && mvc24c_parse_cidr "$prefix" || return 1
-    network=$((UBS24C_CIDR_NET))
-    plen=$UBS24C_CIDR_PREFIX
+    network=$((MVC24C_CIDR_NET))
+    plen=$MVC24C_CIDR_PREFIX
     if (( plen >= 8 )); then
         mvc24c_cidr_contains 10.0.0.0/8 "${prefix%/*}" && return 0
     fi
@@ -105,17 +105,17 @@ mvc24gd3_prepare_endpoint_route() {
        $underlay != lo && $underlay != tun-vpnks && $underlay != vpnks-wg ]] || return 1
     [[ $gateway == - ]] || wg23_validate_ipv4 "$gateway" || return 1
     [[ $endpoint != "$source" && ( $gateway == - || $endpoint != "$gateway" ) ]] || return 1
-    UBS24GD3_ENDPOINT_IP=$endpoint
-    UBS24GD3_UNDERLAY=$underlay
-    UBS24GD3_UNDERLAY_SOURCE=$source
-    UBS24GD3_UNDERLAY_GATEWAY=$gateway
+    MVC24GD3_ENDPOINT_IP=$endpoint
+    MVC24GD3_UNDERLAY=$underlay
+    MVC24GD3_UNDERLAY_SOURCE=$source
+    MVC24GD3_UNDERLAY_GATEWAY=$gateway
     if [[ $gateway == - ]]; then
-        UBS24GD3_ROUTE_ADD_ARGS=(-4 route add "$endpoint/32" dev "$underlay" src "$source")
+        MVC24GD3_ROUTE_ADD_ARGS=(-4 route add "$endpoint/32" dev "$underlay" src "$source")
     else
-        UBS24GD3_ROUTE_ADD_ARGS=(-4 route add "$endpoint/32" via "$gateway" dev "$underlay" src "$source")
+        MVC24GD3_ROUTE_ADD_ARGS=(-4 route add "$endpoint/32" via "$gateway" dev "$underlay" src "$source")
     fi
-    UBS24GD3_ROUTE_DEL_ARGS=(-4 route del "$endpoint/32" dev "$underlay")
-    UBS24GD3_STAGE=endpoint-route-plan-ready-no-authority
+    MVC24GD3_ROUTE_DEL_ARGS=(-4 route del "$endpoint/32" dev "$underlay")
+    MVC24GD3_STAGE=endpoint-route-plan-ready-no-authority
 }
 
 # Copy source keyfile verbatim except the temporary connection identity,
@@ -126,15 +126,15 @@ mvc24gd3_write_pinned_profile() {
     local source=$1 source_uuid=$2 underlay=$3 endpoint_ip=$4 endpoint_port=$5
     local temp_name=$6 temp_uuid=$7 out=$8 source_port
     mvc24gd2_validate_keyfile "$source" "$source_uuid" "$underlay" || return 1
-    (( ${#UBS24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
-    source_port=${UBS24GD2_ENDPOINT_PORTS[0]}
+    (( ${#MVC24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
+    source_port=${MVC24GD2_ENDPOINT_PORTS[0]}
     wg23_validate_ipv4 "$endpoint_ip" || return 1
     [[ $endpoint_port =~ ^[0-9]+$ && $endpoint_port == "$source_port" ]] || return 1
     mvc24gd3_valid_temp_ifname "$temp_name" || return 1
     mvc24_valid_uuid "$temp_uuid" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
-    mvc24gd3_endpoint_not_captured "$endpoint_ip" "${UBS24GD2_ALLOWED_IPS[@]}" || return 1
+    mvc24gd3_endpoint_not_captured "$endpoint_ip" "${MVC24GD2_ALLOWED_IPS[@]}" || return 1
 
     awk -v name="$temp_name" -v uuid="$temp_uuid" -v endpoint="$endpoint_ip:$endpoint_port" '
       function finish_connection() {
@@ -164,13 +164,13 @@ mvc24gd3_write_pinned_profile() {
       }
     ' "$source" > "$out" || return 1
     chmod 600 -- "$out" || return 1
-    UBS24GD3_TEMP_NAME=$temp_name
-    UBS24GD3_TEMP_UUID=$temp_uuid
-    UBS24GD3_WG_SOURCE=$source
-    UBS24GD3_ENDPOINT_IP=$endpoint_ip
-    UBS24GD3_ENDPOINT_PORT=$endpoint_port
+    MVC24GD3_TEMP_NAME=$temp_name
+    MVC24GD3_TEMP_UUID=$temp_uuid
+    MVC24GD3_WG_SOURCE=$source
+    MVC24GD3_ENDPOINT_IP=$endpoint_ip
+    MVC24GD3_ENDPOINT_PORT=$endpoint_port
     mvc24gd3_keyfile_ipv4_source "$out" || return 1
-    UBS24GD3_STAGE=pinned-temporary-profile-plan-ready-no-authority
+    MVC24GD3_STAGE=pinned-temporary-profile-plan-ready-no-authority
 }
 
 mvc24gd3_guard_parameters() {
@@ -234,7 +234,7 @@ mvc24gd3_write_parallel_guard_candidate() {
       printf 'add rule netdev mvc_preclone_underlay lowerdev_deny ip saddr %s ip daddr %s udp dport %s accept\n' \
         "$underlay_source" "$wg_ip" "$wg_port"
     } > "$out"
-    UBS24GD3_STAGE=parallel-guard-plan-ready-no-authority
+    MVC24GD3_STAGE=parallel-guard-plan-ready-no-authority
 }
 
 mvc24gd3_authorize_activation() { return 1; }

@@ -4,10 +4,10 @@
 # This is NOT a NetworkManager loadable keyfile or proof of credential parity.
 
 mvc24op_preview_reset() {
-    UBS24OP_PREVIEW_AUTH=unassessed
-    UBS24OP_PREVIEW_FLAGS=unassessed
-    UBS24OP_PREVIEW_TLS=unassessed
-    UBS24OP_PREVIEW_STATE=unverified
+    MVC24OP_PREVIEW_AUTH=unassessed
+    MVC24OP_PREVIEW_FLAGS=unassessed
+    MVC24OP_PREVIEW_TLS=unassessed
+    MVC24OP_PREVIEW_STATE=unverified
 }
 
 # Inputs: authenticated, stable typed GetSettings JSON, reserved NEW UUID,
@@ -24,7 +24,7 @@ mvc24op_preview_build() {
         declare -F mvc24_valid_uuid >/dev/null &&
         mvc24_valid_uuid "$new_uuid" || return 1
     mvc24op_candidate_plan "$source_file" 1 || return 1
-    endpoint=$UBS24OP_CANDIDATE_ENDPOINT
+    endpoint=$MVC24OP_CANDIDATE_ENDPOINT
     # A projection cannot carry secrets. It preserves non-secret options
     # exactly, except a narrow set of controller-owned identity/transport/DNS
     # overrides. Real secrets and agent custody require separate binding.
@@ -60,8 +60,8 @@ mvc24op_preview_build() {
     # String-only output labels. Never print names, flags, paths or values.
     mode=$(jq -r '.data[0].vpn.data.data["connection-type"] // "missing"' -- "$source_file") || return 1
     case $mode in
-        tls|password|password-tls|static-key) UBS24OP_PREVIEW_AUTH=$mode ;;
-        *) UBS24OP_PREVIEW_AUTH=other-or-unspecified ;;
+        tls|password|password-tls|static-key) MVC24OP_PREVIEW_AUTH=$mode ;;
+        *) MVC24OP_PREVIEW_AUTH=other-or-unspecified ;;
     esac
     flags=$(jq -r '
         [.data[0].vpn.data.data | to_entries[] | select(.key|endswith("-flags")) | .value] as $a |
@@ -71,13 +71,13 @@ mvc24op_preview_build() {
         elif ($a|any(. == "2" or . == "6")) then "includes-not-saved"
         else "nm-owned-or-not-required" end
     ' -- "$source_file") || return 1
-    UBS24OP_PREVIEW_FLAGS=$flags
+    MVC24OP_PREVIEW_FLAGS=$flags
     tls=$(jq -r '
         [.data[0].vpn.data.data | ["ca", "cert", "key", "pkcs12", "tls-auth", "tls-crypt"][] as $k | select(has($k))] |
         if length == 0 then "no-references-observed" else "references-unverified" end
     ' -- "$source_file") || return 1
-    UBS24OP_PREVIEW_TLS=$tls
-    UBS24OP_PREVIEW_STATE=exact-nonsecret-delta-only
+    MVC24OP_PREVIEW_TLS=$tls
+    MVC24OP_PREVIEW_STATE=exact-nonsecret-delta-only
 }
 
 

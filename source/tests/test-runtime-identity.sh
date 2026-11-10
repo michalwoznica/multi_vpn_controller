@@ -47,5 +47,12 @@ else
   fail 'verifier headings are MVC-native'
 fi
 
-printf 'RESULT: MVC-R3A lowercase namespace %d/%d checks passed\n' "$P" "$((P+F))"
+legacy_upper='UBS''24'
+if ! rg -n --glob '*.sh' "${legacy_upper}[A-Za-z0-9_]*" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
+  pass 'uppercase internal variable/constant namespace migrated to MVC24'
+else
+  fail 'uppercase internal variable/constant namespace migrated to MVC24'
+fi
+
+printf 'RESULT: MVC-R3B internal namespace %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

@@ -40,10 +40,10 @@ mvc24gc2_guard_witness() {
     local dir
     dir=$(mvc24gb2_runtime) || return 1
     [[ $dir == /run/mvc-controller ]] || return 1
-    mvc24gc2_lock_held "$dir/controller.lock" "$UBS24GB2_FD" || return 1
+    mvc24gc2_lock_held "$dir/controller.lock" "$MVC24GB2_FD" || return 1
     mvc24gb2_attest || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only &&
-       ${UBS24GB2_AUTHORITY:-} == none ]] && mvc24gb2_lock_valid
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only &&
+       ${MVC24GB2_AUTHORITY:-} == none ]] && mvc24gb2_lock_valid
 }
 
 mvc24gc2_derivative_format() {
@@ -69,7 +69,7 @@ mvc24gc2_derivative_format() {
         (.data[0].vpn|has("secrets")|not)
     ' -- "$file" >/dev/null 2>&1 || return 1
     mvc24op_candidate_plan "$file" 1 >/dev/null || return 1
-    [[ ${UBS24OP_CANDIDATE_COUNT:-} == 1 && ${UBS24OP_CANDIDATE_PROTO:-} == tcp ]]
+    [[ ${MVC24OP_CANDIDATE_COUNT:-} == 1 && ${MVC24OP_CANDIDATE_PROTO:-} == tcp ]]
 }
 
 # iproute2 commonly serialises the route-get source as "prefsrc", while
@@ -109,17 +109,17 @@ mvc24gc2_endpoint_witness() {
         declare -F mvc24op_settings_fingerprint >/dev/null &&
         declare -F mvc24op_settings_equal_except_runtime_timestamp >/dev/null || return 1
     mvc24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
-    [[ ${UBS24GA3_STAGE:-} == prepared-nonsecret-parity-only &&
-       ${UBS24GA3_AUTHORITY:-} == none &&
-       ${UBS24GA2_STATE:-} == quarantined-exact-nonsecret-settings-verified &&
-       ${UBS24GA2_AUTHORITY:-} == none &&
-       ${UBS24GA_AUTHORITY:-} == none &&
-       ${UBS24GA_STATE:-} == raw-temporary-clone-quarantined-needs-hardening &&
-       ${UBS24GA3_PREPARED_CLONE_UUID:-} == "${UBS24GA_CLONE_UUID:-x}" &&
-       -n ${UBS24GA3_PREPARED_SOURCE_UUID:-} &&
-       ${UBS24GA3_PREPARED_SOURCE_UUID:-} != "${UBS24GA3_PREPARED_CLONE_UUID:-}" &&
-       ${UBS24GA3_SOURCE_SHA256:-} =~ ^[a-f0-9]{64}$ &&
-       ${UBS24GA3_DERIVATIVE_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || return 1
+    [[ ${MVC24GA3_STAGE:-} == prepared-nonsecret-parity-only &&
+       ${MVC24GA3_AUTHORITY:-} == none &&
+       ${MVC24GA2_STATE:-} == quarantined-exact-nonsecret-settings-verified &&
+       ${MVC24GA2_AUTHORITY:-} == none &&
+       ${MVC24GA_AUTHORITY:-} == none &&
+       ${MVC24GA_STATE:-} == raw-temporary-clone-quarantined-needs-hardening &&
+       ${MVC24GA3_PREPARED_CLONE_UUID:-} == "${MVC24GA_CLONE_UUID:-x}" &&
+       -n ${MVC24GA3_PREPARED_SOURCE_UUID:-} &&
+       ${MVC24GA3_PREPARED_SOURCE_UUID:-} != "${MVC24GA3_PREPARED_CLONE_UUID:-}" &&
+       ${MVC24GA3_SOURCE_SHA256:-} =~ ^[a-f0-9]{64}$ &&
+       ${MVC24GA3_DERIVATIVE_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || return 1
     mvc24gc2_guard_witness || return 1
     [[ $(mvc24gb2_derive_iface) == "$iface" ]] || return 1
     # Private, ephemeral file permissions mirror A3. No profile content is
@@ -133,23 +133,23 @@ mvc24gc2_endpoint_witness() {
         (umask 077; set -C; : > "$scratch/$item.json") || { success=0; break; }
     done
     if (( success == 1 )); then
-        mvc24ga3_capture_source "$UBS24GA3_PREPARED_SOURCE_UUID" "$scratch/source1.json" &&
-        mvc24ga3_capture_source "$UBS24GA3_PREPARED_SOURCE_UUID" "$scratch/source2.json" &&
-        mvc24ga3_capture_clone "$UBS24GA3_PREPARED_CLONE_UUID" "$scratch/clone1.json" &&
-        mvc24ga3_capture_clone "$UBS24GA3_PREPARED_CLONE_UUID" "$scratch/clone2.json" || success=0
+        mvc24ga3_capture_source "$MVC24GA3_PREPARED_SOURCE_UUID" "$scratch/source1.json" &&
+        mvc24ga3_capture_source "$MVC24GA3_PREPARED_SOURCE_UUID" "$scratch/source2.json" &&
+        mvc24ga3_capture_clone "$MVC24GA3_PREPARED_CLONE_UUID" "$scratch/clone1.json" &&
+        mvc24ga3_capture_clone "$MVC24GA3_PREPARED_CLONE_UUID" "$scratch/clone2.json" || success=0
     fi
     if (( success == 1 )); then
         hash1=$(mvc24op_settings_fingerprint "$scratch/source1.json") || success=0
         hash2=$(mvc24op_settings_fingerprint "$scratch/clone1.json") || success=0
-        [[ $hash1 == "$UBS24GA3_SOURCE_SHA256" &&
-           $hash2 == "$UBS24GA3_DERIVATIVE_SHA256" ]] || success=0
+        [[ $hash1 == "$MVC24GA3_SOURCE_SHA256" &&
+           $hash2 == "$MVC24GA3_DERIVATIVE_SHA256" ]] || success=0
         mvc24op_settings_equal_except_runtime_timestamp "$scratch/source1.json" "$scratch/source2.json" &&
             mvc24op_settings_equal_except_runtime_timestamp "$scratch/clone1.json" "$scratch/clone2.json" || success=0
     fi
     if (( success == 1 )); then
-        mvc24ga3_source_format "$scratch/source1.json" "$UBS24GA3_PREPARED_SOURCE_UUID" &&
-            mvc24gc2_derivative_format "$scratch/clone1.json" "$UBS24GA3_PREPARED_CLONE_UUID" || success=0
-        selected=${UBS24OP_CANDIDATE_ENDPOINT:-}
+        mvc24ga3_source_format "$scratch/source1.json" "$MVC24GA3_PREPARED_SOURCE_UUID" &&
+            mvc24gc2_derivative_format "$scratch/clone1.json" "$MVC24GA3_PREPARED_CLONE_UUID" || success=0
+        selected=${MVC24OP_CANDIDATE_ENDPOINT:-}
         [[ $selected == "$remote:$port" ]] || success=0
     fi
     if (( success == 1 )); then

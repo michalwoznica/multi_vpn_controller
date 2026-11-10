@@ -5,7 +5,7 @@
 set -euo pipefail
 umask 077
 export LC_ALL=C
-export UBS24_DBUS_BACKEND=gdbus
+export MVC24_DBUS_BACKEND=gdbus
 
 mvc24spf_fail() { printf 'UNVERIFIED: %s\n' "$1" >&2; return 1; }
 mvc24spf_pass() { printf 'PASS: %s\n' "$1"; }
@@ -57,8 +57,8 @@ mvc24spf_validate() {
     if ! mvc24b_canonical_endpoint "$remote"; then
         mvc24spf_fail 'saved OpenVPN remote is not a single canonical numeric IPv4:port'; return 1
     fi
-    UBS24SPF_PROTO=$proto
-    UBS24SPF_RANDOM=$random
+    MVC24SPF_PROTO=$proto
+    MVC24SPF_RANDOM=$random
 }
 
 # All classifications are static labels. NO profile fields, endpoint bytes,
@@ -134,11 +134,11 @@ mvc24spf_diagnose() {
             *) hostname_shape=other ;;
         esac
     fi
-    UBS24SPF_DIAG_REMOTE=$remote_shape
-    UBS24SPF_DIAG_PORT=$port_shape
-    UBS24SPF_DIAG_PROTO=$proto_shape
-    UBS24SPF_DIAG_RANDOM=$random_shape
-    UBS24SPF_DIAG_RANDOM_HOSTNAME=$hostname_shape
+    MVC24SPF_DIAG_REMOTE=$remote_shape
+    MVC24SPF_DIAG_PORT=$port_shape
+    MVC24SPF_DIAG_PROTO=$proto_shape
+    MVC24SPF_DIAG_RANDOM=$random_shape
+    MVC24SPF_DIAG_RANDOM_HOSTNAME=$hostname_shape
 }
 
 # Non-admitting summary of *candidate syntax*, not the plugin's fully
@@ -153,12 +153,12 @@ mvc24spf_inventory() {
     local port_count=0 proto_count=0 tcp_count=0 udp_count=0
     local proto_fallback='' count_band addr_label port_label proto_label transport_label syntax_label
 
-    UBS24SPF_INV_COUNT=unassessed
-    UBS24SPF_INV_HOSTS=unassessed
-    UBS24SPF_INV_PORTS=unassessed
-    UBS24SPF_INV_PER_ENTRY_PROTO=unassessed
-    UBS24SPF_INV_TRANSPORT=unassessed
-    UBS24SPF_INV_SYNTAX=unsupported-or-out-of-scope
+    MVC24SPF_INV_COUNT=unassessed
+    MVC24SPF_INV_HOSTS=unassessed
+    MVC24SPF_INV_PORTS=unassessed
+    MVC24SPF_INV_PER_ENTRY_PROTO=unassessed
+    MVC24SPF_INV_TRANSPORT=unassessed
+    MVC24SPF_INV_SYNTAX=unsupported-or-out-of-scope
 
     # Check characters/size *before* importing untrusted settings into Bash.
     # The plugin may accept more forms; those must remain out of scope here.
@@ -268,19 +268,19 @@ mvc24spf_inventory() {
     elif ((udp_count == n)); then transport_label=udp-only
     else transport_label=mixed-tcp-udp
     fi
-    UBS24SPF_INV_COUNT=$count_band
-    UBS24SPF_INV_HOSTS=$addr_label
-    UBS24SPF_INV_PORTS=$port_label
-    UBS24SPF_INV_PER_ENTRY_PROTO=$proto_label
-    UBS24SPF_INV_TRANSPORT=$transport_label
-    UBS24SPF_INV_SYNTAX=$syntax_label
+    MVC24SPF_INV_COUNT=$count_band
+    MVC24SPF_INV_HOSTS=$addr_label
+    MVC24SPF_INV_PORTS=$port_label
+    MVC24SPF_INV_PER_ENTRY_PROTO=$proto_label
+    MVC24SPF_INV_TRANSPORT=$transport_label
+    MVC24SPF_INV_SYNTAX=$syntax_label
 }
 
-_UBS24SPF_PRIVATE=''
+_MVC24SPF_PRIVATE=''
 mvc24spf_cleanup() {
-    if [[ -n ${_UBS24SPF_PRIVATE:-} ]]; then
-        rm -f -- "$_UBS24SPF_PRIVATE/first.json" "$_UBS24SPF_PRIVATE/second.json" "$_UBS24SPF_PRIVATE/preview.json" 2>/dev/null || :
-        rmdir -- "$_UBS24SPF_PRIVATE" 2>/dev/null || :
+    if [[ -n ${_MVC24SPF_PRIVATE:-} ]]; then
+        rm -f -- "$_MVC24SPF_PRIVATE/first.json" "$_MVC24SPF_PRIVATE/second.json" "$_MVC24SPF_PRIVATE/preview.json" 2>/dev/null || :
+        rmdir -- "$_MVC24SPF_PRIVATE" 2>/dev/null || :
     fi
 }
 
@@ -316,7 +316,7 @@ mvc24spf_main() {
     source "$root/lib/combined-operational-ovpn-material-path-triage.sh"
     source "$root/lib/combined-operational-ovpn-material-root-observation.sh"
     mvc24op_session_nm_identity || mvc24spf_fail 'NetworkManager owner/PID/UID not authenticated'
-    initial_owner=$UBS24OP_SESSION_NM_IDENTITY
+    initial_owner=$MVC24OP_SESSION_NM_IDENTITY
     mvc24spf_pass 'real NetworkManager owner/PID/UID available'
     if [[ $action == --preflight ]]; then
         printf 'RESULT: PASS — saved-profile probe prerequisites; no profile inspected\n'
@@ -325,18 +325,18 @@ mvc24spf_main() {
     mvc24_valid_uuid "$uuid" || mvc24spf_fail 'invalid profile UUID format'
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] ||
         mvc24spf_fail 'private tmpfs /dev/shm required'
-    _UBS24SPF_PRIVATE=$(mktemp -d /dev/shm/ubs24-saved-host.XXXXXXXX) ||
+    _MVC24SPF_PRIVATE=$(mktemp -d /dev/shm/ubs24-saved-host.XXXXXXXX) ||
         mvc24spf_fail 'cannot create private scratch'
     trap 'mvc24spf_cleanup' EXIT
-    [[ -d $_UBS24SPF_PRIVATE && ! -L $_UBS24SPF_PRIVATE && -O $_UBS24SPF_PRIVATE &&
-       $(stat -c %a -- "$_UBS24SPF_PRIVATE") == 700 ]] ||
+    [[ -d $_MVC24SPF_PRIVATE && ! -L $_MVC24SPF_PRIVATE && -O $_MVC24SPF_PRIVATE &&
+       $(stat -c %a -- "$_MVC24SPF_PRIVATE") == 700 ]] ||
         mvc24spf_fail 'insecure scratch directory'
-    first_json=$_UBS24SPF_PRIVATE/first.json
+    first_json=$_MVC24SPF_PRIVATE/first.json
     # The settings adapter requires this read-only compatibility flag; it does
     # NOT attest lock ownership. No admission or mutation functions are called.
-    UBS24S_LOCK_HELD=1
+    MVC24S_LOCK_HELD=1
     for side in first second; do
-        path=$_UBS24SPF_PRIVATE/$side.json
+        path=$_MVC24SPF_PRIVATE/$side.json
         (umask 077; set -C; : > "$path") || mvc24spf_fail 'scratch creation failed'
         [[ -f $path && ! -L $path && $(stat -c %a:%h -- "$path") == 600:1 ]] ||
             mvc24spf_fail 'scratch file not private'
@@ -359,21 +359,21 @@ mvc24spf_main() {
             mvc24spf_fail 'repeat Unsaved property unavailable'
         [[ $unsaved_after == 'b false' ]] || mvc24spf_fail 'profile changed during inspection'
         mvc24op_session_nm_identity || mvc24spf_fail 'NetworkManager identity changed during inspection'
-        [[ $initial_owner == "$UBS24OP_SESSION_NM_IDENTITY" ]] ||
+        [[ $initial_owner == "$MVC24OP_SESSION_NM_IDENTITY" ]] ||
             mvc24spf_fail 'NetworkManager identity drift'
     done
     [[ $first_obj == "$second_obj" ]] || mvc24spf_fail 'profile object identity changed'
-    cmp -s -- "$first_json" "$_UBS24SPF_PRIVATE/second.json" ||
+    cmp -s -- "$first_json" "$_MVC24SPF_PRIVATE/second.json" ||
         mvc24spf_fail 'saved GetSettings snapshots changed'
     mvc24op_session_nm_identity || mvc24spf_fail 'final NetworkManager identity unavailable'
-    [[ $initial_owner == "$UBS24OP_SESSION_NM_IDENTITY" ]] ||
+    [[ $initial_owner == "$MVC24OP_SESSION_NM_IDENTITY" ]] ||
         mvc24spf_fail 'final NetworkManager identity drift'
     if [[ $action == --diagnose-source ]]; then
         mvc24spf_diagnose "$first_json" || mvc24spf_fail 'unable to classify saved profile safely'
     elif [[ $action == --inventory-remotes ]]; then
         mvc24spf_inventory "$first_json" || mvc24spf_fail 'unable to inventory saved profile safely'
     elif [[ $action == --preview-derivative || $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]]; then
-        local preview_json=$_UBS24SPF_PRIVATE/preview.json preview_uuid
+        local preview_json=$_MVC24SPF_PRIVATE/preview.json preview_uuid
         (umask 077; set -C; : > "$preview_json") || mvc24spf_fail 'private preview scratch creation failed'
         [[ -f $preview_json && ! -L $preview_json && $(stat -c %a:%h -- "$preview_json") == 600:1 ]] ||
             mvc24spf_fail 'private preview scratch unsafe'
@@ -408,57 +408,57 @@ mvc24spf_main() {
             mvc24spf_fail 'cannot safely classify additional credential flag names'
     fi
     # No success is reported while raw profile data remains in scratch.
-    rm -f -- "$_UBS24SPF_PRIVATE/first.json" "$_UBS24SPF_PRIVATE/second.json" "$_UBS24SPF_PRIVATE/preview.json" ||
+    rm -f -- "$_MVC24SPF_PRIVATE/first.json" "$_MVC24SPF_PRIVATE/second.json" "$_MVC24SPF_PRIVATE/preview.json" ||
         mvc24spf_fail 'private capture cleanup failed'
-    rmdir -- "$_UBS24SPF_PRIVATE" || mvc24spf_fail 'private scratch cleanup failed'
-    _UBS24SPF_PRIVATE=''
+    rmdir -- "$_MVC24SPF_PRIVATE" || mvc24spf_fail 'private scratch cleanup failed'
+    _MVC24SPF_PRIVATE=''
     mvc24spf_pass 'saved OpenVPN UUID and typed GetSettings snapshots consistent'
     if [[ $action == --diagnose-source ]]; then
         printf 'SOURCE-SHAPE: remote=%s; port=%s; proto-tcp=%s; remote-random=%s; remote-random-hostname=%s\n' \
-            "$UBS24SPF_DIAG_REMOTE" "$UBS24SPF_DIAG_PORT" "$UBS24SPF_DIAG_PROTO" \
-            "$UBS24SPF_DIAG_RANDOM" "$UBS24SPF_DIAG_RANDOM_HOSTNAME"
+            "$MVC24SPF_DIAG_REMOTE" "$MVC24SPF_DIAG_PORT" "$MVC24SPF_DIAG_PROTO" \
+            "$MVC24SPF_DIAG_RANDOM" "$MVC24SPF_DIAG_RANDOM_HOSTNAME"
         printf 'RESULT: READ-ONLY SYNTAX DIAGNOSIS ONLY — NOT endpoint resolution, plugin option parity, firewall or activation authority\n'
     elif [[ $action == --inventory-remotes ]]; then
         printf 'REMOTE-INVENTORY: count=%s; hosts=%s; ports=%s; per-entry-protocol=%s; transports=%s; syntax=%s\n' \
-            "$UBS24SPF_INV_COUNT" "$UBS24SPF_INV_HOSTS" "$UBS24SPF_INV_PORTS" \
-            "$UBS24SPF_INV_PER_ENTRY_PROTO" "$UBS24SPF_INV_TRANSPORT" "$UBS24SPF_INV_SYNTAX"
+            "$MVC24SPF_INV_COUNT" "$MVC24SPF_INV_HOSTS" "$MVC24SPF_INV_PORTS" \
+            "$MVC24SPF_INV_PER_ENTRY_PROTO" "$MVC24SPF_INV_TRANSPORT" "$MVC24SPF_INV_SYNTAX"
         printf 'RESULT: READ-ONLY INDICATIVE REMOTE INVENTORY — NOT plugin parity, endpoint selection, DNS, firewall or activation authority\n'
     elif [[ $action == --preview-derivative ]]; then
         printf 'DERIVATIVE-PREVIEW: single-ipv4-tcp=yes; identity=separate; remote-random=off; autoconnect=off; nonsecret-settings=exact-delta\n'
         printf 'AUTH-REVIEW: method=%s; secret-flags=%s; tls=%s; secret-values=not-read\n' \
-            "$UBS24OP_PREVIEW_AUTH" "$UBS24OP_PREVIEW_FLAGS" "$UBS24OP_PREVIEW_TLS"
+            "$MVC24OP_PREVIEW_AUTH" "$MVC24OP_PREVIEW_FLAGS" "$MVC24OP_PREVIEW_TLS"
         printf 'RESULT: READ-ONLY IN-MEMORY SETTINGS PROJECTION — NOT a loadable profile, secret custody, TLS parity, guard or activation authority\n'
     elif [[ $action == --audit-challenge-flags ]]; then
-        printf 'CHALLENGE-RESPONSE-FLAGS: %s; secret=not-read\n' "$UBS24OP_AUTH_CHALLENGE_CLASS"
+        printf 'CHALLENGE-RESPONSE-FLAGS: %s; secret=not-read\n' "$MVC24OP_AUTH_CHALLENGE_CLASS"
         printf 'RESULT: READ-ONLY KNOWN SECRET-POLICY CLASSIFICATION — NOT prompt-free credential delivery, future challenge absence, clone compatibility or activation authority\n'
     elif [[ $action == --audit-extra-flag-names ]]; then
-        printf 'EXTRA-CREDENTIAL-FLAG-KEYS: %s; values=not-read\n' "$UBS24OP_AUTH_EXTRA_FLAG_NAMES"
+        printf 'EXTRA-CREDENTIAL-FLAG-KEYS: %s; values=not-read\n' "$MVC24OP_AUTH_EXTRA_FLAG_NAMES"
         printf 'RESULT: READ-ONLY EXTRA FLAG NAMES ONLY — NOT secret validity, credential availability, clone compatibility or activation authority\n'
     elif [[ $action == --audit-auth-custody ]]; then
         printf 'AUTH-CUSTODY: method=%s; password=%s; cert-pass=%s; proxy-password=%s; other-flags=%s\n' \
-            "$UBS24OP_AUTH_METHOD" "$UBS24OP_AUTH_PASSWORD" "$UBS24OP_AUTH_CERT_PASS" \
-            "$UBS24OP_AUTH_PROXY_PASSWORD" "$UBS24OP_AUTH_OTHER_FLAGS"
+            "$MVC24OP_AUTH_METHOD" "$MVC24OP_AUTH_PASSWORD" "$MVC24OP_AUTH_CERT_PASS" \
+            "$MVC24OP_AUTH_PROXY_PASSWORD" "$MVC24OP_AUTH_OTHER_FLAGS"
         printf 'TLS-REFERENCES: ca=%s; client=%s; control-channel=%s; file-content=not-read; file-access=not-checked\n' \
-            "$UBS24OP_AUTH_CA" "$UBS24OP_AUTH_CLIENT" "$UBS24OP_AUTH_CONTROL"
+            "$MVC24OP_AUTH_CA" "$MVC24OP_AUTH_CLIENT" "$MVC24OP_AUTH_CONTROL"
         printf 'RESULT: READ-ONLY CREDENTIAL FLAGS AND TLS REFERENCES — NOT secret availability, NM agent compatibility, TLS trust or activation authority\n'
     elif [[ $action == --audit-material-readonly ]]; then
         printf 'TLS-METADATA: ca=%s; tls-crypt=%s; remote-cert-tls=%s; name-check=%s\n' \
-            "$UBS24OP_MATERIAL_CA" "$UBS24OP_MATERIAL_TLS_CRYPT" \
-            "$UBS24OP_MATERIAL_SERVER_CERT" "$UBS24OP_MATERIAL_NAME_CHECK"
+            "$MVC24OP_MATERIAL_CA" "$MVC24OP_MATERIAL_TLS_CRYPT" \
+            "$MVC24OP_MATERIAL_SERVER_CERT" "$MVC24OP_MATERIAL_NAME_CHECK"
         printf 'EXTRA-SECRET-FLAGS: %s; credentials=not-read; profile=unchanged\n' \
-            "$UBS24OP_MATERIAL_OTHER_FLAGS"
+            "$MVC24OP_MATERIAL_OTHER_FLAGS"
         printf 'RESULT: CALLER-ONLY READ-ONLY FILE METADATA — NOT NM/PLUGIN FILE ACCESS, TLS CONTENT/TRUST, PASSWORD AVAILABILITY OR ACTIVATION AUTHORITY\n'
     elif [[ $action == --triage-material-readonly ]]; then
         printf 'PATH-TRIAGE: ca=%s; tls-crypt=%s; scope=caller-only; contents=not-read\n' \
-            "$UBS24OP_TRIAGE_CA" "$UBS24OP_TRIAGE_TLS_CRYPT"
+            "$MVC24OP_TRIAGE_CA" "$MVC24OP_TRIAGE_TLS_CRYPT"
         printf 'EXTRA-SECRET-FLAGS: %s; credentials=not-read; profile=unchanged\n' \
-            "$UBS24OP_MATERIAL_OTHER_FLAGS"
+            "$MVC24OP_MATERIAL_OTHER_FLAGS"
         printf 'RESULT: RACEABLE READ-ONLY CALLER PATH TRIAGE — NOT NM ACCESS, TLS TRUST, SECRET AVAILABILITY OR ACTIVATION AUTHORITY\n'
     elif [[ $action == --triage-root-material-readonly ]]; then
         printf 'ROOT-PATH-TRIAGE: ca=%s; tls-crypt=%s; scope=root-caller-only; contents=not-read\n' \
-            "$UBS24OP_ROOT_CA" "$UBS24OP_ROOT_TLS_CRYPT"
+            "$MVC24OP_ROOT_CA" "$MVC24OP_ROOT_TLS_CRYPT"
         printf 'EXTRA-SECRET-FLAGS: %s; credentials=not-read; profile=unchanged\n' \
-            "$UBS24OP_MATERIAL_OTHER_FLAGS"
+            "$MVC24OP_MATERIAL_OTHER_FLAGS"
         printf 'RESULT: READ-ONLY ROOT-CALLER FILE METADATA — NOT OPENVPN PLUGIN ACCESS, TLS TRUST, SECRET AVAILABILITY OR ACTIVATION AUTHORITY\n'
     elif [[ $action == --plan-first-remote ]]; then
         # Deliberately no endpoint, port, count or profile UUID printed.
@@ -466,7 +466,7 @@ mvc24spf_main() {
         printf 'RESULT: READ-ONLY SINGLE-CANDIDATE PROPOSAL — NOT saved derivative, TLS/secret parity, firewall, socket or activation authority\n'
     elif [[ $action == --assess-source ]]; then
         mvc24spf_pass 'source has one canonical numeric IPv4:port and explicit UDP/TCP transport'
-        if [[ $UBS24SPF_RANDOM == yes ]]; then
+        if [[ $MVC24SPF_RANDOM == yes ]]; then
             printf 'ASSESSMENT: source shape could support a controller-owned single-endpoint derivative; remote-random=yes source remains REJECTED by strict bootstrap\n'
         else
             printf 'ASSESSMENT: source shape supports a single endpoint; no controller-owned derivative has been prepared\n'

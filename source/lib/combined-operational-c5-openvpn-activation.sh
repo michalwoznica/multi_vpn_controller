@@ -8,10 +8,10 @@
 # teardown/recovery. No NM delete/down, nft disarm, fallback or retry on error.
 
 mvc24gc5_reset() {
-    UBS24GC5_ATTEMPTED=no
-    UBS24GC5_STAGE=unverified
-    UBS24GC5_AUTHORITY=none
-    UBS24GC5_NM_OWNER=
+    MVC24GC5_ATTEMPTED=no
+    MVC24GC5_STAGE=unverified
+    MVC24GC5_AUTHORITY=none
+    MVC24GC5_NM_OWNER=
 }
 
 mvc24gc5_admission_witness() { return 1; }
@@ -62,13 +62,13 @@ mvc24gc5_prepared_profile_witness() {
     (( $# == 0 )) || return 1
     declare -F mvc24op_settings_fingerprint >/dev/null &&
         declare -F mvc24op_settings_equal_except_runtime_timestamp >/dev/null || return 1
-    local clone=${UBS24GA3_PREPARED_CLONE_UUID:-} source=${UBS24GA3_PREPARED_SOURCE_UUID:-}
-    [[ ${UBS24GA3_STAGE:-} == prepared-nonsecret-parity-only &&
-       ${UBS24GA3_AUTHORITY:-} == none &&
-       ${UBS24GA2_STATE:-} == quarantined-exact-nonsecret-settings-verified &&
-       $clone == "${UBS24GA_CLONE_UUID:-x}" && $clone != "$source" &&
-       ${UBS24GA3_SOURCE_SHA256:-} =~ ^[a-f0-9]{64}$ &&
-       ${UBS24GA3_DERIVATIVE_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || return 1
+    local clone=${MVC24GA3_PREPARED_CLONE_UUID:-} source=${MVC24GA3_PREPARED_SOURCE_UUID:-}
+    [[ ${MVC24GA3_STAGE:-} == prepared-nonsecret-parity-only &&
+       ${MVC24GA3_AUTHORITY:-} == none &&
+       ${MVC24GA2_STATE:-} == quarantined-exact-nonsecret-settings-verified &&
+       $clone == "${MVC24GA_CLONE_UUID:-x}" && $clone != "$source" &&
+       ${MVC24GA3_SOURCE_SHA256:-} =~ ^[a-f0-9]{64}$ &&
+       ${MVC24GA3_DERIVATIVE_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || return 1
     mvc24ga_uuid_valid "$clone" && mvc24ga_uuid_valid "$source" || return 1
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local dir item h good=1
@@ -90,9 +90,9 @@ mvc24gc5_prepared_profile_witness() {
     fi
     if (( good == 1 )); then
         h=$(mvc24op_settings_fingerprint "$dir/source1.json") || good=0
-        [[ $h == "$UBS24GA3_SOURCE_SHA256" ]] || good=0
+        [[ $h == "$MVC24GA3_SOURCE_SHA256" ]] || good=0
         h=$(mvc24op_settings_fingerprint "$dir/clone1.json") || good=0
-        [[ $h == "$UBS24GA3_DERIVATIVE_SHA256" ]] || good=0
+        [[ $h == "$MVC24GA3_DERIVATIVE_SHA256" ]] || good=0
     fi
     for item in source1 source2 clone1 clone2; do
         if [[ -e $dir/$item.json || -L $dir/$item.json ]]; then
@@ -122,8 +122,8 @@ mvc24gc5_guard_witness() {
     a=$scratch/first.json b=$scratch/second.json
     if ! mvc24gb1_capture_nft "$a" || ! mvc24gb1_capture_nft "$b" ||
        ! cmp -s -- "$a" "$b" ||
-       ! mvc24gc1_postshape_observation "$a" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" ||
-       ! mvc24gc1_postshape_observation "$b" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT"; then
+       ! mvc24gc1_postshape_observation "$a" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" ||
+       ! mvc24gc1_postshape_observation "$b" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT"; then
         good=0
     fi
     if (( good == 1 )); then
@@ -166,7 +166,7 @@ mvc24gc5_active_snapshot() {
     local clone=$1 owner=$2 raw paths path vpn uuid state kind name settings expected
     local match='' count=0
     local settings_re='^o "(/org/freedesktop/NetworkManager/Settings/[0-9]+)"$'
-    mvc24op_session_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$owner" ]] || return 1
+    mvc24op_session_nm_identity && [[ $MVC24OP_SESSION_NM_IDENTITY == "$owner" ]] || return 1
     declare -F mvc24g_get_property >/dev/null &&
         declare -F mvc24g_call_readonly >/dev/null || return 1
     raw=$(mvc24g_get_property org.freedesktop.NetworkManager \
@@ -201,7 +201,7 @@ mvc24gc5_active_snapshot() {
         match="$path|$expected"
     done <<< "$paths"
     (( count == 1 )) || return 1
-    mvc24op_session_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$owner" ]] || return 1
+    mvc24op_session_nm_identity && [[ $MVC24OP_SESSION_NM_IDENTITY == "$owner" ]] || return 1
     printf '%s\n' "$match"
 }
 
@@ -225,29 +225,29 @@ mvc24gc5_nm_activate_noninteractive() {
 
 mvc24gc5_activate_once() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GC5_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC5_ATTEMPTED=yes
-    UBS24GC5_STAGE=preflight-unverified
-    UBS24GC5_AUTHORITY=none
-    [[ ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
-       ${UBS24GC3_AUTHORITY:-} == none &&
-       ${UBS24GC3_ATTEMPTED:-} == yes &&
-       -n ${UBS24GC3_IFACE:-} && -n ${UBS24GC3_REMOTE:-} ]] || return 1
+    [[ ${MVC24GC5_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC5_ATTEMPTED=yes
+    MVC24GC5_STAGE=preflight-unverified
+    MVC24GC5_AUTHORITY=none
+    [[ ${MVC24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
+       ${MVC24GC3_AUTHORITY:-} == none &&
+       ${MVC24GC3_ATTEMPTED:-} == yes &&
+       -n ${MVC24GC3_IFACE:-} && -n ${MVC24GC3_REMOTE:-} ]] || return 1
     mvc24gc5_admission_witness || return 1
     mvc24gc3_post_c1_witness && mvc24gc5_prepared_profile_witness &&
-        mvc24gc2_route_witness "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" || return 1
+        mvc24gc2_route_witness "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" || return 1
     mvc24op_session_nm_identity || return 1
-    UBS24GC5_NM_OWNER=$UBS24OP_SESSION_NM_IDENTITY
-    [[ $UBS24GC5_NM_OWNER == *'|0' ]] || return 1
+    MVC24GC5_NM_OWNER=$MVC24OP_SESSION_NM_IDENTITY
+    [[ $MVC24GC5_NM_OWNER == *'|0' ]] || return 1
     mvc24gc5_guard_witness || return 1
-    UBS24GC5_STAGE=nm-activation-attempted-uncertain
-    if ! mvc24gc5_nm_activate_noninteractive "$UBS24GA3_PREPARED_CLONE_UUID" "$UBS24GC3_IFACE"; then
+    MVC24GC5_STAGE=nm-activation-attempted-uncertain
+    if ! mvc24gc5_nm_activate_noninteractive "$MVC24GA3_PREPARED_CLONE_UUID" "$MVC24GC3_IFACE"; then
         return 1
     fi
-    UBS24GC5_STAGE=nm-replied-activation-unverified
-    mvc24gc5_active_witness "$UBS24GA3_PREPARED_CLONE_UUID" "$UBS24GC5_NM_OWNER" &&
+    MVC24GC5_STAGE=nm-replied-activation-unverified
+    mvc24gc5_active_witness "$MVC24GA3_PREPARED_CLONE_UUID" "$MVC24GC5_NM_OWNER" &&
         mvc24gc5_guard_witness &&
         mvc24gc5_prepared_profile_witness || return 1
-    UBS24GC5_STAGE=nm-openvpn-active-and-bootstrap-guard-observed-no-traffic-authority
-    UBS24GC5_AUTHORITY=none
+    MVC24GC5_STAGE=nm-openvpn-active-and-bootstrap-guard-observed-no-traffic-authority
+    MVC24GC5_AUTHORITY=none
 }

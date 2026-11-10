@@ -7,9 +7,9 @@
 # Requires B1/B2 libraries sourced first. Bash-only production dependencies.
 
 mvc24gc1_reset() {
-    UBS24GC1_ATTEMPTED=no
-    UBS24GC1_STAGE=unverified
-    UBS24GC1_AUTHORITY=none
+    MVC24GC1_ATTEMPTED=no
+    MVC24GC1_STAGE=unverified
+    MVC24GC1_AUTHORITY=none
 }
 
 mvc24gc1_guard_witness() {
@@ -164,14 +164,14 @@ mvc24gc1_postshape_observation() {
 # The root runtime remains for later independent reconciliation.
 mvc24gc1_transition_once() {
     (( $# == 4 )) || return 1
-    [[ ${UBS24GC1_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC1_ATTEMPTED=yes
-    UBS24GC1_STAGE=blocked-unverified
-    UBS24GC1_AUTHORITY=none
+    [[ ${MVC24GC1_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC1_ATTEMPTED=yes
+    MVC24GC1_STAGE=blocked-unverified
+    MVC24GC1_AUTHORITY=none
     local iface=$1 source=$2 remote=$3 port=$4 dir scratch first second fbefore fafter
     mvc24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid && mvc24gb2_attest || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
     [[ $(mvc24gb2_derive_iface) == "$iface" ]] || return 1
     mvc24gc1_guard_witness && mvc24gc1_endpoint_witness "$iface" "$source" "$remote" "$port" || return 1
     dir=$(mvc24gb2_runtime) || return 1
@@ -206,7 +206,7 @@ mvc24gc1_transition_once() {
     printf '%s\n' 'ubs-v240-c1-transition-attempt-v1' 'state=attempted-once' \
         "boot=$boot" "prepare=${prepared%% *}" "commit=${committed%% *}" \
         "batch=${batch%% *}" > "$dir/transition-attempt" || return 1
-    UBS24GC1_STAGE=transition-commit-attempted-no-vpn-authority
+    MVC24GC1_STAGE=transition-commit-attempted-no-vpn-authority
     nft --file "$dir/transition.nft" >/dev/null 2>&1 || return 1
     mvc24gb1_capture_nft "$scratch/post1.json" &&
        mvc24gb1_capture_nft "$scratch/post2.json" &&
@@ -217,8 +217,8 @@ mvc24gc1_transition_once() {
     # Still not a security-admitting witness: exact kernel rule expressions and
     # independent NM source/endpoint binding need validation before C1 can be
     # used for host activation.
-    UBS24GC1_STAGE=bootstrap-shape-observed-nonadmitting
-    UBS24GC1_AUTHORITY=none
+    MVC24GC1_STAGE=bootstrap-shape-observed-nonadmitting
+    MVC24GC1_AUTHORITY=none
     rm -rf -- "$scratch" || return 1
 }
 

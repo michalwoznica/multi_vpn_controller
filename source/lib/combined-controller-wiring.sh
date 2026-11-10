@@ -7,15 +7,15 @@
 # dispatcher is loaded second. Historical/offline controller stacks are not
 # production dependencies and intentionally are not sourced here.
 
-[[ -n "${UBS24E_CODE_ROOT:-}" && -d "$UBS24E_CODE_ROOT/lib" ]] || return 1
+[[ -n "${MVC24E_CODE_ROOT:-}" && -d "$MVC24E_CODE_ROOT/lib" ]] || return 1
 
 for mvc24e_module in \
     combined-operational-public-v240-composition \
     combined-controller-entry; do
-    [[ -f "$UBS24E_CODE_ROOT/lib/$mvc24e_module.sh" &&
-       ! -L "$UBS24E_CODE_ROOT/lib/$mvc24e_module.sh" ]] || return 1
+    [[ -f "$MVC24E_CODE_ROOT/lib/$mvc24e_module.sh" &&
+       ! -L "$MVC24E_CODE_ROOT/lib/$mvc24e_module.sh" ]] || return 1
     # shellcheck disable=SC1090
-    source "$UBS24E_CODE_ROOT/lib/$mvc24e_module.sh" || return 1
+    source "$MVC24E_CODE_ROOT/lib/$mvc24e_module.sh" || return 1
 done
 unset mvc24e_module
 

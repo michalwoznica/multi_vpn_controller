@@ -7,8 +7,8 @@
 # nmcli --show-secrets, activate, delete, modify, nft, DNS or recovery here.
 
 mvc24gc8_reset() {
-    UBS24GC8_STAGE=unverified
-    UBS24GC8_AUTHORITY=none
+    MVC24GC8_STAGE=unverified
+    MVC24GC8_AUTHORITY=none
 }
 
 mvc24gc8_authorize_activation() { return 1; }
@@ -85,21 +85,21 @@ mvc24gc8_preflight_locked() {
     (( $# == 0 )) || return 1
     declare -F mvc24op_settings_fingerprint >/dev/null &&
         declare -F mvc24op_settings_equal_except_runtime_timestamp >/dev/null || return 1
-    [[ ${UBS24GC5_ATTEMPTED:-no} == no &&
-       ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
-       ${UBS24GC3_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GC5_ATTEMPTED:-no} == no &&
+       ${MVC24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
+       ${MVC24GC3_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
        mvc24gc3_transition_records_valid &&
        mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local path source_uuid clone_uuid owner_before owner_after
     local item digest success=1 cleanup=1
-    source_uuid=${UBS24GA3_PREPARED_SOURCE_UUID:-}
-    clone_uuid=${UBS24GA3_PREPARED_CLONE_UUID:-}
+    source_uuid=${MVC24GA3_PREPARED_SOURCE_UUID:-}
+    clone_uuid=${MVC24GA3_PREPARED_CLONE_UUID:-}
     mvc24ga_uuid_valid "$source_uuid" && mvc24ga_uuid_valid "$clone_uuid" &&
         [[ $source_uuid != "$clone_uuid" ]] || return 1
     mvc24op_session_nm_identity || return 1
-    owner_before=$UBS24OP_SESSION_NM_IDENTITY
+    owner_before=$MVC24OP_SESSION_NM_IDENTITY
     [[ $owner_before == *'|0' ]] || return 1
     path=$(umask 077; mktemp -d /dev/shm/ubs-v240-c8.XXXXXXXX) || return 1
     [[ -d $path && ! -L $path && -O $path && $(stat -c %a -- "$path") == 700 ]] || return 1
@@ -119,11 +119,11 @@ mvc24gc8_preflight_locked() {
     fi
     if (( success == 1 )); then
         digest=$(mvc24op_settings_fingerprint "$path/source1.json") || success=0
-        [[ $digest == "${UBS24GA3_SOURCE_SHA256:-}" ]] || success=0
+        [[ $digest == "${MVC24GA3_SOURCE_SHA256:-}" ]] || success=0
         digest=$(mvc24op_settings_fingerprint "$path/clone1.json") || success=0
-        [[ $digest == "${UBS24GA3_DERIVATIVE_SHA256:-}" ]] || success=0
+        [[ $digest == "${MVC24GA3_DERIVATIVE_SHA256:-}" ]] || success=0
         mvc24op_session_nm_identity || success=0
-        owner_after=${UBS24OP_SESSION_NM_IDENTITY:-}
+        owner_after=${MVC24OP_SESSION_NM_IDENTITY:-}
         [[ $owner_after == "$owner_before" ]] &&
             mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || success=0
     fi
@@ -138,8 +138,8 @@ mvc24gc8_preflight_locked() {
     done
     rmdir -- "$path" || cleanup=0
     if (( success == 1 && cleanup == 1 )); then
-        UBS24GC8_STAGE=nm-source-clone-metadata-consistent-password-delivery-unproven
-        UBS24GC8_AUTHORITY=none
+        MVC24GC8_STAGE=nm-source-clone-metadata-consistent-password-delivery-unproven
+        MVC24GC8_AUTHORITY=none
         return 0
     fi
     return 1

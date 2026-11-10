@@ -2,13 +2,13 @@
 # C23AT — public v2.4 definition loader for the physically proven composition.
 # Sourcing this file defines functions only. It grants no mutation authority.
 
-[[ -n ${UBS24E_CODE_ROOT:-} && -d $UBS24E_CODE_ROOT/lib ]] || return 1
+[[ -n ${MVC24E_CODE_ROOT:-} && -d $MVC24E_CODE_ROOT/lib ]] || return 1
 
 # C23AY: C4's mature read-only OpenVPN admission deliberately binds its
 # recovery-script identity and saved-profile preview to an explicit source
 # root. Private local-console drivers set this themselves; the public loader
 # must do the same rather than trusting an inherited environment value.
-UBS24GC4_SOURCE_ROOT=$UBS24E_CODE_ROOT
+MVC24GC4_SOURCE_ROOT=$MVC24E_CODE_ROOT
 
 mvc24pub_openvpn_manifest_before_final() {
     cat <<'MANIFEST'
@@ -59,10 +59,10 @@ mvc24pub_wireguard_runtime_root() { printf '%s\n' /run/mvc-wireguard; }
 mvc24pub_source_module() {
     (( $# == 1 )) || return 1
     local module=$1
-    [[ $module =~ ^[a-z0-9-]+$ && -f $UBS24E_CODE_ROOT/lib/$module.sh &&
-       ! -L $UBS24E_CODE_ROOT/lib/$module.sh ]] || return 1
+    [[ $module =~ ^[a-z0-9-]+$ && -f $MVC24E_CODE_ROOT/lib/$module.sh &&
+       ! -L $MVC24E_CODE_ROOT/lib/$module.sh ]] || return 1
     # shellcheck disable=SC1090
-    source "$UBS24E_CODE_ROOT/lib/$module.sh"
+    source "$MVC24E_CODE_ROOT/lib/$module.sh"
 }
 
 # Reproduce accept-v240-dual-session-c23ar-local.sh's proven source ordering.
@@ -131,9 +131,9 @@ mvc24pub_process_initialize() {
 
     # Reset functions deliberately clear mutable stage state, not trusted code
     # provenance. Rebind C4 to this exact packaged source tree every time.
-    UBS24GC4_SOURCE_ROOT=$UBS24E_CODE_ROOT
+    MVC24GC4_SOURCE_ROOT=$MVC24E_CODE_ROOT
 
-    [[ ${UBS24GD4_TEMP_NAME:-} == vpnks-wg &&
-       ${UBS24GD4_RUNTIME:-} == /run/mvc-wireguard &&
-       ${UBS24PUBC_STAGE:-} == idle && ${UBS24PUBD_STAGE:-} == idle ]]
+    [[ ${MVC24GD4_TEMP_NAME:-} == vpnks-wg &&
+       ${MVC24GD4_RUNTIME:-} == /run/mvc-wireguard &&
+       ${MVC24PUBC_STAGE:-} == idle && ${MVC24PUBD_STAGE:-} == idle ]]
 }

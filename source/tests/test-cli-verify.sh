@@ -29,7 +29,7 @@ verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_R3A_LOWERCASE_NAMESPACE' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_R3B_UPPERCASE_NAMESPACE' <<<"$verbose" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
@@ -85,8 +85,8 @@ fi
 
 # Prove the builder embeds the verifier's marked function block byte-for-byte.
 awk '
-    $0 == "# UBS24_MONOLITH_VERIFY_FUNCTIONS_BEGIN" {inside=1; next}
-    $0 == "# UBS24_MONOLITH_VERIFY_FUNCTIONS_END" {inside=0; next}
+    $0 == "# MVC24_MONOLITH_VERIFY_FUNCTIONS_BEGIN" {inside=1; next}
+    $0 == "# MVC24_MONOLITH_VERIFY_FUNCTIONS_END" {inside=0; next}
     inside {print}
 ' "$VERIFY_SOURCE" > "$TMP/verify-source-functions"
 awk '
@@ -203,9 +203,9 @@ echo 'nameserver 192.168.200.1' > "$TMP/resolv"
 run_verify_case() {
     local case_name=$1 output=$2
     VERIFY_CASE=$case_name \
-    UBS24V_DUAL_RECOVERY="$TMP/dual" \
-    UBS24V_EMERGENCY_RECOVERY="$TMP/emergency" \
-    UBS24V_RESOLV_CONF="$TMP/resolv" \
+    MVC24V_DUAL_RECOVERY="$TMP/dual" \
+    MVC24V_EMERGENCY_RECOVERY="$TMP/emergency" \
+    MVC24V_RESOLV_CONF="$TMP/resolv" \
     PATH="$TMP/bin:$PATH" \
         "$A" verify --no-internet-check > "$output" 2>&1
 }

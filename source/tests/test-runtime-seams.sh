@@ -58,7 +58,7 @@ if [[ $(stat -c '%a:%h' -- "$awk_asset") == 600:1 && $(stat -c '%a:%h' -- "$nft_
 else
     bad 'runtime embedded assets are private single-link files'
 fi
-asset_dir=$UBS24_MONOLITH_ASSET_DIR
+asset_dir=$MVC24_MONOLITH_ASSET_DIR
 mvc24mon_runtime_assets_cleanup
 [[ ! -e $asset_dir && ! -L $asset_dir ]] && ok 'runtime embedded assets clean up without residue' || bad 'runtime embedded assets clean up without residue'
 
@@ -66,12 +66,12 @@ mvc24mon_runtime_assets_cleanup
 recovery=$TMP/emergency-recovery
 cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 700 -- "$recovery"
-mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256" && ok 'embedded emergency recovery SHA authenticates exact file' || bad 'embedded emergency recovery SHA authenticates exact file'
+mvc24mon_recovery_file_identity "$recovery" "$MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256" && ok 'embedded emergency recovery SHA authenticates exact file' || bad 'embedded emergency recovery SHA authenticates exact file'
 printf '\n# drift\n' >> "$recovery"
-if ! mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects content drift'; else bad 'recovery identity rejects content drift'; fi
+if ! mvc24mon_recovery_file_identity "$recovery" "$MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects content drift'; else bad 'recovery identity rejects content drift'; fi
 cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 755 -- "$recovery"
-if ! mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects wrong mode'; else bad 'recovery identity rejects wrong mode'; fi
+if ! mvc24mon_recovery_file_identity "$recovery" "$MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects wrong mode'; else bad 'recovery identity rejects wrong mode'; fi
 
 # Preview-shape contract must exactly match the old external --preview-derivative
 # structural validator. Source the old probe for its pure validator only.
@@ -133,9 +133,9 @@ preview_case() (
     mvc24op_session_nm_identity() {
         owner_call=$((owner_call+1))
         if [[ $mode == owner-drift && $owner_call -ge 3 ]]; then
-            UBS24OP_SESSION_NM_IDENTITY=':1.99|999|0'
+            MVC24OP_SESSION_NM_IDENTITY=':1.99|999|0'
         else
-            UBS24OP_SESSION_NM_IDENTITY=':1.7|1025|0'
+            MVC24OP_SESSION_NM_IDENTITY=':1.7|1025|0'
         fi
     }
     if [[ $mode == preview-reject ]]; then
@@ -151,18 +151,18 @@ if ! preview_case owner-drift; then ok 'internal preview rejects NetworkManager 
 if ! preview_case preview-reject; then ok 'internal preview rejects unsupported derivative projection'; else bad 'internal preview rejects unsupported derivative projection'; fi
 
 # C4 final definitions must be monolith-native and independent of source-root.
-if ! declare -f mvc24gc4_recovery_installed | grep -Eq 'UBS24GC4_SOURCE_ROOT|cmp -s'; then ok 'C4 recovery identity has no sibling source dependency'; else bad 'C4 recovery identity has no sibling source dependency'; fi
-if ! declare -f mvc24gc4_source_preview | grep -Eq 'check-v240-live-saved-ovpn-readonly|UBS24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
+if ! declare -f mvc24gc4_recovery_installed | grep -Eq 'MVC24GC4_SOURCE_ROOT|cmp -s'; then ok 'C4 recovery identity has no sibling source dependency'; else bad 'C4 recovery identity has no sibling source dependency'; fi
+if ! declare -f mvc24gc4_source_preview | grep -Eq 'check-v240-live-saved-ovpn-readonly|MVC24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
 
 # Fresh-process initialization should prepare only embedded runtime assets and
 # leave the obsolete modular source-root binding empty.
 mvc24pub_process_initialize
-if [[ -z ${UBS24GC4_SOURCE_ROOT:-} && -n ${UBS24_MONOLITH_ASSET_DIR:-} && -d $UBS24_MONOLITH_ASSET_DIR ]]; then
+if [[ -z ${MVC24GC4_SOURCE_ROOT:-} && -n ${MVC24_MONOLITH_ASSET_DIR:-} && -d $MVC24_MONOLITH_ASSET_DIR ]]; then
     ok 'monolith process initialization uses embedded assets with no C4 source root'
 else
     bad 'monolith process initialization uses embedded assets with no C4 source root'
 fi
-asset_dir=$UBS24_MONOLITH_ASSET_DIR
+asset_dir=$MVC24_MONOLITH_ASSET_DIR
 mvc24mon_runtime_assets_cleanup
 [[ ! -e $asset_dir ]] && ok 'process-initialization asset directory is cleanly removable' || bad 'process-initialization asset directory is cleanly removable'
 

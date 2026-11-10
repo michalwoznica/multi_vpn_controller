@@ -2,7 +2,7 @@
 # UBS VPN Controller v2.4.0 - Phase A (development library)
 # This file does not run any NetworkManager or nftables commands.
 # Load with: source lib/dual-session.sh
-# Sets UBS24_COMMAND / UBS24_MODE / UBS24_PRIMARY_PROFILE / UBS24_OVPN_PROFILE.
+# Sets MVC24_COMMAND / MVC24_MODE / MVC24_PRIMARY_PROFILE / MVC24_OVPN_PROFILE.
 # State helpers here are an evolving development schema, not a replacement
 # for the stable v2.3.0 state format. Do NOT point them at /run/vpnks/state.
 
@@ -18,28 +18,28 @@ mvc24_valid_name() {
 }
 
 mvc24_parse_command() {
-    UBS24_COMMAND='' UBS24_MODE='' UBS24_PRIMARY_PROFILE='' UBS24_OVPN_PROFILE=''
+    MVC24_COMMAND='' MVC24_MODE='' MVC24_PRIMARY_PROFILE='' MVC24_OVPN_PROFILE=''
     local command=${1:-}
     case "$command" in
         version|--version|list|status|disconnect)
             (( $# == 1 )) || { mvc24_error "Unexpected arguments to $command"; return 2; }
-            UBS24_COMMAND=${command#--}
+            MVC24_COMMAND=${command#--}
             return 0
             ;;
         connect)
             (( $# >= 2 && $# <= 4 )) || { mvc24_error 'Usage: connect PROFILE [--split [OPENVPN_PROFILE]]'; return 2; }
             mvc24_valid_name "$2" || { mvc24_error 'Invalid selected profile name'; return 2; }
-            UBS24_COMMAND=connect
-            UBS24_PRIMARY_PROFILE=$2 # Type is resolved by NetworkManager later.
-            UBS24_MODE=protected
+            MVC24_COMMAND=connect
+            MVC24_PRIMARY_PROFILE=$2 # Type is resolved by NetworkManager later.
+            MVC24_MODE=protected
             if (( $# >= 3 )); then
                 [[ "$3" == --split ]] || { mvc24_error 'Expected --split after WireGuard profile'; return 2; }
-                UBS24_MODE=split
+                MVC24_MODE=split
                 if (( $# == 4 )); then
                     mvc24_valid_name "$4" || { mvc24_error 'Invalid OpenVPN profile name'; return 2; }
                     [[ "$4" != "$2" ]] || { mvc24_error 'Both profiles cannot be the same'; return 2; }
-                    UBS24_OVPN_PROFILE=$4
-                    UBS24_MODE=combined
+                    MVC24_OVPN_PROFILE=$4
+                    MVC24_MODE=combined
                 fi
             fi
             return 0
@@ -53,7 +53,7 @@ mvc24_parse_command() {
 # Arguments: primary_type primary_vpn_service secondary_type secondary_vpn_service
 mvc24_validate_profile_types() {
     local primary=$1 primary_service=$2 secondary=${3:-} secondary_service=${4:-}
-    case "$UBS24_MODE" in
+    case "$MVC24_MODE" in
         protected)
             [[ -z "$secondary" && -z "$secondary_service" ]] || return 1
             [[ "$primary" == wireguard ]] ||
@@ -99,11 +99,11 @@ mvc24_valid_endpoint() {
 mvc24_normalize_endpoints() {
     local ep
     local -a input=("$@")
-    UBS24_ENDPOINTS=()
+    MVC24_ENDPOINTS=()
     (( ${#input[@]} >= 1 && ${#input[@]} <= 64 )) || return 1
     for ep in "${input[@]}"; do mvc24_valid_endpoint "$ep" || return 1; done
-    mapfile -t UBS24_ENDPOINTS < <(printf '%s\n' "${input[@]}" | LC_ALL=C sort -u)
-    (( ${#UBS24_ENDPOINTS[@]} >= 1 && ${#UBS24_ENDPOINTS[@]} <= 64 ))
+    mapfile -t MVC24_ENDPOINTS < <(printf '%s\n' "${input[@]}" | LC_ALL=C sort -u)
+    (( ${#MVC24_ENDPOINTS[@]} >= 1 && ${#MVC24_ENDPOINTS[@]} <= 64 ))
 }
 
 # Development-only dual-session metadata: no credentials and no shell eval.
@@ -127,7 +127,7 @@ mvc24_write_combined_state() {
         printf '%s\n' 'ubs-vpn-state-v4-draft' 'mode=combined' \
             "wg_uuid=$wg" "ovpn_uuid=$ovpn" 'wg_tunnel=vpnks-wg' \
             'ovpn_tunnel=tun-vpnks' "ovpn_proto=$proto" "ovpn_endpoint=$ip:$port"
-        printf 'wg_endpoint=%s\n' "${UBS24_ENDPOINTS[@]}"
+        printf 'wg_endpoint=%s\n' "${MVC24_ENDPOINTS[@]}"
     } > "$tmp" || { rm -f -- "$tmp"; return 1; }
     # Atomic publication without overwriting another writer's state file.
     ln -- "$tmp" "$path" || { rm -f -- "$tmp"; return 1; }
@@ -137,8 +137,8 @@ mvc24_write_combined_state() {
 mvc24_read_combined_state() {
     local path=$1 row endpoint i
     local -a lines=() endpoints=() canon=()
-    UBS24_STATE_WG_UUID='' UBS24_STATE_OVPN_UUID='' UBS24_STATE_OVPN_PROTO=''
-    UBS24_STATE_OVPN_ENDPOINT='' UBS24_STATE_WG_ENDPOINTS=()
+    MVC24_STATE_WG_UUID='' MVC24_STATE_OVPN_UUID='' MVC24_STATE_OVPN_PROTO=''
+    MVC24_STATE_OVPN_ENDPOINT='' MVC24_STATE_WG_ENDPOINTS=()
     [[ -f "$path" && ! -L "$path" && -r "$path" ]] || return 1
     [[ "$(stat -c %a -- "$path")" == 600 ]] || return 1
     mapfile -t lines < "$path" || return 1
@@ -161,11 +161,11 @@ mvc24_read_combined_state() {
         endpoints+=("$endpoint")
     done
     mvc24_normalize_endpoints "${endpoints[@]}" || return 1
-    (( ${#UBS24_ENDPOINTS[@]} == ${#endpoints[@]} )) || return 1
+    (( ${#MVC24_ENDPOINTS[@]} == ${#endpoints[@]} )) || return 1
     for ((i=0; i<${#endpoints[@]}; i++)); do
-        [[ "${UBS24_ENDPOINTS[i]}" == "${endpoints[i]}" ]] || return 1
+        [[ "${MVC24_ENDPOINTS[i]}" == "${endpoints[i]}" ]] || return 1
     done
-    UBS24_STATE_WG_UUID=$wg UBS24_STATE_OVPN_UUID=$ovpn
-    UBS24_STATE_OVPN_PROTO=$proto UBS24_STATE_OVPN_ENDPOINT=$openvpn_ep
-    UBS24_STATE_WG_ENDPOINTS=("${endpoints[@]}")
+    MVC24_STATE_WG_UUID=$wg MVC24_STATE_OVPN_UUID=$ovpn
+    MVC24_STATE_OVPN_PROTO=$proto MVC24_STATE_OVPN_ENDPOINT=$openvpn_ep
+    MVC24_STATE_WG_ENDPOINTS=("${endpoints[@]}")
 }

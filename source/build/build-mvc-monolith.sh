@@ -6,9 +6,9 @@ set -euo pipefail
 umask 077
 export LC_ALL=C
 
-UBS24_BUILD_VERSION='2.4.1'
-UBS24_BUILD_CHECKPOINT='MVC_R3A_LOWERCASE_NAMESPACE'
-UBS24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
+MVC24_BUILD_VERSION='2.4.1'
+MVC24_BUILD_CHECKPOINT='MVC_R3B_UPPERCASE_NAMESPACE'
+MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
     printf 'build-mvc-monolith: %s\n' "$*" >&2
@@ -19,7 +19,7 @@ mvc24_build_script=${BASH_SOURCE[0]}
 [[ $mvc24_build_script == /* ]] || mvc24_build_script=$PWD/$mvc24_build_script
 mvc24_build_dir=$(cd -- "${mvc24_build_script%/*}" && pwd -P) || exit 1
 mvc24_project_root=$(cd -- "$mvc24_build_dir/../.." && pwd -P) || exit 1
-mvc24_manifest="$mvc24_project_root/$UBS24_BUILD_MANIFEST_REL"
+mvc24_manifest="$mvc24_project_root/$MVC24_BUILD_MANIFEST_REL"
 
 (( $# == 1 )) || mvc24_build_die 'usage: build-mvc-monolith.sh OUTPUT'
 mvc24_output=$1
@@ -57,18 +57,18 @@ mvc24_builder_sha=$(mvc24_build_hash_file "$mvc24_build_script") || exit 1
 
 # Parsed manifest state. Every declared input is validated even when its role is
 # deferred to a later monolith stage; this makes drift visible immediately.
-declare -a UBS24_BUILD_MODULE_PATHS=()
-declare -a UBS24_BUILD_MODULE_SHAS=()
-declare -a UBS24_BUILD_MODULE_ORDERS=()
-declare -A UBS24_BUILD_KEYS=()
-declare -A UBS24_BUILD_PATHS=()
-declare -A UBS24_BUILD_ASSET_PATH=()
-declare -A UBS24_BUILD_ASSET_SHA=()
-declare -A UBS24_BUILD_INTEGRATE_PATH=()
-declare -A UBS24_BUILD_INTEGRATE_SHA=()
-declare -A UBS24_BUILD_RECOVERY_PATH=()
-declare -A UBS24_BUILD_RECOVERY_SHA=()
-declare -A UBS24_BUILD_KIND_COUNT=()
+declare -a MVC24_BUILD_MODULE_PATHS=()
+declare -a MVC24_BUILD_MODULE_SHAS=()
+declare -a MVC24_BUILD_MODULE_ORDERS=()
+declare -A MVC24_BUILD_KEYS=()
+declare -A MVC24_BUILD_PATHS=()
+declare -A MVC24_BUILD_ASSET_PATH=()
+declare -A MVC24_BUILD_ASSET_SHA=()
+declare -A MVC24_BUILD_INTEGRATE_PATH=()
+declare -A MVC24_BUILD_INTEGRATE_SHA=()
+declare -A MVC24_BUILD_RECOVERY_PATH=()
+declare -A MVC24_BUILD_RECOVERY_SHA=()
+declare -A MVC24_BUILD_KIND_COUNT=()
 mvc24_record_count=0
 mvc24_module_count=0
 
@@ -90,12 +90,12 @@ while IFS='|' read -r kind key expected_sha rel detail extra; do
     [[ $actual_sha == "$expected_sha" ]] || mvc24_build_die "SHA-256 mismatch: $rel"
     record_key=$kind:$key
     if [[ $kind != EXCLUDE ]]; then
-        [[ -z ${UBS24_BUILD_KEYS[$record_key]+x} ]] || mvc24_build_die "duplicate manifest key: $record_key"
-        UBS24_BUILD_KEYS[$record_key]=1
+        [[ -z ${MVC24_BUILD_KEYS[$record_key]+x} ]] || mvc24_build_die "duplicate manifest key: $record_key"
+        MVC24_BUILD_KEYS[$record_key]=1
     fi
-    [[ -z ${UBS24_BUILD_PATHS[$rel]+x} ]] || mvc24_build_die "duplicate manifest path: $rel"
-    UBS24_BUILD_PATHS[$rel]=1
-    UBS24_BUILD_KIND_COUNT[$kind]=$(( ${UBS24_BUILD_KIND_COUNT[$kind]:-0} + 1 ))
+    [[ -z ${MVC24_BUILD_PATHS[$rel]+x} ]] || mvc24_build_die "duplicate manifest path: $rel"
+    MVC24_BUILD_PATHS[$rel]=1
+    MVC24_BUILD_KIND_COUNT[$kind]=$(( ${MVC24_BUILD_KIND_COUNT[$kind]:-0} + 1 ))
     mvc24_record_count=$((mvc24_record_count + 1))
 
     case $kind in
@@ -103,9 +103,9 @@ while IFS='|' read -r kind key expected_sha rel detail extra; do
             [[ $key =~ ^[0-9]{3}$ ]] || mvc24_build_die "invalid MODULE order: $key"
             expected_order=$(printf '%03d' $((mvc24_module_count + 1)))
             [[ $key == "$expected_order" ]] || mvc24_build_die "MODULE order gap/reorder: expected $expected_order, got $key"
-            UBS24_BUILD_MODULE_ORDERS+=("$key")
-            UBS24_BUILD_MODULE_SHAS+=("$expected_sha")
-            UBS24_BUILD_MODULE_PATHS+=("$rel")
+            MVC24_BUILD_MODULE_ORDERS+=("$key")
+            MVC24_BUILD_MODULE_SHAS+=("$expected_sha")
+            MVC24_BUILD_MODULE_PATHS+=("$rel")
             mvc24_module_count=$((mvc24_module_count + 1))
             ;;
         ASSET)
@@ -113,45 +113,45 @@ while IFS='|' read -r kind key expected_sha rel detail extra; do
                 gvariant-awk|b4-bootstrap-nft) ;;
                 *) mvc24_build_die "unexpected ASSET key: $key" ;;
             esac
-            UBS24_BUILD_ASSET_PATH[$key]=$rel
-            UBS24_BUILD_ASSET_SHA[$key]=$expected_sha
+            MVC24_BUILD_ASSET_PATH[$key]=$rel
+            MVC24_BUILD_ASSET_SHA[$key]=$expected_sha
             ;;
         INTEGRATE)
             case $key in
                 openvpn-source-preview|verify) ;;
                 *) mvc24_build_die "unexpected INTEGRATE key: $key" ;;
             esac
-            UBS24_BUILD_INTEGRATE_PATH[$key]=$rel
-            UBS24_BUILD_INTEGRATE_SHA[$key]=$expected_sha
+            MVC24_BUILD_INTEGRATE_PATH[$key]=$rel
+            MVC24_BUILD_INTEGRATE_SHA[$key]=$expected_sha
             ;;
         EXTERNAL_RECOVERY)
             case $key in
                 emergency|dual) ;;
                 *) mvc24_build_die "unexpected EXTERNAL_RECOVERY key: $key" ;;
             esac
-            UBS24_BUILD_RECOVERY_PATH[$key]=$rel
-            UBS24_BUILD_RECOVERY_SHA[$key]=$expected_sha
+            MVC24_BUILD_RECOVERY_PATH[$key]=$rel
+            MVC24_BUILD_RECOVERY_SHA[$key]=$expected_sha
             ;;
     esac
 done < "$mvc24_manifest"
 
 [[ $mvc24_record_count == 57 ]] || mvc24_build_die "manifest record count changed: $mvc24_record_count"
 [[ $mvc24_module_count == 49 ]] || mvc24_build_die "MODULE count changed: $mvc24_module_count"
-[[ ${UBS24_BUILD_KIND_COUNT[ASSET]:-0} == 2 &&
-   ${UBS24_BUILD_KIND_COUNT[INTEGRATE]:-0} == 2 &&
-   ${UBS24_BUILD_KIND_COUNT[EXTERNAL_RECOVERY]:-0} == 2 &&
-   ${UBS24_BUILD_KIND_COUNT[EXCLUDE]:-0} == 2 ]] || mvc24_build_die 'manifest role counts changed'
-[[ ${UBS24_BUILD_ASSET_PATH[gvariant-awk]:-} == source/lib/combined-gvariant-settings-to-json.awk ]] || \
+[[ ${MVC24_BUILD_KIND_COUNT[ASSET]:-0} == 2 &&
+   ${MVC24_BUILD_KIND_COUNT[INTEGRATE]:-0} == 2 &&
+   ${MVC24_BUILD_KIND_COUNT[EXTERNAL_RECOVERY]:-0} == 2 &&
+   ${MVC24_BUILD_KIND_COUNT[EXCLUDE]:-0} == 2 ]] || mvc24_build_die 'manifest role counts changed'
+[[ ${MVC24_BUILD_ASSET_PATH[gvariant-awk]:-} == source/lib/combined-gvariant-settings-to-json.awk ]] || \
     mvc24_build_die 'gvariant asset path changed'
-[[ ${UBS24_BUILD_ASSET_PATH[b4-bootstrap-nft]:-} == source/nftables/vpn-v240-preclone-quarantine-offline.nft ]] || \
+[[ ${MVC24_BUILD_ASSET_PATH[b4-bootstrap-nft]:-} == source/nftables/vpn-v240-preclone-quarantine-offline.nft ]] || \
     mvc24_build_die 'B4 nft asset path changed'
-[[ ${UBS24_BUILD_INTEGRATE_PATH[openvpn-source-preview]:-} == source/tools/check-v240-live-saved-ovpn-readonly.sh ]] || \
+[[ ${MVC24_BUILD_INTEGRATE_PATH[openvpn-source-preview]:-} == source/tools/check-v240-live-saved-ovpn-readonly.sh ]] || \
     mvc24_build_die 'OpenVPN preview integration path changed'
-[[ ${UBS24_BUILD_INTEGRATE_PATH[verify]:-} == source/tools/verify-mvc-state-readonly.sh ]] || \
+[[ ${MVC24_BUILD_INTEGRATE_PATH[verify]:-} == source/tools/verify-mvc-state-readonly.sh ]] || \
     mvc24_build_die 'read-only verifier integration path changed'
-[[ ${UBS24_BUILD_RECOVERY_PATH[emergency]:-} == source/tools/recover-mvc-host-guard-local.sh ]] || \
+[[ ${MVC24_BUILD_RECOVERY_PATH[emergency]:-} == source/tools/recover-mvc-host-guard-local.sh ]] || \
     mvc24_build_die 'emergency recovery source path changed'
-[[ ${UBS24_BUILD_RECOVERY_PATH[dual]:-} == source/tools/recover-mvc-dual-local.sh ]] || \
+[[ ${MVC24_BUILD_RECOVERY_PATH[dual]:-} == source/tools/recover-mvc-dual-local.sh ]] || \
     mvc24_build_die 'dual recovery source path changed'
 
 mvc24_tmp=$mvc24_output_dir/.${mvc24_output_name}.tmp.$$
@@ -168,7 +168,7 @@ mvc24_emit '# Changes belong in the modular source tree and must be rebuilt.'
 mvc24_emit '#'
 mvc24_emit '# C24A Stage 3 v2.4.1 operational candidate.'
 mvc24_emit '# Generated-runtime equivalence is proven; lifecycle delegates to the audited public dispatcher.'
-mvc24_emit "# Source checkpoint: $UBS24_BUILD_CHECKPOINT"
+mvc24_emit "# Source checkpoint: $MVC24_BUILD_CHECKPOINT"
 mvc24_emit "# Runtime manifest SHA-256: $mvc24_manifest_sha"
 mvc24_emit "# Builder SHA-256: $mvc24_builder_sha"
 mvc24_emit "# Ordered runtime modules: $mvc24_module_count"
@@ -177,15 +177,15 @@ mvc24_emit ''
 mvc24_emit 'set -euo pipefail'
 mvc24_emit 'umask 077'
 mvc24_emit 'export LC_ALL=C'
-mvc24_emit "readonly UBS24_MONOLITH_VERSION='$UBS24_BUILD_VERSION'"
-mvc24_emit "readonly UBS24_MONOLITH_CHECKPOINT='$UBS24_BUILD_CHECKPOINT'"
-mvc24_emit "readonly UBS24_MONOLITH_MANIFEST_SHA256='$mvc24_manifest_sha'"
-mvc24_emit "readonly UBS24_MONOLITH_BUILDER_SHA256='$mvc24_builder_sha'"
-mvc24_emit "readonly UBS24_MONOLITH_VERIFY_SOURCE_SHA256='${UBS24_BUILD_INTEGRATE_SHA[verify]}'"
-mvc24_emit "readonly UBS24_MONOLITH_EMERGENCY_RECOVERY='/root/mvc-emergency-rollback'"
-mvc24_emit "readonly UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256='${UBS24_BUILD_RECOVERY_SHA[emergency]}'"
-mvc24_emit "readonly UBS24_MONOLITH_DUAL_RECOVERY='/root/mvc-dual-recovery'"
-mvc24_emit "readonly UBS24_MONOLITH_DUAL_RECOVERY_SHA256='${UBS24_BUILD_RECOVERY_SHA[dual]}'"
+mvc24_emit "readonly MVC24_MONOLITH_VERSION='$MVC24_BUILD_VERSION'"
+mvc24_emit "readonly MVC24_MONOLITH_CHECKPOINT='$MVC24_BUILD_CHECKPOINT'"
+mvc24_emit "readonly MVC24_MONOLITH_MANIFEST_SHA256='$mvc24_manifest_sha'"
+mvc24_emit "readonly MVC24_MONOLITH_BUILDER_SHA256='$mvc24_builder_sha'"
+mvc24_emit "readonly MVC24_MONOLITH_VERIFY_SOURCE_SHA256='${MVC24_BUILD_INTEGRATE_SHA[verify]}'"
+mvc24_emit "readonly MVC24_MONOLITH_EMERGENCY_RECOVERY='/root/mvc-emergency-rollback'"
+mvc24_emit "readonly MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256='${MVC24_BUILD_RECOVERY_SHA[emergency]}'"
+mvc24_emit "readonly MVC24_MONOLITH_DUAL_RECOVERY='/root/mvc-dual-recovery'"
+mvc24_emit "readonly MVC24_MONOLITH_DUAL_RECOVERY_SHA256='${MVC24_BUILD_RECOVERY_SHA[dual]}'"
 mvc24_emit ''
 mvc24_emit '# ============================================================================'
 mvc24_emit '# Embedded deterministic runtime resources'
@@ -199,7 +199,7 @@ mvc24_build_emit_resource_function() {
         b4-bootstrap-nft) fn=mvc24mon_emit_b4_bootstrap_nft ;;
         *) return 1 ;;
     esac
-    delim="__UBS24_RESOURCE_${sha}__"
+    delim="__MVC24_RESOURCE_${sha}__"
     ! grep -Fqx -- "$delim" "$mvc24_project_root/$rel" || mvc24_build_die "resource delimiter collision: $rel"
     mvc24_emit "# Resource: $rel"
     mvc24_emit "# SHA-256: $sha"
@@ -214,9 +214,9 @@ mvc24_build_emit_resource_function() {
 }
 
 mvc24_build_emit_resource_function gvariant-awk \
-    "${UBS24_BUILD_ASSET_PATH[gvariant-awk]}" "${UBS24_BUILD_ASSET_SHA[gvariant-awk]}"
+    "${MVC24_BUILD_ASSET_PATH[gvariant-awk]}" "${MVC24_BUILD_ASSET_SHA[gvariant-awk]}"
 mvc24_build_emit_resource_function b4-bootstrap-nft \
-    "${UBS24_BUILD_ASSET_PATH[b4-bootstrap-nft]}" "${UBS24_BUILD_ASSET_SHA[b4-bootstrap-nft]}"
+    "${MVC24_BUILD_ASSET_PATH[b4-bootstrap-nft]}" "${MVC24_BUILD_ASSET_SHA[b4-bootstrap-nft]}"
 
 cat >> "$mvc24_tmp" <<'BASH_RESOURCE_HELPERS'
 mvc24mon_resource_sha256() {
@@ -251,25 +251,25 @@ mvc24mon_materialize_resource() {
     [[ -f $dest && ! -L $dest && $(stat -c %a -- "$dest") == 600 ]] || return 1
 }
 
-UBS24_MONOLITH_ASSET_DIR=''
+MVC24_MONOLITH_ASSET_DIR=''
 
 mvc24mon_runtime_assets_cleanup() {
     (( $# == 0 )) || return 1
-    local dir=${UBS24_MONOLITH_ASSET_DIR:-}
+    local dir=${MVC24_MONOLITH_ASSET_DIR:-}
     [[ -n $dir ]] || return 0
     if [[ -d $dir && ! -L $dir && $dir == /dev/shm/mvc-monolith-assets.* ]]; then
         rm -f -- "$dir/gvariant-settings-to-json.awk" "$dir/vpn-v240-preclone-quarantine-offline.nft" 2>/dev/null || :
         rmdir -- "$dir" 2>/dev/null || :
     fi
-    UBS24_MONOLITH_ASSET_DIR=''
-    export UBS24_MONOLITH_ASSET_DIR
+    MVC24_MONOLITH_ASSET_DIR=''
+    export MVC24_MONOLITH_ASSET_DIR
 }
 
 mvc24mon_runtime_assets_prepare() {
     (( $# == 0 )) || return 1
     local dir
-    if [[ -n ${UBS24_MONOLITH_ASSET_DIR:-} ]]; then
-        dir=$UBS24_MONOLITH_ASSET_DIR
+    if [[ -n ${MVC24_MONOLITH_ASSET_DIR:-} ]]; then
+        dir=$MVC24_MONOLITH_ASSET_DIR
         [[ -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir" 2>/dev/null) == "$EUID:700:2" ]] || return 1
         [[ -f $dir/gvariant-settings-to-json.awk && ! -L $dir/gvariant-settings-to-json.awk &&
            -f $dir/vpn-v240-preclone-quarantine-offline.nft && ! -L $dir/vpn-v240-preclone-quarantine-offline.nft ]] || return 1
@@ -284,13 +284,13 @@ mvc24mon_runtime_assets_prepare() {
         rmdir -- "$dir" 2>/dev/null || :
         return 1
     fi
-    UBS24_MONOLITH_ASSET_DIR=$dir
-    export UBS24_MONOLITH_ASSET_DIR
+    MVC24_MONOLITH_ASSET_DIR=$dir
+    export MVC24_MONOLITH_ASSET_DIR
 }
 
 mvc24mon_runtime_asset_dir() {
     (( $# == 0 )) || return 1
-    local dir=${UBS24_MONOLITH_ASSET_DIR:-}
+    local dir=${MVC24_MONOLITH_ASSET_DIR:-}
     [[ -n $dir && -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir" 2>/dev/null) == "$EUID:700:2" ]] || return 1
     printf '%s\n' "$dir"
 }
@@ -313,8 +313,8 @@ mvc24mon_runtime_asset_path() {
 BASH_RESOURCE_HELPERS
 # Replace deterministic placeholders without depending on source path ordering.
 sed -i \
-    -e "s/__GVARIANT_SHA__/${UBS24_BUILD_ASSET_SHA[gvariant-awk]}/" \
-    -e "s/__B4_SHA__/${UBS24_BUILD_ASSET_SHA[b4-bootstrap-nft]}/" \
+    -e "s/__GVARIANT_SHA__/${MVC24_BUILD_ASSET_SHA[gvariant-awk]}/" \
+    -e "s/__B4_SHA__/${MVC24_BUILD_ASSET_SHA[b4-bootstrap-nft]}/" \
     "$mvc24_tmp"
 mvc24_emit ''
 
@@ -368,8 +368,8 @@ mvc24_build_emit_module() {
 # file also provides three runtime glue functions after loading these modules;
 # reproduce only those functions, not its source-loop/loader mechanics.
 for ((i=0; i<48; i++)); do
-    mvc24_build_emit_module "${UBS24_BUILD_MODULE_ORDERS[$i]}" \
-        "${UBS24_BUILD_MODULE_SHAS[$i]}" "${UBS24_BUILD_MODULE_PATHS[$i]}"
+    mvc24_build_emit_module "${MVC24_BUILD_MODULE_ORDERS[$i]}" \
+        "${MVC24_BUILD_MODULE_SHAS[$i]}" "${MVC24_BUILD_MODULE_PATHS[$i]}"
 done
 
 cat >> "$mvc24_tmp" <<'BASH_MONOLITH_GLUE'
@@ -400,19 +400,19 @@ mvc24pub_process_initialize() {
     done
 
     # Monolith-native C4 admission does not use a project source root.
-    UBS24GC4_SOURCE_ROOT=
+    MVC24GC4_SOURCE_ROOT=
 
-    [[ ${UBS24GD4_TEMP_NAME:-} == vpnks-wg &&
-       ${UBS24GD4_RUNTIME:-} == /run/mvc-wireguard &&
-       ${UBS24PUBC_STAGE:-} == idle && ${UBS24PUBD_STAGE:-} == idle ]]
+    [[ ${MVC24GD4_TEMP_NAME:-} == vpnks-wg &&
+       ${MVC24GD4_RUNTIME:-} == /run/mvc-wireguard &&
+       ${MVC24PUBC_STAGE:-} == idle && ${MVC24PUBD_STAGE:-} == idle ]]
 }
 # <<< END MONOLITH COMPOSITION GLUE
 
 BASH_MONOLITH_GLUE
 
 # Module 049 is the public dispatcher and must remain final in modular function order.
-mvc24_build_emit_module "${UBS24_BUILD_MODULE_ORDERS[48]}" \
-    "${UBS24_BUILD_MODULE_SHAS[48]}" "${UBS24_BUILD_MODULE_PATHS[48]}"
+mvc24_build_emit_module "${MVC24_BUILD_MODULE_ORDERS[48]}" \
+    "${MVC24_BUILD_MODULE_SHAS[48]}" "${MVC24_BUILD_MODULE_PATHS[48]}"
 
 cat >> "$mvc24_tmp" <<'BASH_STAGE3A_SEAMS'
 # ============================================================================
@@ -458,18 +458,18 @@ mvc24mon_openvpn_source_preview() {
         command -v "$bin" >/dev/null 2>&1 || return 1
     done
     mvc24op_session_nm_identity || return 1
-    initial_owner=${UBS24OP_SESSION_NM_IDENTITY:-}
+    initial_owner=${MVC24OP_SESSION_NM_IDENTITY:-}
     [[ -n $initial_owner ]] || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs24-monolith-saved-host.XXXXXXXX) || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch && $(stat -c %a:%h -- "$scratch") == 700:2 ]] || {
         rm -rf -- "$scratch" 2>/dev/null || :
         return 1
     }
-    if [[ ${UBS24S_LOCK_HELD+x} ]]; then
+    if [[ ${MVC24S_LOCK_HELD+x} ]]; then
         old_lock_set=1
-        old_lock=$UBS24S_LOCK_HELD
+        old_lock=$MVC24S_LOCK_HELD
     fi
-    UBS24S_LOCK_HELD=1
+    MVC24S_LOCK_HELD=1
 
     while :; do
         for side in first second; do
@@ -491,12 +491,12 @@ mvc24mon_openvpn_source_preview() {
                 org.freedesktop.NetworkManager.Settings.Connection Unsaved b) || break 2
             [[ $unsaved_after == 'b false' ]] || break 2
             mvc24op_session_nm_identity || break 2
-            [[ ${UBS24OP_SESSION_NM_IDENTITY:-} == "$initial_owner" ]] || break 2
+            [[ ${MVC24OP_SESSION_NM_IDENTITY:-} == "$initial_owner" ]] || break 2
         done
         [[ -n $first_obj && $first_obj == "$second_obj" ]] || break
         cmp -s -- "$scratch/first.json" "$scratch/second.json" || break
         mvc24op_session_nm_identity || break
-        [[ ${UBS24OP_SESSION_NM_IDENTITY:-} == "$initial_owner" ]] || break
+        [[ ${MVC24OP_SESSION_NM_IDENTITY:-} == "$initial_owner" ]] || break
         path=$scratch/preview.json
         (umask 077; set -C; : > "$path") || break
         [[ -f $path && ! -L $path && $(stat -c %a:%h -- "$path") == 600:1 ]] || break
@@ -506,7 +506,7 @@ mvc24mon_openvpn_source_preview() {
         break
     done
 
-    if (( old_lock_set == 1 )); then UBS24S_LOCK_HELD=$old_lock; else unset UBS24S_LOCK_HELD; fi
+    if (( old_lock_set == 1 )); then MVC24S_LOCK_HELD=$old_lock; else unset MVC24S_LOCK_HELD; fi
     rm -f -- "$scratch/first.json" "$scratch/second.json" "$scratch/preview.json" 2>/dev/null || result=1
     rmdir -- "$scratch" 2>/dev/null || result=1
     (( result == 0 ))
@@ -516,8 +516,8 @@ mvc24mon_openvpn_source_preview() {
 # call contract while removing sibling source/tool dependencies.
 mvc24gc4_recovery_installed() {
     (( $# == 0 )) || return 1
-    mvc24mon_recovery_file_identity "$UBS24_MONOLITH_EMERGENCY_RECOVERY" \
-        "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"
+    mvc24mon_recovery_file_identity "$MVC24_MONOLITH_EMERGENCY_RECOVERY" \
+        "$MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256"
 }
 
 mvc24gc4_source_preview() {
@@ -533,10 +533,10 @@ BASH_STAGE3A_SEAMS
 # copied into the monolith.
 mvc24_build_emit_verify_functions() {
     (( $# == 0 )) || return 1
-    local rel=${UBS24_BUILD_INTEGRATE_PATH[verify]} abs begin end begin_count end_count
+    local rel=${MVC24_BUILD_INTEGRATE_PATH[verify]} abs begin end begin_count end_count
     abs=$mvc24_project_root/$rel
-    begin='# UBS24_MONOLITH_VERIFY_FUNCTIONS_BEGIN'
-    end='# UBS24_MONOLITH_VERIFY_FUNCTIONS_END'
+    begin='# MVC24_MONOLITH_VERIFY_FUNCTIONS_BEGIN'
+    end='# MVC24_MONOLITH_VERIFY_FUNCTIONS_END'
     begin_count=$(grep -Fxc -- "$begin" "$abs") || :
     end_count=$(grep -Fxc -- "$end" "$abs") || :
     [[ $begin_count == 1 && $end_count == 1 ]] || \
@@ -544,7 +544,7 @@ mvc24_build_emit_verify_functions() {
     mvc24_emit '# ============================================================================'
     mvc24_emit '# >>> BEGIN C23BN STAGE-3B READ-ONLY VERIFIER'
     mvc24_emit "# >>> SOURCE: $rel"
-    mvc24_emit "# >>> SOURCE SHA-256: ${UBS24_BUILD_INTEGRATE_SHA[verify]}"
+    mvc24_emit "# >>> SOURCE SHA-256: ${MVC24_BUILD_INTEGRATE_SHA[verify]}"
     awk -v begin="$begin" -v end="$end" '
         $0 == begin { inside=1; seen_begin++; next }
         $0 == end { inside=0; seen_end++; next }
@@ -643,20 +643,20 @@ HELP
 }
 
 mvc24mon_stage5_build_info() {
-    printf 'version=%s\n' "$UBS24_MONOLITH_VERSION"
-    printf 'checkpoint=%s\n' "$UBS24_MONOLITH_CHECKPOINT"
+    printf 'version=%s\n' "$MVC24_MONOLITH_VERSION"
+    printf 'checkpoint=%s\n' "$MVC24_MONOLITH_CHECKPOINT"
     printf 'authority=audited-dispatch-mvc-v241-candidate-physical-pending\n'
-    printf 'manifest_sha256=%s\n' "$UBS24_MONOLITH_MANIFEST_SHA256"
-    printf 'builder_sha256=%s\n' "$UBS24_MONOLITH_BUILDER_SHA256"
-    printf 'verify_source_sha256=%s\n' "$UBS24_MONOLITH_VERIFY_SOURCE_SHA256"
-    printf 'emergency_recovery=%s\n' "$UBS24_MONOLITH_EMERGENCY_RECOVERY"
-    printf 'emergency_recovery_sha256=%s\n' "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"
-    printf 'dual_recovery=%s\n' "$UBS24_MONOLITH_DUAL_RECOVERY"
-    printf 'dual_recovery_sha256=%s\n' "$UBS24_MONOLITH_DUAL_RECOVERY_SHA256"
+    printf 'manifest_sha256=%s\n' "$MVC24_MONOLITH_MANIFEST_SHA256"
+    printf 'builder_sha256=%s\n' "$MVC24_MONOLITH_BUILDER_SHA256"
+    printf 'verify_source_sha256=%s\n' "$MVC24_MONOLITH_VERIFY_SOURCE_SHA256"
+    printf 'emergency_recovery=%s\n' "$MVC24_MONOLITH_EMERGENCY_RECOVERY"
+    printf 'emergency_recovery_sha256=%s\n' "$MVC24_MONOLITH_EMERGENCY_RECOVERY_SHA256"
+    printf 'dual_recovery=%s\n' "$MVC24_MONOLITH_DUAL_RECOVERY"
+    printf 'dual_recovery_sha256=%s\n' "$MVC24_MONOLITH_DUAL_RECOVERY_SHA256"
 }
 
 mvc24mon_stage5_version_verbose() {
-    printf 'Multi VPN Controller %s\n' "$UBS24_MONOLITH_VERSION"
+    printf 'Multi VPN Controller %s\n' "$MVC24_MONOLITH_VERSION"
     mvc24mon_stage5_build_info
 }
 

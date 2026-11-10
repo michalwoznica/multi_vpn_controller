@@ -5,9 +5,9 @@
 # it is NOT NM/OpenVPN file custody or TLS trust evidence.
 
 mvc24op_path_triage_reset() {
-    UBS24OP_TRIAGE_CA=unassessed
-    UBS24OP_TRIAGE_TLS_CRYPT=unassessed
-    UBS24OP_TRIAGE_STATE=unverified
+    MVC24OP_TRIAGE_CA=unassessed
+    MVC24OP_TRIAGE_TLS_CRYPT=unassessed
+    MVC24OP_TRIAGE_STATE=unverified
 }
 
 mvc24op_path_triage_reference() {
@@ -15,13 +15,13 @@ mvc24op_path_triage_reference() {
     local file=$1 key=$2 value item prefix index
     local -a components=()
     case $key in ca|tls-crypt) ;; *) return 1 ;; esac
-    UBS24OP_TRIAGE_REF=unassessed
+    MVC24OP_TRIAGE_REF=unassessed
 
     # First apply the existing conservative classifier. Re-examine even
     # readable paths to detect unsafe ancestor symlinks and path spelling.
     mvc24op_material_reference "$file" "$key" || return 1
-    UBS24OP_TRIAGE_REF=$UBS24OP_MATERIAL_REF
-    case $UBS24OP_TRIAGE_REF in
+    MVC24OP_TRIAGE_REF=$MVC24OP_MATERIAL_REF
+    case $MVC24OP_TRIAGE_REF in
         absent|unsupported-reference|nonabsolute-or-inline) return 0 ;;
         *) : ;;
     esac
@@ -32,16 +32,16 @@ mvc24op_path_triage_reference() {
     # Reject ambiguous /./, /../, repeated separators or trailing separators.
     # No canonicalisation, realpath, pathname interpolation, or symlink follow.
     if [[ $value != /* ]]; then
-        UBS24OP_TRIAGE_REF=unsupported-path-spelling
+        MVC24OP_TRIAGE_REF=unsupported-path-spelling
         return 0
     fi
     if [[ $value == */ || $value == */./* || $value == */../* || $value == */. || $value == */.. || $value == *//* ]]; then
-        UBS24OP_TRIAGE_REF=unsupported-path-spelling
+        MVC24OP_TRIAGE_REF=unsupported-path-spelling
         return 0
     fi
     IFS='/' read -r -a components <<< "${value#/}"
     if (( ${#components[@]} < 1 || ${#components[@]} > 128 )); then
-        UBS24OP_TRIAGE_REF=unsupported-path-spelling
+        MVC24OP_TRIAGE_REF=unsupported-path-spelling
         return 0
     fi
     prefix=''
@@ -49,36 +49,36 @@ mvc24op_path_triage_reference() {
     for ((index=0; index<${#components[@]}-1; index++)); do
         item=${components[index]}
         [[ -n $item && $item != . && $item != .. ]] || {
-            UBS24OP_TRIAGE_REF=unsupported-path-spelling
+            MVC24OP_TRIAGE_REF=unsupported-path-spelling
             return 0
         }
         prefix+=/$item
         if [[ -L $prefix ]]; then
-            UBS24OP_TRIAGE_REF=symlink-ancestor
+            MVC24OP_TRIAGE_REF=symlink-ancestor
             return 0
         elif [[ ! -d $prefix ]]; then
             if [[ -e $prefix ]]; then
-                UBS24OP_TRIAGE_REF=non-directory-ancestor
+                MVC24OP_TRIAGE_REF=non-directory-ancestor
             else
-                UBS24OP_TRIAGE_REF=missing-ancestor-as-caller
+                MVC24OP_TRIAGE_REF=missing-ancestor-as-caller
             fi
             return 0
         elif [[ ! -x $prefix ]]; then
-            UBS24OP_TRIAGE_REF=ancestor-search-denied-to-caller
+            MVC24OP_TRIAGE_REF=ancestor-search-denied-to-caller
             return 0
         fi
     done
     # The metadata checks are raceable, and only reflect caller permissions.
     if [[ -L $value ]]; then
-        UBS24OP_TRIAGE_REF=symlink-reference
+        MVC24OP_TRIAGE_REF=symlink-reference
     elif [[ ! -e $value ]]; then
-        UBS24OP_TRIAGE_REF=missing-leaf-as-caller
+        MVC24OP_TRIAGE_REF=missing-leaf-as-caller
     elif [[ ! -f $value ]]; then
-        UBS24OP_TRIAGE_REF=nonregular
+        MVC24OP_TRIAGE_REF=nonregular
     elif [[ -r $value ]]; then
-        UBS24OP_TRIAGE_REF=regular-readable-by-caller
+        MVC24OP_TRIAGE_REF=regular-readable-by-caller
     else
-        UBS24OP_TRIAGE_REF=regular-not-readable-by-caller
+        MVC24OP_TRIAGE_REF=regular-not-readable-by-caller
     fi
 }
 
@@ -90,10 +90,10 @@ mvc24op_path_triage() {
     # secrets dictionary; preserve that prerequisite rather than relaxing it.
     mvc24op_material_preflight "$file" || return 1
     mvc24op_path_triage_reference "$file" ca || return 1
-    UBS24OP_TRIAGE_CA=$UBS24OP_TRIAGE_REF
+    MVC24OP_TRIAGE_CA=$MVC24OP_TRIAGE_REF
     mvc24op_path_triage_reference "$file" tls-crypt || return 1
-    UBS24OP_TRIAGE_TLS_CRYPT=$UBS24OP_TRIAGE_REF
-    UBS24OP_TRIAGE_STATE=caller-metadata-only-not-admitting
+    MVC24OP_TRIAGE_TLS_CRYPT=$MVC24OP_TRIAGE_REF
+    MVC24OP_TRIAGE_STATE=caller-metadata-only-not-admitting
 }
 
 mvc24op_path_triage_authorize_nm_write() { return 1; }

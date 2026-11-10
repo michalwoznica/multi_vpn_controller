@@ -43,7 +43,7 @@ mvc24d_tunnel_source_for() {
     done
     [[ "$dev" == tun-vpnks && $seen_dev == 1 && $seen_src == 1 ]] || return 1
     wg23_validate_ipv4 "$src" || return 1
-    UBS24D_TUN_SOURCE=$src
+    MVC24D_TUN_SOURCE=$src
 }
 
 # All queries are issued to explicit *numeric* DNS server addresses. The
@@ -63,20 +63,20 @@ mvc24d_query() {
     }
     local -a opts=(+time=3 +tries=1 +noall +answer +comments)
     if [[ "$mode" == authoritative ]]; then opts+=(+norecurse); else opts+=(+recurse); fi
-    response=$(LC_ALL=C dig -4 -b "$UBS24D_TUN_SOURCE" "@$server" "$name" "$type" "${opts[@]}") || return 1
+    response=$(LC_ALL=C dig -4 -b "$MVC24D_TUN_SOURCE" "@$server" "$name" "$type" "${opts[@]}") || return 1
     [[ "$response" == *'status: NOERROR'* && "$response" != *$'\r'* ]] || return 1
     if [[ "$mode" == authoritative ]]; then
         # An answer from a recursive cache does not prove freshness.
         awk '/^;; flags:/ {for(i=1;i<=NF;i++) if ($i == "aa" || $i == "aa;") found=1}
              END {exit !found}' <<< "$response" || return 1
     fi
-    UBS24D_ANSWER=$response
+    MVC24D_ANSWER=$response
     # Evidence of the LAST successful query only. These are observations, not
     # authenticated DNSSEC material or proof of physical packet egress.
-    UBS24D_LAST_QUERY_SERVER=$server
-    UBS24D_LAST_QUERY_SOURCE=$UBS24D_TUN_SOURCE
-    UBS24D_LAST_QUERY_NAME=${name,,}
-    UBS24D_LAST_QUERY_MODE=$mode
+    MVC24D_LAST_QUERY_SERVER=$server
+    MVC24D_LAST_QUERY_SOURCE=$MVC24D_TUN_SOURCE
+    MVC24D_LAST_QUERY_NAME=${name,,}
+    MVC24D_LAST_QUERY_MODE=$mode
 }
 
 # Take a matching answer from the DNS ANSWER SECTION only; bounded to one
@@ -96,25 +96,25 @@ mvc24d_answer_value() {
 mvc24d_get_vpn_resolver() {
     local list line
     list=$(nmcli -g IP4.DNS device show tun-vpnks) || return 1
-    UBS24D_VPN_RESOLVER='' UBS24D_VPN_DNS=()
+    MVC24D_VPN_RESOLVER='' MVC24D_VPN_DNS=()
     while IFS= read -r line; do
         [[ -n "$line" ]] || continue
         wg23_validate_ipv4 "$line" || {
             mvc24d_error 'Non-IPv4 or malformed OpenVPN resolver.'; return 1;
         }
-        UBS24D_VPN_DNS+=("$line")
-        if [[ -z "$UBS24D_VPN_RESOLVER" ]]; then UBS24D_VPN_RESOLVER=$line; fi
+        MVC24D_VPN_DNS+=("$line")
+        if [[ -z "$MVC24D_VPN_RESOLVER" ]]; then MVC24D_VPN_RESOLVER=$line; fi
     done <<< "$list"
-    [[ -n "$UBS24D_VPN_RESOLVER" ]] ||
+    [[ -n "$MVC24D_VPN_RESOLVER" ]] ||
         mvc24d_error 'OpenVPN did not provide an IPv4 DNS resolver.'
 }
 
 mvc24d_verify_protection() {
-    mvc24l_read_state "$UBS24D_STATE" && [[ "$UBS24L_STAGE" == ovpn_active ]] || return 1
-    mvc24n_is_active "$UBS24L_OVPN_UUID" || return 1
-    mvc24b_prepare_openvpn "$UBS24L_IFACE" "$UBS24L_OVPN_PROTO" "$UBS24L_OVPN_ENDPOINT" || return 1
+    mvc24l_read_state "$MVC24D_STATE" && [[ "$MVC24L_STAGE" == ovpn_active ]] || return 1
+    mvc24n_is_active "$MVC24L_OVPN_UUID" || return 1
+    mvc24b_prepare_openvpn "$MVC24L_IFACE" "$MVC24L_OVPN_PROTO" "$MVC24L_OVPN_ENDPOINT" || return 1
     mvc24k_use_table
-    mvc24b_verify_guard openvpn && mvc24k_verify_openvpn_route "$UBS24D_STATE"
+    mvc24b_verify_guard openvpn && mvc24k_verify_openvpn_route "$MVC24D_STATE"
 }
 
 mvc24d_resolve_name() {
@@ -126,31 +126,31 @@ mvc24d_resolve_name() {
         # Ascend zone labels until the recursive OpenVPN resolver identifies
         # the exact zone's SOA. Do not use implicit system DNS during discovery.
         while [[ "$zone" == *.* ]]; do
-            mvc24d_query "$UBS24D_VPN_RESOLVER" "$zone" SOA recursive || return 1
-            response=$UBS24D_ANSWER
+            mvc24d_query "$MVC24D_VPN_RESOLVER" "$zone" SOA recursive || return 1
+            response=$MVC24D_ANSWER
             answer=$(mvc24d_answer_value "$response" "$zone" SOA) || return 1
             [[ -z "$answer" ]] || break
             zone=${zone#*.}
         done
         [[ "$zone" == *.* ]] || return 1
-        mvc24d_query "$UBS24D_VPN_RESOLVER" "$zone" NS recursive || return 1
-        ns_host=$(mvc24d_answer_value "$UBS24D_ANSWER" "$zone" NS) || return 1
+        mvc24d_query "$MVC24D_VPN_RESOLVER" "$zone" NS recursive || return 1
+        ns_host=$(mvc24d_answer_value "$MVC24D_ANSWER" "$zone" NS) || return 1
         ns_host=${ns_host%.}
         wg23_validate_hostname "$ns_host" || return 1
-        mvc24d_query "$UBS24D_VPN_RESOLVER" "$ns_host" A recursive || return 1
-        ns_ip=$(mvc24d_answer_value "$UBS24D_ANSWER" "$ns_host" A) || return 1
+        mvc24d_query "$MVC24D_VPN_RESOLVER" "$ns_host" A recursive || return 1
+        ns_ip=$(mvc24d_answer_value "$MVC24D_ANSWER" "$ns_host" A) || return 1
         wg23_validate_ipv4 "$ns_ip" || return 1
         mvc24d_query "$ns_ip" "$current" A authoritative || return 1
-        response=$UBS24D_ANSWER
+        response=$MVC24D_ANSWER
         answer=$(mvc24d_answer_value "$response" "$current" A) || return 1
         if [[ -n "$answer" ]]; then
             wg23_validate_ipv4 "$answer" || return 1
-            UBS24D_RESOLVED_IP=$answer
-            UBS24D_RESOLVED_AUTH_SERVER=$UBS24D_LAST_QUERY_SERVER
-            UBS24D_RESOLVED_TUN_SOURCE=$UBS24D_LAST_QUERY_SOURCE
-            UBS24D_RESOLVED_ANSWER_NAME=$current
-            UBS24D_RESOLVED_ANSWER_SHA=$(printf '%s' "$response" | sha256sum)
-            UBS24D_RESOLVED_ANSWER_SHA=${UBS24D_RESOLVED_ANSWER_SHA%% *}
+            MVC24D_RESOLVED_IP=$answer
+            MVC24D_RESOLVED_AUTH_SERVER=$MVC24D_LAST_QUERY_SERVER
+            MVC24D_RESOLVED_TUN_SOURCE=$MVC24D_LAST_QUERY_SOURCE
+            MVC24D_RESOLVED_ANSWER_NAME=$current
+            MVC24D_RESOLVED_ANSWER_SHA=$(printf '%s' "$response" | sha256sum)
+            MVC24D_RESOLVED_ANSWER_SHA=${MVC24D_RESOLVED_ANSWER_SHA%% *}
             return 0
         fi
         cname=$(mvc24d_answer_value "$response" "$current" CNAME) || return 1
@@ -169,13 +169,13 @@ mvc24d_resolve_wireguard() {
     (( $# == 2 )) || return 1
     local state=$1 source=$2 raw ep index host ip ovpn_ip
     local -a ordered=() wg_ips=() observations=()
-    UBS24D_PINNED_PEERS=() UBS24D_PEER_OBSERVATIONS=()
-    UBS24D_STATE=$state
+    MVC24D_PINNED_PEERS=() MVC24D_PEER_OBSERVATIONS=()
+    MVC24D_STATE=$state
     [[ -f "$source" && ! -L "$source" && -r "$source" ]] || return 1
     mvc24d_verify_protection || return 1
     mvc24d_get_vpn_resolver || return 1
     local server
-    for server in "${UBS24D_VPN_DNS[@]}"; do
+    for server in "${MVC24D_VPN_DNS[@]}"; do
         mvc24d_tunnel_source_for "$server" || return 1
     done
     raw=$(wg23_read_peer_endpoints "$source") || return 1
@@ -188,8 +188,8 @@ mvc24d_resolve_wireguard() {
             observations+=("literal"$'\t'"-"$'\t'"-"$'\t'"-"$'\t'"-")
         else
             mvc24d_resolve_name "$host" || return 1
-            ip=$UBS24D_RESOLVED_IP
-            observations+=("observed-A"$'\t'"$UBS24D_RESOLVED_AUTH_SERVER"$'\t'"$UBS24D_RESOLVED_TUN_SOURCE"$'\t'"$UBS24D_RESOLVED_ANSWER_NAME"$'\t'"$UBS24D_RESOLVED_ANSWER_SHA")
+            ip=$MVC24D_RESOLVED_IP
+            observations+=("observed-A"$'\t'"$MVC24D_RESOLVED_AUTH_SERVER"$'\t'"$MVC24D_RESOLVED_TUN_SOURCE"$'\t'"$MVC24D_RESOLVED_ANSWER_NAME"$'\t'"$MVC24D_RESOLVED_ANSWER_SHA")
         fi
         ordered+=("$ip:$WG23_PARSED_PORT")
         wg_ips+=("$ip")
@@ -197,13 +197,13 @@ mvc24d_resolve_wireguard() {
     (( ${#ordered[@]} >= 1 && ${#ordered[@]} <= 64 )) || return 1
     mvc24d_verify_protection || return 1
     mvc24c_read_allowed_ips "$source" || return 1
-    ovpn_ip=${UBS24L_OVPN_ENDPOINT%:*}
+    ovpn_ip=${MVC24L_OVPN_ENDPOINT%:*}
     # WG AllowedIPs may not hijack the active OpenVPN DNS servers after WG
     # comes up, or DNS for ordinary internet could stop using OpenVPN.
-    mvc24c_check_allowed_routes "$UBS24L_GATEWAY" "$ovpn_ip" "${wg_ips[@]}" "${UBS24D_VPN_DNS[@]}" || return 1
+    mvc24c_check_allowed_routes "$MVC24L_GATEWAY" "$ovpn_ip" "${wg_ips[@]}" "${MVC24D_VPN_DNS[@]}" || return 1
     # Preserve the endpoint for EVERY source peer, in source order, even if
     # multiple peers share the same destination. The durable lifecycle state
     # derives the unique nftables/route allowlist separately on read.
-    UBS24D_PINNED_PEERS=("${ordered[@]}")
-    UBS24D_PEER_OBSERVATIONS=("${observations[@]}")
+    MVC24D_PINNED_PEERS=("${ordered[@]}")
+    MVC24D_PEER_OBSERVATIONS=("${observations[@]}")
 }

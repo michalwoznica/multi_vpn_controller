@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Multi VPN Controller 2.4.1 — release-candidate installer.
 # File-management only. Never mutates VPN/network state.
-# Lowercase internal functions use mvc24*; uppercase UBS24* variables and legacy migration roots remain intentionally.
+# Lowercase internal functions use mvc24*; uppercase MVC24* variables and legacy migration roots remain intentionally.
 set -euo pipefail
 umask 077
 export LC_ALL=C
@@ -53,9 +53,9 @@ manifest=$project_root/source/build/monolith-runtime.manifest
 builder=$project_root/source/build/build-mvc-monolith.sh
 
 # Exact physically proven pre-MVC 2.4.0 identities accepted only for migration.
-readonly UBS24I_LEGACY_CONTROLLER_SHA='a035bcdfca9eab009d9f7ad1455f519516109f95c0ecf4345db2633506f8a0ef'
-readonly UBS24I_LEGACY_EMERGENCY_SHA='e2de136ccdc43f70aebb83778c5ff09ee706e870d6ad4a7d0770aabcec3af8f9'
-readonly UBS24I_LEGACY_DUAL_SHA='a6222f917c8b4ecd8284887ec1a0895774c877ca985ebb575608f73ecce8a15a'
+readonly MVC24I_LEGACY_CONTROLLER_SHA='a035bcdfca9eab009d9f7ad1455f519516109f95c0ecf4345db2633506f8a0ef'
+readonly MVC24I_LEGACY_EMERGENCY_SHA='e2de136ccdc43f70aebb83778c5ff09ee706e870d6ad4a7d0770aabcec3af8f9'
+readonly MVC24I_LEGACY_DUAL_SHA='a6222f917c8b4ecd8284887ec1a0895774c877ca985ebb575608f73ecce8a15a'
 
 mvc24i_target() {
     (( $# == 1 )) || return 1
@@ -90,7 +90,7 @@ mvc24i_package_verify() {
     builder_sha=$(mvc24i_hash "$builder")
     emergency_sha=$(mvc24i_hash "$emergency_src")
     dual_sha=$(mvc24i_hash "$dual_src")
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R3A_LOWERCASE_NAMESPACE ]] || mvc24i_die 'controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R3B_UPPERCASE_NAMESPACE ]] || mvc24i_die 'controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v241-candidate-physical-pending ]] || mvc24i_die 'controller authority provenance mismatch'
     [[ $(mvc24i_info_value "$info" manifest_sha256) == "$manifest_sha" ]] || mvc24i_die 'controller/manifest provenance mismatch'
     [[ $(mvc24i_info_value "$info" builder_sha256) == "$builder_sha" ]] || mvc24i_die 'controller/builder provenance mismatch'
@@ -149,9 +149,9 @@ mvc24i_assert_legacy_identity() {
         mvc24i_die 'legacy emergency recovery target is unsafe'
     [[ -f $legacy_dual_dst && ! -L $legacy_dual_dst && $(stat -c %u:%g:%h -- "$legacy_dual_dst") == 0:0:1 ]] || \
         mvc24i_die 'legacy dual recovery target is unsafe'
-    [[ $(mvc24i_hash "$legacy_controller_dst") == "$UBS24I_LEGACY_CONTROLLER_SHA" ]] || mvc24i_die 'unrecognized legacy controller identity'
-    [[ $(mvc24i_hash "$legacy_emergency_dst") == "$UBS24I_LEGACY_EMERGENCY_SHA" ]] || mvc24i_die 'unrecognized legacy emergency recovery identity'
-    [[ $(mvc24i_hash "$legacy_dual_dst") == "$UBS24I_LEGACY_DUAL_SHA" ]] || mvc24i_die 'unrecognized legacy dual recovery identity'
+    [[ $(mvc24i_hash "$legacy_controller_dst") == "$MVC24I_LEGACY_CONTROLLER_SHA" ]] || mvc24i_die 'unrecognized legacy controller identity'
+    [[ $(mvc24i_hash "$legacy_emergency_dst") == "$MVC24I_LEGACY_EMERGENCY_SHA" ]] || mvc24i_die 'unrecognized legacy emergency recovery identity'
+    [[ $(mvc24i_hash "$legacy_dual_dst") == "$MVC24I_LEGACY_DUAL_SHA" ]] || mvc24i_die 'unrecognized legacy dual recovery identity'
 }
 
 mvc24i_retire_legacy_if_present() {
@@ -213,7 +213,7 @@ mvc24i_verify_installed() {
     mvc24i_verify_one "$dual_dst" 700 "$dual_sha" 'dual recovery tool'
     [[ $($controller_dst version) == 'Multi VPN Controller 2.4.1' ]] || mvc24i_die 'installed controller version mismatch'
     info=$($controller_dst --monolith-build-info) || mvc24i_die 'installed controller provenance unreadable'
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R3A_LOWERCASE_NAMESPACE ]] || mvc24i_die 'installed controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R3B_UPPERCASE_NAMESPACE ]] || mvc24i_die 'installed controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'installed emergency recovery identity mismatch'
     [[ $(mvc24i_info_value "$info" dual_recovery_sha256) == "$dual_sha" ]] || mvc24i_die 'installed dual recovery identity mismatch'
 }

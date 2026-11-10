@@ -8,7 +8,7 @@ mvc24c_ip_number() {
     local addr=$1 a b c d
     mvc24_valid_ip "$addr" || return 1
     IFS=. read -r a b c d <<< "$addr"
-    UBS24C_IP_NUMBER=$(( (10#$a << 24) | (10#$b << 16) | (10#$c << 8) | 10#$d ))
+    MVC24C_IP_NUMBER=$(( (10#$a << 24) | (10#$b << 16) | (10#$c << 8) | 10#$d ))
 }
 mvc24c_parse_cidr() {
     local cidr=$1 network prefix
@@ -17,19 +17,19 @@ mvc24c_parse_cidr() {
     mvc24c_ip_number "$network" || return 1
     [[ "$prefix" =~ ^(0|[1-9][0-9]?)$ ]] || return 1
     (( prefix <= 32 )) || return 1
-    UBS24C_CIDR_NET=$UBS24C_IP_NUMBER
-    UBS24C_CIDR_PREFIX=$prefix
-    if (( prefix == 0 )); then UBS24C_CIDR_MASK=0
-    else UBS24C_CIDR_MASK=$(( (0xffffffff << (32-prefix)) & 0xffffffff ))
+    MVC24C_CIDR_NET=$MVC24C_IP_NUMBER
+    MVC24C_CIDR_PREFIX=$prefix
+    if (( prefix == 0 )); then MVC24C_CIDR_MASK=0
+    else MVC24C_CIDR_MASK=$(( (0xffffffff << (32-prefix)) & 0xffffffff ))
     fi
-    (( (UBS24C_CIDR_NET & UBS24C_CIDR_MASK) == UBS24C_CIDR_NET )) || return 1
+    (( (MVC24C_CIDR_NET & MVC24C_CIDR_MASK) == MVC24C_CIDR_NET )) || return 1
 }
 mvc24c_cidr_contains() {
     local subnet=$1 address=$2 network mask
     mvc24c_parse_cidr "$subnet" || return 1
-    network=$UBS24C_CIDR_NET mask=$UBS24C_CIDR_MASK
+    network=$MVC24C_CIDR_NET mask=$MVC24C_CIDR_MASK
     mvc24c_ip_number "$address" || return 1
-    (( (UBS24C_IP_NUMBER & mask) == network ))
+    (( (MVC24C_IP_NUMBER & mask) == network ))
 }
 
 # Only inspect [wireguard-peer.X] sections. Require exactly one allowed-ips
@@ -80,13 +80,13 @@ mvc24c_read_allowed_ips() {
             else
                 mvc24c_parse_cidr "$token" || { mvc24c_error "Invalid IPv4 AllowedIPs: $token"; return 1; }
                 # Reject broad captures, including the two /1 internet halves.
-                (( UBS24C_CIDR_PREFIX >= 8 )) || { mvc24c_error "Overly broad IPv4 AllowedIPs: $token"; return 1; }
+                (( MVC24C_CIDR_PREFIX >= 8 )) || { mvc24c_error "Overly broad IPv4 AllowedIPs: $token"; return 1; }
             fi
             tokens+=("$token")
         done
     done <<< "$records"
     (( ${#tokens[@]} >= 1 && ${#tokens[@]} <= 512 )) || return 1
-    UBS24C_ALLOWED_IPS=("${tokens[@]}")
+    MVC24C_ALLOWED_IPS=("${tokens[@]}")
 }
 
 # Prevent WG peer routes from capturing OpenVPN's transport, the physical
@@ -101,7 +101,7 @@ mvc24c_check_allowed_routes() {
     local -a sensitive=("$ovpn" "$@")
     [[ "$gateway" == '-' ]] || sensitive+=("$gateway")
     for ep in "${sensitive[@]}"; do mvc24_valid_ip "$ep" || return 1; done
-    for route in "${UBS24C_ALLOWED_IPS[@]}"; do
+    for route in "${MVC24C_ALLOWED_IPS[@]}"; do
         [[ "$route" != *:* ]] || continue
         for ep in "${sensitive[@]}"; do
             if mvc24c_cidr_contains "$route" "$ep"; then
@@ -114,10 +114,10 @@ mvc24c_check_allowed_routes() {
 
 # Parse a simple, uncontended physical route, checking syntax rather than
 # allowing a VPN/tunnel/device or ambiguous nexthop. Result is captured in
-# UBS24C_IFACE, UBS24C_GATEWAY, UBS24C_SOURCE.
+# MVC24C_IFACE, MVC24C_GATEWAY, MVC24C_SOURCE.
 mvc24c_parse_physical_route() {
     local destination=${1:-} output=${2:-}
-    UBS24C_IFACE='' UBS24C_GATEWAY='' UBS24C_SOURCE=''
+    MVC24C_IFACE='' MVC24C_GATEWAY='' MVC24C_SOURCE=''
     mvc24_valid_ip "$destination" || return 1
     [[ -n "$output" && "$output" != *$'\r'* ]] || return 1
     # iproute2 may indent its optional `cache` line and add trailing
@@ -156,7 +156,7 @@ mvc24c_parse_physical_route() {
     [[ -z "$via" ]] || mvc24_valid_ip "$via" || return 1
     [[ "$dev" =~ ^[a-zA-Z0-9_.-]{1,15}$ ]] || return 1
     [[ "$dev" != lo && "$dev" != tun* && "$dev" != wg* && "$dev" != vpnks* ]] || return 1
-    UBS24C_IFACE=$dev UBS24C_GATEWAY=${via:--} UBS24C_SOURCE=$src
+    MVC24C_IFACE=$dev MVC24C_GATEWAY=${via:--} MVC24C_SOURCE=$src
 }
 
 # Require precisely the three ordinary IPv4 policy rules. iproute2 can
@@ -180,7 +180,7 @@ mvc24c_standard_ipv4_rules() {
 mvc24c_route_matches_snapshot() {
     local dest=$1 output=$2 expected_dev=$3 expected_gw=$4 expected_src=$5
     mvc24c_parse_physical_route "$dest" "$output" || return 1
-    [[ "$UBS24C_IFACE" == "$expected_dev" &&
-       "$UBS24C_GATEWAY" == "$expected_gw" &&
-       "$UBS24C_SOURCE" == "$expected_src" ]]
+    [[ "$MVC24C_IFACE" == "$expected_dev" &&
+       "$MVC24C_GATEWAY" == "$expected_gw" &&
+       "$MVC24C_SOURCE" == "$expected_src" ]]
 }

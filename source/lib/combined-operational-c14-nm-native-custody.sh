@@ -12,8 +12,8 @@
 # that an unrelated registered agent will not prompt. No activation authority.
 
 mvc24gc14_reset() {
-    UBS24GC14_STAGE=unverified
-    UBS24GC14_AUTHORITY=none
+    MVC24GC14_STAGE=unverified
+    MVC24GC14_AUTHORITY=none
 }
 mvc24gc14_authorize_activation() { return 1; }
 mvc24gc14_authorize_secrets() { return 1; }
@@ -48,21 +48,21 @@ mvc24gc14_connection_flags() {
 mvc24gc14_witness_locked() {
     mvc24gc14_reset
     (( $# == 0 )) || return 1
-    [[ ${UBS24GC8_STAGE:-} == nm-source-clone-metadata-consistent-password-delivery-unproven &&
-       ${UBS24GC8_AUTHORITY:-} == none &&
-       ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
-       ${UBS24GC3_AUTHORITY:-} == none &&
-       ${UBS24GC5_ATTEMPTED:-no} == no ]] || return 1
+    [[ ${MVC24GC8_STAGE:-} == nm-source-clone-metadata-consistent-password-delivery-unproven &&
+       ${MVC24GC8_AUTHORITY:-} == none &&
+       ${MVC24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
+       ${MVC24GC3_AUTHORITY:-} == none &&
+       ${MVC24GC5_ATTEMPTED:-no} == no ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
         mvc24gc3_transition_records_valid && mvc24gc5_guard_witness &&
         mvc24gc5_prepared_profile_witness || return 1
-    local source=${UBS24GA3_PREPARED_SOURCE_UUID:-}
-    local clone=${UBS24GA3_PREPARED_CLONE_UUID:-}
+    local source=${MVC24GA3_PREPARED_SOURCE_UUID:-}
+    local clone=${MVC24GA3_PREPARED_CLONE_UUID:-}
     local owner source1 source2 clone1 clone2 fs fc
     mvc24ga_uuid_valid "$source" && mvc24ga_uuid_valid "$clone" &&
         [[ $source != "$clone" ]] || return 1
     mvc24op_session_nm_identity || return 1
-    owner=$UBS24OP_SESSION_NM_IDENTITY
+    owner=$MVC24OP_SESSION_NM_IDENTITY
     [[ $owner == *'|0' ]] || return 1
     source1=$(mvc24gc14_connection_flags "$source") || return 1
     clone1=$(mvc24gc14_connection_flags "$clone") || return 1
@@ -74,9 +74,9 @@ mvc24gc14_witness_locked() {
     # Source saved and unchanged (Flags == 0); temporary derivative UNSAVED
     # but not NM_GENERATED (2). VOLATILE (4) is permitted with UNSAVED.
     (( fs == 0 && (fc & 1) == 1 && (fc & 2) == 0 && (fc & ~5) == 0 )) || return 1
-    mvc24op_session_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$owner" ]] &&
+    mvc24op_session_nm_identity && [[ $MVC24OP_SESSION_NM_IDENTITY == "$owner" ]] &&
         mvc24gb2_lock_valid && mvc24gc3_transition_records_valid &&
         mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
-    UBS24GC14_STAGE=nm-native-temporary-flags-verified-password-unproven
-    UBS24GC14_AUTHORITY=none
+    MVC24GC14_STAGE=nm-native-temporary-flags-verified-password-unproven
+    MVC24GC14_AUTHORITY=none
 }

@@ -8,10 +8,10 @@
 # AllowedIPs over vpnks-wg.  Ordinary physical/Wi-Fi Internet stays fail-closed.
 
 mvc24gwg_reset() {
-    UBS24GWG_STAGE=idle
-    UBS24GWG_ATTEMPTED=no
-    UBS24GWG_GUARD_BATCH=
-    UBS24GWG_RELEASE_BATCH=
+    MVC24GWG_STAGE=idle
+    MVC24GWG_ATTEMPTED=no
+    MVC24GWG_GUARD_BATCH=
+    MVC24GWG_RELEASE_BATCH=
 }
 
 mvc24gwg_policy_file() {
@@ -143,9 +143,9 @@ mvc24gwg_guard_exact_now() {
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-protected-observe.XXXXXXXX) || return 1
     a=$scratch/a.json; b=$scratch/b.json
     if ! mvc24gwg_capture_guard "$a" || ! mvc24gwg_capture_guard "$b" || ! cmp -s -- "$a" "$b" ||
-       ! mvc24gwg_guard_observation "$a" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
-          "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" \
-          "${UBS24GD4_ALLOWED_IPS[@]}" || ! mvc24gd4_foreign_policy_unchanged "$a"; then
+       ! mvc24gwg_guard_observation "$a" "$MVC24GD4_UNDERLAY" "$MVC24GD4_UNDERLAY_SOURCE" \
+          "$MVC24GD4_TEMP_NAME" "$MVC24GD4_WG_SOURCE" "$MVC24GD4_ENDPOINT_IP" "$MVC24GD4_ENDPOINT_PORT" \
+          "${MVC24GD4_ALLOWED_IPS[@]}" || ! mvc24gd4_foreign_policy_unchanged "$a"; then
         good=0
     fi
     rm -f -- "$a" "$b" >/dev/null 2>&1 || good=0
@@ -184,7 +184,7 @@ mvc24gwg_owned_tables_absent_now() {
 
 mvc24gwg_publish_release_intent() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} batch tmp boot intent_sha prepare_sha
+    local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} batch tmp boot intent_sha prepare_sha
     [[ -d $runtime && ! -L $runtime && -f $runtime/intent && ! -L $runtime/intent &&
        ! -e $runtime/protected-release-intent && ! -L $runtime/protected-release-intent ]] || return 1
     batch=$runtime/protected-release.nft
@@ -208,7 +208,7 @@ mvc24gwg_publish_release_intent() {
 
 mvc24gwg_release_intent_valid() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} boot
+    local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} boot
     local -a rows=()
     [[ -f $runtime/protected-release-intent && ! -L $runtime/protected-release-intent &&
        -f $runtime/protected-release.nft && ! -L $runtime/protected-release.nft ]] || return 1
@@ -226,105 +226,105 @@ mvc24gwg_release_intent_valid() {
 mvc24gwg_preflight_readonly() {
     (( $# == 1 )) || return 1
     local wg_name=$1 underlay source_sha temp_uuid endpoint host port ip prefix
-    [[ ${UBS24GWG_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GWG_STAGE=preflight-fixed-live-roots
+    [[ ${MVC24GWG_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GWG_STAGE=preflight-fixed-live-roots
     mvc24pubc_fixed_live_roots_absent || return 1
-    UBS24GWG_STAGE=preflight-profile-identity
+    MVC24GWG_STAGE=preflight-profile-identity
     mvc24pub_bind_wireguard_name "$wg_name" || return 1
-    UBS24GWG_STAGE=preflight-underlay
+    MVC24GWG_STAGE=preflight-underlay
     mvc24gb4_no_active_vpn || return 1
     underlay=$(mvc24gb4_underlay) || return 1
-    UBS24GWG_STAGE=preflight-wireguard
-    mvc24gd2_assess_saved_profile "$UBS24PUB_WG_UUID" "$underlay" || return 1
-    (( ${UBS24GD2_PEER_COUNT:-0} == 1 && ${#UBS24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
-    mvc24gd3_keyfile_ipv4_source "$UBS24GD2_KEYFILE" || return 1
-    for prefix in "${UBS24GD2_ALLOWED_IPS[@]}"; do mvc24gd3_private_ipv4_prefix "$prefix" || return 1; done
+    MVC24GWG_STAGE=preflight-wireguard
+    mvc24gd2_assess_saved_profile "$MVC24PUB_WG_UUID" "$underlay" || return 1
+    (( ${MVC24GD2_PEER_COUNT:-0} == 1 && ${#MVC24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
+    mvc24gd3_keyfile_ipv4_source "$MVC24GD2_KEYFILE" || return 1
+    for prefix in "${MVC24GD2_ALLOWED_IPS[@]}"; do mvc24gd3_private_ipv4_prefix "$prefix" || return 1; done
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
-    source_sha=$(mvc24gd4_hash_file "$UBS24GD2_KEYFILE") || return 1
+    source_sha=$(mvc24gd4_hash_file "$MVC24GD2_KEYFILE") || return 1
     temp_uuid=$(cat /proc/sys/kernel/random/uuid) || return 1
     mvc24_valid_uuid "$temp_uuid" || return 1
-    endpoint=${UBS24GD2_ENDPOINT_CANDIDATES[0]:-}
+    endpoint=${MVC24GD2_ENDPOINT_CANDIDATES[0]:-}
     [[ $endpoint == *:* && $endpoint != *:*:* ]] || return 1
     ip=${endpoint%:*}; port=${endpoint##*:}
     wg23_validate_ipv4 "$ip" && [[ $port =~ ^[0-9]+$ ]] || return 1
 
-    UBS24PUBC_MODE=wireguard-protected
-    UBS24PUBC_WG_NAME=$wg_name
-    UBS24PUBC_OVPN_NAME=-
-    UBS24PUBC_WG_UUID=$UBS24PUB_WG_UUID
-    UBS24PUBC_OVPN_UUID=-
-    UBS24PUBC_UNDERLAY=$underlay
-    UBS24PUBC_NM_OWNER=-
-    UBS24PUBC_SOURCE_FILE=$UBS24GD2_KEYFILE
-    UBS24PUBC_SOURCE_SHA=$source_sha
-    UBS24PUBC_WG_SOURCE=$UBS24GD3_WG_SOURCE_IP
-    UBS24PUBC_TEMP_UUID=$temp_uuid
+    MVC24PUBC_MODE=wireguard-protected
+    MVC24PUBC_WG_NAME=$wg_name
+    MVC24PUBC_OVPN_NAME=-
+    MVC24PUBC_WG_UUID=$MVC24PUB_WG_UUID
+    MVC24PUBC_OVPN_UUID=-
+    MVC24PUBC_UNDERLAY=$underlay
+    MVC24PUBC_NM_OWNER=-
+    MVC24PUBC_SOURCE_FILE=$MVC24GD2_KEYFILE
+    MVC24PUBC_SOURCE_SHA=$source_sha
+    MVC24PUBC_WG_SOURCE=$MVC24GD3_WG_SOURCE_IP
+    MVC24PUBC_TEMP_UUID=$temp_uuid
 
-    mvc24gd4_prepare_from_preflight "$UBS24PUBC_WG_UUID" "$UBS24PUBC_SOURCE_FILE" "$UBS24PUBC_SOURCE_SHA" \
-      "$UBS24PUBC_WG_SOURCE" "$underlay" "$UBS24GD2_UNDERLAY_SOURCE" "$UBS24GD2_UNDERLAY_GATEWAY" "$temp_uuid" || return 1
-    UBS24GD4_ENDPOINT_IP=$ip
-    UBS24GD4_ENDPOINT_PORT=$port
-    UBS24GD4_ALLOWED_IPS=("${UBS24GD2_ALLOWED_IPS[@]}")
-    UBS24GD4_STAGE=protected-endpoint-resolved-no-wireguard-mutation-yet
+    mvc24gd4_prepare_from_preflight "$MVC24PUBC_WG_UUID" "$MVC24PUBC_SOURCE_FILE" "$MVC24PUBC_SOURCE_SHA" \
+      "$MVC24PUBC_WG_SOURCE" "$underlay" "$MVC24GD2_UNDERLAY_SOURCE" "$MVC24GD2_UNDERLAY_GATEWAY" "$temp_uuid" || return 1
+    MVC24GD4_ENDPOINT_IP=$ip
+    MVC24GD4_ENDPOINT_PORT=$port
+    MVC24GD4_ALLOWED_IPS=("${MVC24GD2_ALLOWED_IPS[@]}")
+    MVC24GD4_STAGE=protected-endpoint-resolved-no-wireguard-mutation-yet
     mvc24pubc_fixed_live_roots_absent || return 1
-    UBS24GWG_STAGE=fresh-public-wireguard-protected-readonly-eligible
+    MVC24GWG_STAGE=fresh-public-wireguard-protected-readonly-eligible
 }
 
 mvc24gwg_install_b2() {
     (( $# == 0 )) || return 1
     local policy
     policy=$(mvc24gwg_policy_file) || return 1
-    [[ ${UBS24GWG_STAGE:-} == authorizing-public-connect ]] || return 1
+    [[ ${MVC24GWG_STAGE:-} == authorizing-public-connect ]] || return 1
     mvc24pub_connect_admission_witness || return 1
-    UBS24GWG_STAGE=b2-install-outcome-uncertain
-    mvc24gb2_install_once "$UBS24PUBC_UNDERLAY" "$policy" || return 1
-    [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only && ${UBS24GB2_AUTHORITY:-} == none ]] || return 1
-    UBS24GWG_STAGE=b2-quarantine-observed
+    MVC24GWG_STAGE=b2-install-outcome-uncertain
+    mvc24gb2_install_once "$MVC24PUBC_UNDERLAY" "$policy" || return 1
+    [[ ${MVC24GB2_STAGE:-} == host-deny-all-attested-observation-only && ${MVC24GB2_AUTHORITY:-} == none ]] || return 1
+    MVC24GWG_STAGE=b2-quarantine-observed
 }
 
 mvc24gwg_extend_guard() {
     (( $# == 0 )) || return 1
     local scratch batch before1 before2 after1 after2
-    [[ ${UBS24GD4_STAGE:-} == owned-endpoint-route-observed && ${UBS24GWG_STAGE:-} == b2-quarantine-observed ]] || return 1
+    [[ ${MVC24GD4_STAGE:-} == owned-endpoint-route-observed && ${MVC24GWG_STAGE:-} == b2-quarantine-observed ]] || return 1
     mvc24gd4_authority_witness || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-wg-protected-guard.XXXXXXXX) || return 1
     batch=$scratch/protected.nft; before1=$scratch/before1.json; before2=$scratch/before2.json; after1=$scratch/after1.json; after2=$scratch/after2.json
     : > "$batch" || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
     if ! mvc24gb1_capture_nft "$before1" || ! mvc24gb1_capture_nft "$before2" || ! cmp -s -- "$before1" "$before2" ||
-       ! mvc24gb2_poststate_valid "$before1" "$UBS24GD4_UNDERLAY" || ! mvc24gd4_foreign_policy_unchanged "$before1" ||
-       ! mvc24gwg_write_guard_candidate "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" "$UBS24GD4_TEMP_NAME" \
-          "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" "$batch" "${UBS24GD4_ALLOWED_IPS[@]}" ||
+       ! mvc24gb2_poststate_valid "$before1" "$MVC24GD4_UNDERLAY" || ! mvc24gd4_foreign_policy_unchanged "$before1" ||
+       ! mvc24gwg_write_guard_candidate "$MVC24GD4_UNDERLAY" "$MVC24GD4_UNDERLAY_SOURCE" "$MVC24GD4_TEMP_NAME" \
+          "$MVC24GD4_WG_SOURCE" "$MVC24GD4_ENDPOINT_IP" "$MVC24GD4_ENDPOINT_PORT" "$batch" "${MVC24GD4_ALLOWED_IPS[@]}" ||
        ! nft --check --file "$batch" >/dev/null 2>&1; then
         rm -rf -- "$scratch"; return 1
     fi
     mvc24gd4_write_marker protected-guard-attempt || { rm -rf -- "$scratch"; return 1; }
-    UBS24GWG_STAGE=protected-guard-commit-outcome-uncertain
+    MVC24GWG_STAGE=protected-guard-commit-outcome-uncertain
     if ! nft --file "$batch" >/dev/null 2>&1; then rm -rf -- "$scratch"; return 1; fi
     if ! mvc24gb1_capture_nft "$after1" || ! mvc24gb1_capture_nft "$after2" || ! cmp -s -- "$after1" "$after2" ||
-       ! mvc24gwg_guard_observation "$after1" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" "$UBS24GD4_TEMP_NAME" \
-          "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" "${UBS24GD4_ALLOWED_IPS[@]}" ||
+       ! mvc24gwg_guard_observation "$after1" "$MVC24GD4_UNDERLAY" "$MVC24GD4_UNDERLAY_SOURCE" "$MVC24GD4_TEMP_NAME" \
+          "$MVC24GD4_WG_SOURCE" "$MVC24GD4_ENDPOINT_IP" "$MVC24GD4_ENDPOINT_PORT" "${MVC24GD4_ALLOWED_IPS[@]}" ||
        ! mvc24gd4_foreign_policy_unchanged "$after1"; then
         rm -rf -- "$scratch"; return 1
     fi
     rm -rf -- "$scratch"
-    UBS24GWG_STAGE=protected-guard-observed-wg-inactive
+    MVC24GWG_STAGE=protected-guard-observed-wg-inactive
 }
 
 mvc24gwg_authority_witness() {
     (( $# == 0 )) || return 1
-    if [[ ${UBS24PUBC_MODE:-none} == wireguard-protected &&
-          ${UBS24PUBC_OPERATION:-none} == connect &&
-          ${UBS24PUBC_APPROVAL:-none} == approved-process-local &&
-          ${UBS24PUBC_AUTHORITY:-none} == public-explicit-connect ]]; then
+    if [[ ${MVC24PUBC_MODE:-none} == wireguard-protected &&
+          ${MVC24PUBC_OPERATION:-none} == connect &&
+          ${MVC24PUBC_APPROVAL:-none} == approved-process-local &&
+          ${MVC24PUBC_AUTHORITY:-none} == public-explicit-connect ]]; then
         mvc24pub_connect_admission_witness && mvc24gb2_root_scope && mvc24gb2_lock_valid
         return
     fi
-    if [[ ${UBS24PUBD_SESSION_MODE:-none} == wireguard-protected &&
-          ${UBS24PUBD_OPERATION:-none} == disconnect &&
-          ${UBS24PUBD_APPROVAL:-none} == approved-process-local &&
-          ${UBS24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
-        case ${UBS24PUBD_STAGE:-idle} in
+    if [[ ${MVC24PUBD_SESSION_MODE:-none} == wireguard-protected &&
+          ${MVC24PUBD_OPERATION:-none} == disconnect &&
+          ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
+          ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
+        case ${MVC24PUBD_STAGE:-idle} in
           reobserving-wireguard-protected|stopping-wireguard-protected) ;;
           *) return 1 ;;
         esac
@@ -338,9 +338,9 @@ mvc24gwg_active_observed() {
     (( $# == 0 )) || return 1
     local prefix target
     mvc24gwg_authority_witness && mvc24gd4_wg_nm_active && mvc24gd4_wg_kernel_endpoint && mvc24gd4_endpoint_route_observed || return 1
-    for prefix in "${UBS24GD4_ALLOWED_IPS[@]}"; do
+    for prefix in "${MVC24GD4_ALLOWED_IPS[@]}"; do
         target=${prefix%/*}
-        mvc24gd4_route_get_json_matches "$target" "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" || return 1
+        mvc24gd4_route_get_json_matches "$target" "$MVC24GD4_TEMP_NAME" "$MVC24GD4_WG_SOURCE" || return 1
     done
     mvc24gwg_guard_exact_now
 }
@@ -348,16 +348,16 @@ mvc24gwg_active_observed() {
 mvc24gwg_activate() {
     (( $# == 0 )) || return 1
     local rc
-    [[ ${UBS24GWG_STAGE:-} == protected-guard-observed-wg-inactive ]] || return 1
+    [[ ${MVC24GWG_STAGE:-} == protected-guard-observed-wg-inactive ]] || return 1
     mvc24gd4_write_marker activation-attempt || return 1
-    UBS24GWG_STAGE=wireguard-activation-outcome-uncertain
+    MVC24GWG_STAGE=wireguard-activation-outcome-uncertain
     set +e
-    nmcli --wait 60 connection up uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1
+    nmcli --wait 60 connection up uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1
     rc=$?
     set -e
-    UBS24GD4_NM_UP_EXIT_STATUS=$rc
+    MVC24GD4_NM_UP_EXIT_STATUS=$rc
     if mvc24gwg_active_observed; then
-        UBS24GWG_STAGE=wireguard-only-protected-running
+        MVC24GWG_STAGE=wireguard-only-protected-running
         return 0
     fi
     return 1
@@ -365,8 +365,8 @@ mvc24gwg_activate() {
 
 mvc24gwg_start_once() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GWG_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GWG_ATTEMPTED=yes
+    [[ ${MVC24GWG_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GWG_ATTEMPTED=yes
     mvc24gwg_install_b2 || return 1
     # D4 profile/intent and endpoint-route helpers are transport-generic once
     # the endpoint is already pinned by the standalone read-only preflight.
@@ -379,42 +379,42 @@ mvc24gwg_start_once() {
 mvc24gwg_temp_profile_inventory_absent() {
     local rows
     rows=$(nmcli --wait 10 --colors no -t -f UUID,TYPE,NAME connection show 2>/dev/null) || return 1
-    ! awk -F: -v u="$UBS24GD4_TEMP_UUID" -v n="$UBS24GD4_TEMP_NAME" '$1==u || $3==n {found=1} END{exit(found?0:1)}' <<< "$rows"
+    ! awk -F: -v u="$MVC24GD4_TEMP_UUID" -v n="$MVC24GD4_TEMP_NAME" '$1==u || $3==n {found=1} END{exit(found?0:1)}' <<< "$rows"
 }
 
 mvc24gwg_delete_route_once() {
     local -a argv
     local shown rc
     mvc24gd4_endpoint_route_observed || return 1
-    argv=(-4 route del "$UBS24GD4_ENDPOINT_IP/32")
-    [[ $UBS24GD4_UNDERLAY_GATEWAY == - ]] || argv+=(via "$UBS24GD4_UNDERLAY_GATEWAY")
-    argv+=(dev "$UBS24GD4_UNDERLAY" src "$UBS24GD4_UNDERLAY_SOURCE" proto 186 metric 4240)
+    argv=(-4 route del "$MVC24GD4_ENDPOINT_IP/32")
+    [[ $MVC24GD4_UNDERLAY_GATEWAY == - ]] || argv+=(via "$MVC24GD4_UNDERLAY_GATEWAY")
+    argv+=(dev "$MVC24GD4_UNDERLAY" src "$MVC24GD4_UNDERLAY_SOURCE" proto 186 metric 4240)
     set +e; ip "${argv[@]}" >/dev/null 2>&1; rc=$?; set -e
     : "$rc"
-    shown=$(ip -4 route show exact "$UBS24GD4_ENDPOINT_IP/32" table main) || return 1
+    shown=$(ip -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
     [[ -z $shown ]]
 }
 
 mvc24gwg_delete_profile_once() {
     local rc
     if ! mvc24gwg_temp_profile_inventory_absent; then
-        set +e; nmcli --wait 30 connection delete uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
+        set +e; nmcli --wait 30 connection delete uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
         : "$rc"
     fi
     mvc24gwg_temp_profile_inventory_absent || return 1
-    if [[ -e ${UBS24GD4_TEMP_FILE:-} || -L ${UBS24GD4_TEMP_FILE:-} ]]; then
-        [[ -f $UBS24GD4_TEMP_FILE && ! -L $UBS24GD4_TEMP_FILE ]] || return 1
+    if [[ -e ${MVC24GD4_TEMP_FILE:-} || -L ${MVC24GD4_TEMP_FILE:-} ]]; then
+        [[ -f $MVC24GD4_TEMP_FILE && ! -L $MVC24GD4_TEMP_FILE ]] || return 1
         local observed
-        observed=$(mvc24gd2_keyfile_scalar "$UBS24GD4_TEMP_FILE" connection uuid) || return 1
-        [[ $observed == "$UBS24GD4_TEMP_UUID" ]] || return 1
-        rm -f -- "$UBS24GD4_TEMP_FILE" || return 1
+        observed=$(mvc24gd2_keyfile_scalar "$MVC24GD4_TEMP_FILE" connection uuid) || return 1
+        [[ $observed == "$MVC24GD4_TEMP_UUID" ]] || return 1
+        rm -f -- "$MVC24GD4_TEMP_FILE" || return 1
     fi
-    [[ ! -e ${UBS24GD4_TEMP_FILE:-} && ! -L ${UBS24GD4_TEMP_FILE:-} ]]
+    [[ ! -e ${MVC24GD4_TEMP_FILE:-} && ! -L ${MVC24GD4_TEMP_FILE:-} ]]
 }
 
 mvc24gwg_release_guard_once() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} rc
+    local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} rc
     if [[ ! -f $runtime/protected-release-intent ]]; then
         mvc24gwg_publish_release_intent || return 1
     fi
@@ -458,20 +458,20 @@ mvc24gwg_network_clean_retirement_pending_observed() {
     mvc24gwg_owned_tables_absent_now || return 1
     mvc24gwg_temp_profile_inventory_absent || return 1
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
-    ! ip link show dev "$UBS24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    ! wg show "$UBS24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     mvc24gwg_controller_topology_restored
 }
 
 mvc24gwg_retire_runtime_once() {
     (( $# == 0 )) || return 1
-    local runtime=${UBS24GD4_RUNTIME:-/run/mvc-wireguard} controller public
+    local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} controller public
     controller=$(mvc24gb2_runtime) || return 1
     public=$(mvc24pub_session_runtime_root) || return 1
     mvc24gwg_owned_tables_absent_now && mvc24gwg_temp_profile_inventory_absent || return 1
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
-    ! ip link show dev "$UBS24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    ! wg show "$UBS24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     mvc24gwg_controller_topology_restored || return 1
     rm -rf -- "$runtime" || return 1
     [[ ! -e $runtime && ! -L $runtime ]] || return 1
@@ -488,17 +488,17 @@ mvc24gwg_stop_once() {
     (( $# == 0 )) || return 1
     local rc
     mvc24gwg_active_observed || return 1
-    UBS24GWG_STAGE=wireguard-disconnect-outcome-uncertain
-    set +e; nmcli --wait 60 connection down uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
+    MVC24GWG_STAGE=wireguard-disconnect-outcome-uncertain
+    set +e; nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
     : "$rc"
     mvc24gd4_wg_down_observed || return 1
     mvc24gwg_guard_exact_now || return 1
-    UBS24GWG_STAGE=wireguard-down-protected-guard-retained
+    MVC24GWG_STAGE=wireguard-down-protected-guard-retained
     mvc24gwg_delete_route_once || return 1
     mvc24gwg_delete_profile_once || return 1
-    UBS24GWG_STAGE=wireguard-residue-removed-protected-guard-retained
+    MVC24GWG_STAGE=wireguard-residue-removed-protected-guard-retained
     mvc24gwg_release_guard_once || return 1
-    UBS24GWG_STAGE=guard-released-runtime-retirement-pending
+    MVC24GWG_STAGE=guard-released-runtime-retirement-pending
     mvc24gwg_retire_runtime_once || return 1
-    UBS24GWG_STAGE=wireguard-only-protected-complete-sameboot-ready
+    MVC24GWG_STAGE=wireguard-only-protected-complete-sameboot-ready
 }

@@ -5,8 +5,8 @@
 # The result is an untrusted plan, NOT proof of complete namespace/physical coverage.
 
 mvc24gb1_reset() {
-    UBS24GB1_STAGE=blocked
-    UBS24GB1_AUTHORITY=none
+    MVC24GB1_STAGE=blocked
+    MVC24GB1_AUTHORITY=none
 }
 
 mvc24gb1_valid_ifname() {
@@ -90,8 +90,8 @@ mvc24gb1_plan_once() {
     (( $# == 3 )) || return 1
     mvc24gb1_reset
     local iface=$1 reference=$2 scratch=$3 file
-    [[ ${UBS24GB1_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GB1_ATTEMPTED=yes
+    [[ ${MVC24GB1_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GB1_ATTEMPTED=yes
     mvc24gb1_scope && mvc24gb1_valid_ifname "$iface" || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' "$scratch") == 700:2 ]] || return 1
@@ -125,8 +125,8 @@ mvc24gb1_plan_once() {
     mvc24op_qg_preflight_snapshot "$scratch/nft2" &&
       mvc24gb1_links_valid "$iface" "$scratch/links2" &&
       mvc24gb1_routes_valid "$iface" "$scratch/route4b" "$scratch/route6b" || return 1
-    UBS24GB1_STAGE=production-batch-prechecked-readonly-no-authority
-    UBS24GB1_AUTHORITY=none
+    MVC24GB1_STAGE=production-batch-prechecked-readonly-no-authority
+    MVC24GB1_AUTHORITY=none
 }
 
 mvc24gb1_authorize_install() { return 1; }

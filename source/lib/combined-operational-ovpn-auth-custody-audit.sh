@@ -4,15 +4,15 @@
 # grant permission to import, start VPNs, or change firewall.
 
 mvc24op_auth_audit_reset() {
-    UBS24OP_AUTH_METHOD=unassessed
-    UBS24OP_AUTH_PASSWORD=unassessed
-    UBS24OP_AUTH_CERT_PASS=unassessed
-    UBS24OP_AUTH_PROXY_PASSWORD=unassessed
-    UBS24OP_AUTH_OTHER_FLAGS=unassessed
-    UBS24OP_AUTH_CA=unassessed
-    UBS24OP_AUTH_CLIENT=unassessed
-    UBS24OP_AUTH_CONTROL=unassessed
-    UBS24OP_AUTH_STATE=unverified
+    MVC24OP_AUTH_METHOD=unassessed
+    MVC24OP_AUTH_PASSWORD=unassessed
+    MVC24OP_AUTH_CERT_PASS=unassessed
+    MVC24OP_AUTH_PROXY_PASSWORD=unassessed
+    MVC24OP_AUTH_OTHER_FLAGS=unassessed
+    MVC24OP_AUTH_CA=unassessed
+    MVC24OP_AUTH_CLIENT=unassessed
+    MVC24OP_AUTH_CONTROL=unassessed
+    MVC24OP_AUTH_STATE=unverified
 }
 
 mvc24op_auth_audit() {
@@ -80,15 +80,15 @@ mvc24op_auth_audit() {
     [[ $ca == present || $ca == absent ]] || return 1
     case $client in pkcs12|pkcs12-plus-other|cert-and-key|incomplete-cert-key|none) ;; *) return 1 ;; esac
     case $control in both|tls-auth|tls-crypt|none) ;; *) return 1 ;; esac
-    UBS24OP_AUTH_METHOD=$method
-    UBS24OP_AUTH_PASSWORD=$pw
-    UBS24OP_AUTH_CERT_PASS=$cp
-    UBS24OP_AUTH_PROXY_PASSWORD=$proxy
-    UBS24OP_AUTH_OTHER_FLAGS=$other
-    UBS24OP_AUTH_CA=$ca
-    UBS24OP_AUTH_CLIENT=$client
-    UBS24OP_AUTH_CONTROL=$control
-    UBS24OP_AUTH_STATE=read-only-references-only
+    MVC24OP_AUTH_METHOD=$method
+    MVC24OP_AUTH_PASSWORD=$pw
+    MVC24OP_AUTH_CERT_PASS=$cp
+    MVC24OP_AUTH_PROXY_PASSWORD=$proxy
+    MVC24OP_AUTH_OTHER_FLAGS=$other
+    MVC24OP_AUTH_CA=$ca
+    MVC24OP_AUTH_CLIENT=$client
+    MVC24OP_AUTH_CONTROL=$control
+    MVC24OP_AUTH_STATE=read-only-references-only
 }
 
 mvc24op_auth_audit_authorize_nm_write() { return 1; }
@@ -120,7 +120,7 @@ mvc24op_auth_extra_flag_names() {
         else join(",") end
     ' -- "$file" 2>/dev/null) || return 1
     [[ -n $result ]] || return 1
-    UBS24OP_AUTH_EXTRA_FLAG_NAMES=$result
+    MVC24OP_AUTH_EXTRA_FLAG_NAMES=$result
 }
 
 # C8B2: classify only the known OpenVPN challenge-response secret-policy bitfield.
@@ -150,5 +150,5 @@ mvc24op_auth_challenge_flag_class() {
         unreported|nm-owned-unverified|agent-owned|not-saved|agent-and-not-saved|not-required|unsupported) ;;
         *) return 1 ;;
     esac
-    UBS24OP_AUTH_CHALLENGE_CLASS=$result
+    MVC24OP_AUTH_CHALLENGE_CLASS=$result
 }

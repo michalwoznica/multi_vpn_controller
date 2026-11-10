@@ -20,19 +20,19 @@
 # combined-networkmanager-backend.sh (read-only validator only).
 
 mvc24gd2_reset() {
-    UBS24GD2_STAGE=unverified
-    UBS24GD2_KEYFILE=
-    UBS24GD2_IFACE=
-    UBS24GD2_PEER_COUNT=0
-    UBS24GD2_ALLOWED_COUNT=0
-    UBS24GD2_ENDPOINT_CANDIDATE_COUNT=0
-    UBS24GD2_ENDPOINTS=()
-    UBS24GD2_ENDPOINT_HOSTS=()
-    UBS24GD2_ENDPOINT_PORTS=()
-    UBS24GD2_ENDPOINT_CANDIDATES=()
-    UBS24GD2_ALLOWED_IPS=()
-    UBS24GD2_UNDERLAY_GATEWAY=
-    UBS24GD2_UNDERLAY_SOURCE=
+    MVC24GD2_STAGE=unverified
+    MVC24GD2_KEYFILE=
+    MVC24GD2_IFACE=
+    MVC24GD2_PEER_COUNT=0
+    MVC24GD2_ALLOWED_COUNT=0
+    MVC24GD2_ENDPOINT_CANDIDATE_COUNT=0
+    MVC24GD2_ENDPOINTS=()
+    MVC24GD2_ENDPOINT_HOSTS=()
+    MVC24GD2_ENDPOINT_PORTS=()
+    MVC24GD2_ENDPOINT_CANDIDATES=()
+    MVC24GD2_ALLOWED_IPS=()
+    MVC24GD2_UNDERLAY_GATEWAY=
+    MVC24GD2_UNDERLAY_SOURCE=
 }
 
 mvc24gd2_valid_wg_ifname() {
@@ -58,7 +58,7 @@ mvc24gd2_find_saved_keyfile() {
     done
     [[ -n $candidate && -f $candidate && ! -L $candidate &&
        $(stat -c '%u:%a:%h' -- "$candidate") == '0:600:1' ]] || return 1
-    UBS24GD2_KEYFILE=$candidate
+    MVC24GD2_KEYFILE=$candidate
 }
 
 mvc24gd2_keyfile_scalar() {
@@ -100,8 +100,8 @@ mvc24gd2_disjoint_ipv4_prefixes() {
     local -a nets=() masks=()
     for item in "$@"; do
         [[ $item != *:* ]] && mvc24c_parse_cidr "$item" &&
-            (( UBS24C_CIDR_PREFIX >= 8 )) || return 1
-        network=$UBS24C_CIDR_NET mask=$UBS24C_CIDR_MASK
+            (( MVC24C_CIDR_PREFIX >= 8 )) || return 1
+        network=$MVC24C_CIDR_NET mask=$MVC24C_CIDR_MASK
         for ((j=0; j<${#nets[@]}; j++)); do
             if (( (network & masks[j]) == nets[j] ||
                   (nets[j] & mask) == network )); then
@@ -121,7 +121,7 @@ mvc24gd2_resolve_ipv4_candidates() {
     local -A seen=()
     local -a out=()
     if wg23_validate_ipv4 "$host"; then
-        UBS24GD2_RESOLVED_IPS=("$host")
+        MVC24GD2_RESOLVED_IPS=("$host")
         return 0
     fi
     wg23_validate_hostname "$host" || return 1
@@ -138,7 +138,7 @@ mvc24gd2_resolve_ipv4_candidates() {
         fi
     done <<< "$raw"
     (( ${#out[@]} >= 1 )) || return 1
-    UBS24GD2_RESOLVED_IPS=("${out[@]}")
+    MVC24GD2_RESOLVED_IPS=("${out[@]}")
 }
 
 # Pure/keyfile-only shape check. No live networking or DNS is read here.
@@ -146,7 +146,7 @@ mvc24gd2_validate_keyfile() {
     (( $# == 3 )) || return 1
     local file=$1 uuid=$2 underlay=$3 iface peer_routes ip4_auto ip6_auto fwmark
     local v4_method v6_method v4_dns v6_dns autoconnect ep prefix host port
-    UBS24GD2_STAGE=keyfile-shape
+    MVC24GD2_STAGE=keyfile-shape
     [[ -f $file && ! -L $file && -r $file ]] || return 1
     mvc24_valid_uuid "$uuid" || return 1
     mvc24n_validate_source wg "$file" || return 1
@@ -190,11 +190,11 @@ mvc24gd2_validate_keyfile() {
        ${#WG23_PEER_ENDPOINTS[@]} == ${#WG23_PEER_PORTS[@]} )) || return 1
 
     mvc24c_read_allowed_ips "$file" || return 1
-    (( ${#UBS24C_ALLOWED_IPS[@]} >= 1 )) || return 1
-    for prefix in "${UBS24C_ALLOWED_IPS[@]}"; do
+    (( ${#MVC24C_ALLOWED_IPS[@]} >= 1 )) || return 1
+    for prefix in "${MVC24C_ALLOWED_IPS[@]}"; do
         [[ $prefix != *:* ]] || return 1
     done
-    mvc24gd2_disjoint_ipv4_prefixes "${UBS24C_ALLOWED_IPS[@]}" || return 1
+    mvc24gd2_disjoint_ipv4_prefixes "${MVC24C_ALLOWED_IPS[@]}" || return 1
 
     # Numeric endpoints can be checked against AllowedIPs immediately.
     # Hostnames are checked after read-only resolution in assess_saved_profile.
@@ -203,7 +203,7 @@ mvc24gd2_validate_keyfile() {
         port=${WG23_PEER_PORTS[ep]}
         [[ $port =~ ^[0-9]+$ ]] || return 1
         if wg23_validate_ipv4 "$host"; then
-            for prefix in "${UBS24C_ALLOWED_IPS[@]}"; do
+            for prefix in "${MVC24C_ALLOWED_IPS[@]}"; do
                 ! mvc24c_cidr_contains "$prefix" "$host" || return 1
             done
         else
@@ -211,15 +211,15 @@ mvc24gd2_validate_keyfile() {
         fi
     done
 
-    UBS24GD2_KEYFILE=$file
-    UBS24GD2_IFACE=$iface
-    UBS24GD2_ENDPOINTS=("${WG23_PEER_ENDPOINTS[@]}")
-    UBS24GD2_ENDPOINT_HOSTS=("${WG23_PEER_HOSTS[@]}")
-    UBS24GD2_ENDPOINT_PORTS=("${WG23_PEER_PORTS[@]}")
-    UBS24GD2_ALLOWED_IPS=("${UBS24C_ALLOWED_IPS[@]}")
-    UBS24GD2_PEER_COUNT=${#UBS24GD2_ENDPOINTS[@]}
-    UBS24GD2_ALLOWED_COUNT=${#UBS24GD2_ALLOWED_IPS[@]}
-    UBS24GD2_STAGE=keyfile-eligible-hostname-or-numeric-ipv4-private-only
+    MVC24GD2_KEYFILE=$file
+    MVC24GD2_IFACE=$iface
+    MVC24GD2_ENDPOINTS=("${WG23_PEER_ENDPOINTS[@]}")
+    MVC24GD2_ENDPOINT_HOSTS=("${WG23_PEER_HOSTS[@]}")
+    MVC24GD2_ENDPOINT_PORTS=("${WG23_PEER_PORTS[@]}")
+    MVC24GD2_ALLOWED_IPS=("${MVC24C_ALLOWED_IPS[@]}")
+    MVC24GD2_PEER_COUNT=${#MVC24GD2_ENDPOINTS[@]}
+    MVC24GD2_ALLOWED_COUNT=${#MVC24GD2_ALLOWED_IPS[@]}
+    MVC24GD2_STAGE=keyfile-eligible-hostname-or-numeric-ipv4-private-only
 }
 
 # Live, read-only route/NM binding. The current host is expected to be in the
@@ -230,26 +230,26 @@ mvc24gd2_assess_saved_profile() {
     local -A seen_candidates=()
     local -a candidate_endpoints=()
     mvc24gd2_reset
-    UBS24GD2_STAGE=source-uuid
+    MVC24GD2_STAGE=source-uuid
     mvc24_valid_uuid "$uuid" || return 1
-    UBS24GD2_STAGE=nm-type
+    MVC24GD2_STAGE=nm-type
     type=$(nmcli --wait 10 -g connection.type connection show uuid "$uuid" 2>/dev/null) || return 1
     [[ $type == wireguard ]] || return 1
-    UBS24GD2_STAGE=keyfile-discovery
+    MVC24GD2_STAGE=keyfile-discovery
     mvc24gd2_find_saved_keyfile "$uuid" || return 1
-    mvc24gd2_validate_keyfile "$UBS24GD2_KEYFILE" "$uuid" "$underlay" || return 1
+    mvc24gd2_validate_keyfile "$MVC24GD2_KEYFILE" "$uuid" "$underlay" || return 1
 
     # Resolve every source endpoint read-only to prove the current clean-host
     # resolver and physical route can reach it. These candidates are diagnostic
     # only; a later protected-running stage must re-resolve through OpenVPN DNS
     # before deriving any endpoint/firewall authority.
-    UBS24GD2_STAGE=endpoint-resolution
-    for ((i=0; i<${#UBS24GD2_ENDPOINT_HOSTS[@]}; i++)); do
-        host=${UBS24GD2_ENDPOINT_HOSTS[i]}
-        port=${UBS24GD2_ENDPOINT_PORTS[i]}
+    MVC24GD2_STAGE=endpoint-resolution
+    for ((i=0; i<${#MVC24GD2_ENDPOINT_HOSTS[@]}; i++)); do
+        host=${MVC24GD2_ENDPOINT_HOSTS[i]}
+        port=${MVC24GD2_ENDPOINT_PORTS[i]}
         mvc24gd2_resolve_ipv4_candidates "$host" || return 1
-        for ip in "${UBS24GD2_RESOLVED_IPS[@]}"; do
-            for prefix in "${UBS24GD2_ALLOWED_IPS[@]}"; do
+        for ip in "${MVC24GD2_RESOLVED_IPS[@]}"; do
+            for prefix in "${MVC24GD2_ALLOWED_IPS[@]}"; do
                 ! mvc24c_cidr_contains "$prefix" "$ip" || return 1
             done
             if [[ -z ${seen_candidates["$ip:$port"]+x} ]]; then
@@ -261,31 +261,31 @@ mvc24gd2_assess_saved_profile() {
     done
     (( ${#candidate_endpoints[@]} >= 1 )) || return 1
 
-    UBS24GD2_STAGE=endpoint-routes
+    MVC24GD2_STAGE=endpoint-routes
     for ep in "${candidate_endpoints[@]}"; do
         ip=${ep%:*}
         route=$(ip -4 route get "$ip") || return 1
         mvc24c_parse_physical_route "$ip" "$route" || return 1
-        [[ $UBS24C_IFACE == "$underlay" ]] || return 1
+        [[ $MVC24C_IFACE == "$underlay" ]] || return 1
         if [[ -z $source ]]; then
-            source=$UBS24C_SOURCE gateway=$UBS24C_GATEWAY
+            source=$MVC24C_SOURCE gateway=$MVC24C_GATEWAY
         else
-            [[ $UBS24C_SOURCE == "$source" && $UBS24C_GATEWAY == "$gateway" ]] || return 1
+            [[ $MVC24C_SOURCE == "$source" && $MVC24C_GATEWAY == "$gateway" ]] || return 1
         fi
     done
     [[ -n $source ]] || return 1
 
     # Private AllowedIPs must not capture the current gateway or underlay source.
-    for prefix in "${UBS24GD2_ALLOWED_IPS[@]}"; do
+    for prefix in "${MVC24GD2_ALLOWED_IPS[@]}"; do
         [[ $gateway == - ]] || ! mvc24c_cidr_contains "$prefix" "$gateway" || return 1
         ! mvc24c_cidr_contains "$prefix" "$source" || return 1
     done
 
-    UBS24GD2_ENDPOINT_CANDIDATES=("${candidate_endpoints[@]}")
-    UBS24GD2_ENDPOINT_CANDIDATE_COUNT=${#candidate_endpoints[@]}
-    UBS24GD2_UNDERLAY_GATEWAY=$gateway
-    UBS24GD2_UNDERLAY_SOURCE=$source
-    UBS24GD2_STAGE=eligible-direct-source-first-dual-vertical
+    MVC24GD2_ENDPOINT_CANDIDATES=("${candidate_endpoints[@]}")
+    MVC24GD2_ENDPOINT_CANDIDATE_COUNT=${#candidate_endpoints[@]}
+    MVC24GD2_UNDERLAY_GATEWAY=$gateway
+    MVC24GD2_UNDERLAY_SOURCE=$source
+    MVC24GD2_STAGE=eligible-direct-source-first-dual-vertical
 }
 
 mvc24gd2_authorize_activation() { return 1; }

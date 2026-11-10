@@ -6,10 +6,10 @@
 # DNS correctness, remote peer authenticity and teardown are NOT proven here.
 
 mvc24gc11_reset() {
-    UBS24GC11_STAGE=unverified
-    UBS24GC11_AUTHORITY=none
-    UBS24GC11_TUNNEL=
-    UBS24GC11_TUNNEL_SOURCE=
+    MVC24GC11_STAGE=unverified
+    MVC24GC11_AUTHORITY=none
+    MVC24GC11_TUNNEL=
+    MVC24GC11_TUNNEL_SOURCE=
 }
 mvc24gc11_authorize_public_activation() { return 1; }
 mvc24gc11_authorize_traffic() { return 1; }
@@ -142,40 +142,40 @@ mvc24gc11_postshape_observation() {
 mvc24gc11_candidate_after_c9() {
     (( $# == 1 )) || return 1
     local out=$1 nm1 nm2 route1 route2 underlay source tunnel tun_source
-    UBS24GC11_STAGE=unverified
-    UBS24GC11_AUTHORITY=none
-    UBS24GC11_TUNNEL= UBS24GC11_TUNNEL_SOURCE=
-    [[ ${UBS24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
-       ${UBS24GC9_AUTHORITY:-} == none &&
-       ${UBS24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
-       ${UBS24GC7_AUTHORITY:-} == none &&
-       ${UBS24GC8_STAGE:-} == nm-source-clone-metadata-consistent-password-delivery-unproven &&
-       ${UBS24GC8_AUTHORITY:-} == none &&
-       ${UBS24GC6_STAGE:-} == nm-active-and-selected-ipv4-tun-observed-no-traffic-authority &&
-       ${UBS24GC6_AUTHORITY:-} == none ]] || return 1
+    MVC24GC11_STAGE=unverified
+    MVC24GC11_AUTHORITY=none
+    MVC24GC11_TUNNEL= MVC24GC11_TUNNEL_SOURCE=
+    [[ ${MVC24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard &&
+       ${MVC24GC9_AUTHORITY:-} == none &&
+       ${MVC24GC7_STAGE:-} == active-nm-and-ipv4-observed-bootstrap-only &&
+       ${MVC24GC7_AUTHORITY:-} == none &&
+       ${MVC24GC8_STAGE:-} == nm-source-clone-metadata-consistent-password-delivery-unproven &&
+       ${MVC24GC8_AUTHORITY:-} == none &&
+       ${MVC24GC6_STAGE:-} == nm-active-and-selected-ipv4-tun-observed-no-traffic-authority &&
+       ${MVC24GC6_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid || return 1
     # The typed GetSettings capture layer still requires the legacy
-    # UBS24S_LOCK_HELD assertion. C9's dynamically scoped marker ends when C9
+    # MVC24S_LOCK_HELD assertion. C9's dynamically scoped marker ends when C9
     # returns, but C11 runs later under the same genuine B2 flock. Re-bind the
     # marker only after independently proving that real lock here; the marker
     # itself grants no authority and cannot substitute for the flock witness.
-    local UBS24S_LOCK_HELD=1
+    local MVC24S_LOCK_HELD=1
     mvc24gc3_transition_records_valid && mvc24gc5_guard_witness &&
        mvc24gc5_prepared_profile_witness && mvc24gc7_read_intent || return 1
-    [[ ${UBS24GC7_CLONE_UUID:-} == "${UBS24GA3_PREPARED_CLONE_UUID:-}" &&
-       ${UBS24GC7_NM_OWNER:-} == "${UBS24GC5_NM_OWNER:-}" ]] || return 1
-    nm1=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
-    route1=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    route2=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    nm2=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
-    [[ -n $nm1 && $nm1 == "$nm2" && $nm1 == "${UBS24GC6_NM_SNAPSHOT:-}" &&
-       -n $route1 && $route1 == "$route2" && $route1 == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] || return 1
+    [[ ${MVC24GC7_CLONE_UUID:-} == "${MVC24GA3_PREPARED_CLONE_UUID:-}" &&
+       ${MVC24GC7_NM_OWNER:-} == "${MVC24GC5_NM_OWNER:-}" ]] || return 1
+    nm1=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || return 1
+    route1=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
+    route2=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || return 1
+    nm2=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || return 1
+    [[ -n $nm1 && $nm1 == "$nm2" && $nm1 == "${MVC24GC6_NM_SNAPSHOT:-}" &&
+       -n $route1 && $route1 == "$route2" && $route1 == "${MVC24GC6_ROUTE_SNAPSHOT:-}" ]] || return 1
     IFS='|' read -r underlay source tunnel tun_source <<< "$route1"
-    mvc24gc11_parameters "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" &&
-       [[ $underlay == "$UBS24GC3_IFACE" && $source == "$UBS24GC3_SOURCE" ]] || return 1
+    mvc24gc11_parameters "$underlay" "$source" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$tunnel" "$tun_source" &&
+       [[ $underlay == "$MVC24GC3_IFACE" && $source == "$MVC24GC3_SOURCE" ]] || return 1
     mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness &&
        mvc24gc3_transition_records_valid && mvc24gc7_read_intent || return 1
-    mvc24gc11_write_candidate "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" "$out" || return 1
-    UBS24GC11_TUNNEL=$tunnel UBS24GC11_TUNNEL_SOURCE=$tun_source
-    UBS24GC11_STAGE=prospective-ipv4-host-tunnel-output-only-no-commit-authority
+    mvc24gc11_write_candidate "$underlay" "$source" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$tunnel" "$tun_source" "$out" || return 1
+    MVC24GC11_TUNNEL=$tunnel MVC24GC11_TUNNEL_SOURCE=$tun_source
+    MVC24GC11_STAGE=prospective-ipv4-host-tunnel-output-only-no-commit-authority
 }

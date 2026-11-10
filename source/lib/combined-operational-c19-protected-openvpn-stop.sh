@@ -5,11 +5,11 @@
 # An interrupted transaction must be inspected manually while guard persists.
 
 mvc24gc19_reset() {
-    UBS24GC19_ATTEMPTED=no
-    UBS24GC19_STAGE=unverified
-    UBS24GC19_AUTHORITY=none
-    UBS24GC19_NM_STOP_EXIT_STATUS=unattempted
-    UBS24GC19_POST_STOP_OBSERVATION=unverified
+    MVC24GC19_ATTEMPTED=no
+    MVC24GC19_STAGE=unverified
+    MVC24GC19_AUTHORITY=none
+    MVC24GC19_NM_STOP_EXIT_STATUS=unattempted
+    MVC24GC19_POST_STOP_OBSERVATION=unverified
 }
 mvc24gc19_admission_witness() { return 1; }
 mvc24gc19_authorize_public_stop() { return 1; }
@@ -49,16 +49,16 @@ mvc24gc19_kernel_witness() {
         mvc24gc3_transition_records_valid && mvc24gc13_intent_valid || return 1
     case "$state" in
         c11)
-            mvc24gc11_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-                "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" &&
-            mvc24gc11_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-                "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" || return 1
+            mvc24gc11_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+                "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" &&
+            mvc24gc11_postshape_observation "$second" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+                "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$MVC24GC11_TUNNEL" "$MVC24GC11_TUNNEL_SOURCE" || return 1
             ;;
         c1)
-            mvc24gc1_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-                "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" &&
-            mvc24gc1_postshape_observation "$second" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-                "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" || return 1
+            mvc24gc1_postshape_observation "$first" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+                "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" &&
+            mvc24gc1_postshape_observation "$second" "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+                "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" || return 1
             ;;
         *) return 1 ;;
     esac
@@ -113,11 +113,11 @@ mvc24gc19_normal_intent_valid() {
        ${records[6]} == "c13=$c13" &&
        ${records[7]} == "c1=$c1" &&
        ${records[8]} == handback_sha=* &&
-       ${records[9]} == "clone=${UBS24GC7_CLONE_UUID:-}" &&
-       ${records[10]} == "nm_owner=${UBS24GC7_NM_OWNER:-}" ]] || return 1
+       ${records[9]} == "clone=${MVC24GC7_CLONE_UUID:-}" &&
+       ${records[10]} == "nm_owner=${MVC24GC7_NM_OWNER:-}" ]] || return 1
     mvc24gc13_sha_valid "${records[8]#handback_sha=}" &&
-      mvc24ga_uuid_valid "${UBS24GC7_CLONE_UUID:-}" &&
-      mvc24gc7_nm_owner_valid "${UBS24GC7_NM_OWNER:-}"
+      mvc24ga_uuid_valid "${MVC24GC7_CLONE_UUID:-}" &&
+      mvc24gc7_nm_owner_valid "${MVC24GC7_NM_OWNER:-}"
 }
 
 # v2.4.1 C24A: an already-published session may lose OpenVPN independently
@@ -162,13 +162,13 @@ mvc24gc19_absent_intent_valid() {
        ${records[6]} == "c13=$c13" &&
        ${records[7]} == "c1=$c1" &&
        ${records[8]} == handback_sha=* &&
-       ${records[9]} == "clone=${UBS24GC7_CLONE_UUID:-}" &&
-       ${records[10]} == "nm_owner=${UBS24GC7_NM_OWNER:-}" &&
+       ${records[9]} == "clone=${MVC24GC7_CLONE_UUID:-}" &&
+       ${records[10]} == "nm_owner=${MVC24GC7_NM_OWNER:-}" &&
        ${records[11]} == "marker=$marker_kind" &&
        $current_marker_sha == "$marker_sha" ]] || return 1
     mvc24gc13_sha_valid "${records[8]#handback_sha=}" &&
-      mvc24ga_uuid_valid "${UBS24GC7_CLONE_UUID:-}" &&
-      mvc24gc7_nm_owner_valid "${UBS24GC7_NM_OWNER:-}"
+      mvc24ga_uuid_valid "${MVC24GC7_CLONE_UUID:-}" &&
+      mvc24gc7_nm_owner_valid "${MVC24GC7_NM_OWNER:-}"
 }
 
 mvc24gc19_publish_intent() {
@@ -193,7 +193,7 @@ mvc24gc19_publish_intent() {
         state=handback-commit-attempted-outcome-uncertain \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c13=$c13" "c1=$c1" "handback_sha=$digest" \
-        "clone=$UBS24GC7_CLONE_UUID" "nm_owner=$UBS24GC7_NM_OWNER" > "$tmp"; then return 1; fi
+        "clone=$MVC24GC7_CLONE_UUID" "nm_owner=$MVC24GC7_NM_OWNER" > "$tmp"; then return 1; fi
     chmod 400 -- "$tmp" || return 1
     [[ ! -e $dir/attempt && ! -L $dir/attempt ]] || return 1
     mv -T -- "$tmp" "$dir/attempt" || return 1
@@ -232,7 +232,7 @@ mvc24gc19_publish_absent_intent() {
         state=c11-handback-attempted-openvpn-already-absent \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c13=$c13" "c1=$c1" "handback_sha=$digest" \
-        "clone=$UBS24GC7_CLONE_UUID" "nm_owner=$UBS24GC7_NM_OWNER" \
+        "clone=$MVC24GC7_CLONE_UUID" "nm_owner=$MVC24GC7_NM_OWNER" \
         "marker=$marker_kind" "marker_sha=$marker_sha" > "$tmp"; then return 1; fi
     chmod 400 -- "$tmp" || return 1
     [[ ! -e $dir/attempt && ! -L $dir/attempt ]] || return 1
@@ -277,18 +277,18 @@ mvc24gc19_observe_disconnect_poststate() {
     local first=$1 second=$2 attempt max_attempts=20
     for (( attempt=1; attempt<=max_attempts; attempt++ )); do
         if mvc24gc19_post_disconnect_witness "$first" "$second"; then
-            UBS24GC19_POST_STOP_OBSERVATION=verified
+            MVC24GC19_POST_STOP_OBSERVATION=verified
             return 0
         fi
         if (( attempt < max_attempts )); then
-            UBS24GC19_POST_STOP_OBSERVATION=waiting-readonly-poststate
+            MVC24GC19_POST_STOP_OBSERVATION=waiting-readonly-poststate
             mvc24gc19_disconnect_pause || {
-                UBS24GC19_POST_STOP_OBSERVATION=pause-failed
+                MVC24GC19_POST_STOP_OBSERVATION=pause-failed
                 return 1
             }
         fi
     done
-    UBS24GC19_POST_STOP_OBSERVATION=not-verified
+    MVC24GC19_POST_STOP_OBSERVATION=not-verified
     return 1
 }
 
@@ -297,18 +297,18 @@ mvc24gc19_observe_disconnect_poststate() {
 # Never disarm; C1 guard remains installed after NM disconnect.
 mvc24gc19_execute_once() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GC19_ATTEMPTED:-no} == no ]] || return 1
-    UBS24GC19_ATTEMPTED=yes
-    UBS24GC19_STAGE=refused-or-unverified
-    UBS24GC19_AUTHORITY=none
+    [[ ${MVC24GC19_ATTEMPTED:-no} == no ]] || return 1
+    MVC24GC19_ATTEMPTED=yes
+    MVC24GC19_STAGE=refused-or-unverified
+    MVC24GC19_AUTHORITY=none
     mvc24gc19_admission_witness || return 1
-    [[ ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
-       ${UBS24GC17_AUTHORITY:-} == none &&
-       ${UBS24GC13_STAGE:-} == atomic-ipv4-tunnel-output-observed-dns-unverified &&
-       ${UBS24GC13_AUTHORITY:-} == none &&
-       ( ${UBS24GC16_STAGE:-} == direct-glibc-vpn-dns-observed-no-traffic-authority ||
-         ${UBS24GC16_STAGE:-} == conditional-arch-nss-vpn-dns-observed-no-traffic-authority ) &&
-       ${UBS24GC16_AUTHORITY:-} == none ]] || return 1
+    [[ ${MVC24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
+       ${MVC24GC17_AUTHORITY:-} == none &&
+       ${MVC24GC13_STAGE:-} == atomic-ipv4-tunnel-output-observed-dns-unverified &&
+       ${MVC24GC13_AUTHORITY:-} == none &&
+       ( ${MVC24GC16_STAGE:-} == direct-glibc-vpn-dns-observed-no-traffic-authority ||
+         ${MVC24GC16_STAGE:-} == conditional-arch-nss-vpn-dns-observed-no-traffic-authority ) &&
+       ${MVC24GC16_AUTHORITY:-} == none ]] || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid &&
         mvc24gc3_transition_records_valid && mvc24gc7_read_intent &&
         mvc24gc13_intent_valid || return 1
@@ -320,15 +320,15 @@ mvc24gc19_execute_once() {
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     batch=$scratch/handback.nft a=$scratch/first.json b=$scratch/second.json
     if ! (umask 077; set -C; : > "$batch") ||
-       ! mvc24gc19_write_c1_handback "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" \
-           "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$batch" ||
+       ! mvc24gc19_write_c1_handback "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" \
+           "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$batch" ||
        ! nft --check --file "$batch" >/dev/null 2>&1; then success=0; fi
     if (( success == 1 )); then
-        nm=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || success=0
-        route=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || success=0
-        expected="$UBS24GC3_IFACE|$UBS24GC3_SOURCE|$UBS24GC11_TUNNEL|$UBS24GC11_TUNNEL_SOURCE"
-        [[ -n ${nm:-} && $nm == "${UBS24GC6_NM_SNAPSHOT:-}" &&
-           $route == "$expected" && $route == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] || success=0
+        nm=$(mvc24gc6_nm_ipv4_snapshot "$MVC24GC7_CLONE_UUID" "$MVC24GC7_NM_OWNER") || success=0
+        route=$(mvc24gc6_kernel_ipv4_snapshot "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE") || success=0
+        expected="$MVC24GC3_IFACE|$MVC24GC3_SOURCE|$MVC24GC11_TUNNEL|$MVC24GC11_TUNNEL_SOURCE"
+        [[ -n ${nm:-} && $nm == "${MVC24GC6_NM_SNAPSHOT:-}" &&
+           $route == "$expected" && $route == "${MVC24GC6_ROUTE_SNAPSHOT:-}" ]] || success=0
     fi
     if (( success == 1 )); then
         mvc24gb1_capture_nft "$a" && mvc24gb1_capture_nft "$b" &&
@@ -339,7 +339,7 @@ mvc24gc19_execute_once() {
           mvc24gc19_candidate_matches_intent "$batch" || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC19_STAGE=handback-commit-attempted-uncertain
+        MVC24GC19_STAGE=handback-commit-attempted-uncertain
         if ! nft --file "$batch" >/dev/null 2>&1; then success=0; fi
     fi
     if (( success == 1 )); then
@@ -347,23 +347,23 @@ mvc24gc19_execute_once() {
           mvc24gc19_kernel_witness c1 "$a" "$b" && mvc24gc19_intent_valid || success=0
     fi
     if (( success == 1 )); then
-        UBS24GC19_STAGE=c1-quarantine-verified-nm-disconnect-attempted-uncertain
+        MVC24GC19_STAGE=c1-quarantine-verified-nm-disconnect-attempted-uncertain
         # Invoke NetworkManager exactly once. Its process exit status is
         # diagnostic evidence, not proof of mutation outcome: classify only
         # from the authoritative host post-state while C1 remains fail-closed.
         local nm_stop_rc
-        if mvc24gc19_nm_stop "$UBS24GC7_CLONE_UUID"; then
+        if mvc24gc19_nm_stop "$MVC24GC7_CLONE_UUID"; then
             nm_stop_rc=0
         else
             nm_stop_rc=$?
         fi
-        UBS24GC19_NM_STOP_EXIT_STATUS=$nm_stop_rc
+        MVC24GC19_NM_STOP_EXIT_STATUS=$nm_stop_rc
         mvc24gc19_observe_disconnect_poststate "$a" "$b" || success=0
     fi
     rm -f -- "$batch" "$a" "$b" || success=0
     rmdir -- "$scratch" || success=0
     if (( success == 1 )); then
-        UBS24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority
+        MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority
         return 0
     fi
     return 1

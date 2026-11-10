@@ -20,32 +20,32 @@
 # remains denied.
 
 mvc24gco_reset() {
-    UBS24GCO_MODE=disabled
-    UBS24GCO_EXTERNALS_MOCKED=no
-    UBS24GCO_ATTEMPTED=no
-    UBS24GCO_STAGE=idle
-    UBS24GCO_AUTHORITY=none
-    UBS24GCO_SOURCE_UUID=
-    UBS24GCO_UNDERLAY=
+    MVC24GCO_MODE=disabled
+    MVC24GCO_EXTERNALS_MOCKED=no
+    MVC24GCO_ATTEMPTED=no
+    MVC24GCO_STAGE=idle
+    MVC24GCO_AUTHORITY=none
+    MVC24GCO_SOURCE_UUID=
+    MVC24GCO_UNDERLAY=
     declare -F mvc24gc23t_reset >/dev/null && mvc24gc23t_reset
 }
 
 mvc24gco_enable_offline_integration() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == no &&
-       ${UBS24GCO_STAGE:-idle} == idle &&
-       ${UBS24GCO_AUTHORITY:-none} == none ]] || return 1
+    [[ ${MVC24GCO_ATTEMPTED:-no} == no &&
+       ${MVC24GCO_STAGE:-idle} == idle &&
+       ${MVC24GCO_AUTHORITY:-none} == none ]] || return 1
     # The harness must explicitly state that all external mutating effects
     # are substituted before admission is enabled. This is not a host token.
-    [[ ${UBS24GCO_EXTERNALS_MOCKED:-no} == yes ]] || return 1
-    UBS24GCO_MODE=offline-integration
+    [[ ${MVC24GCO_EXTERNALS_MOCKED:-no} == yes ]] || return 1
+    MVC24GCO_MODE=offline-integration
 }
 
 mvc24gco_offline_enabled() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GCO_MODE:-disabled} == offline-integration &&
-       ${UBS24GCO_EXTERNALS_MOCKED:-no} == yes &&
-       ${UBS24GCO_AUTHORITY:-none} == none ]]
+    [[ ${MVC24GCO_MODE:-disabled} == offline-integration &&
+       ${MVC24GCO_EXTERNALS_MOCKED:-no} == yes &&
+       ${MVC24GCO_AUTHORITY:-none} == none ]]
 }
 
 # Default-deny external live-admission hook. The C23U private driver overrides
@@ -55,19 +55,19 @@ mvc24gcu_live_admission_witness() { return 1; }
 
 mvc24gco_enable_private_live() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == no &&
-       ${UBS24GCO_STAGE:-idle} == idle &&
-       ${UBS24GCO_AUTHORITY:-none} == none ]] || return 1
+    [[ ${MVC24GCO_ATTEMPTED:-no} == no &&
+       ${MVC24GCO_STAGE:-idle} == idle &&
+       ${MVC24GCO_AUTHORITY:-none} == none ]] || return 1
     declare -F mvc24gcu_live_admission_witness >/dev/null || return 1
     mvc24gcu_live_admission_witness || return 1
-    UBS24GCO_MODE=private-live-local-console
-    UBS24GCO_AUTHORITY=private-local-console
+    MVC24GCO_MODE=private-live-local-console
+    MVC24GCO_AUTHORITY=private-local-console
 }
 
 mvc24gco_private_live_enabled() {
     (( $# == 0 )) || return 1
-    [[ ${UBS24GCO_MODE:-disabled} == private-live-local-console &&
-       ${UBS24GCO_AUTHORITY:-none} == private-local-console ]] || return 1
+    [[ ${MVC24GCO_MODE:-disabled} == private-live-local-console &&
+       ${MVC24GCO_AUTHORITY:-none} == private-local-console ]] || return 1
     declare -F mvc24gcu_live_admission_witness >/dev/null || return 1
     mvc24gcu_live_admission_witness
 }
@@ -86,68 +86,68 @@ mvc24gco_enabled() {
 mvc24gc17_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == yes &&
-       ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == refused-before-activation ]]
+    [[ ${MVC24GCO_ATTEMPTED:-no} == yes &&
+       ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == refused-before-activation ]]
 }
 
 mvc24gc9_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
-       ${UBS24GC9_STAGE:-} == refused-preflight ]]
+    [[ ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
+       ${MVC24GC9_STAGE:-} == refused-preflight ]]
 }
 
 mvc24gc3_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
-       ${UBS24GC9_STAGE:-} == firewall-or-profile-preparation-uncertain &&
-       ${UBS24GC3_STAGE:-} == refused-preflight ]]
+    [[ ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
+       ${MVC24GC9_STAGE:-} == firewall-or-profile-preparation-uncertain &&
+       ${MVC24GC3_STAGE:-} == refused-preflight ]]
 }
 
 mvc24gc7_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
-       ${UBS24GC9_STAGE:-} == activation-intent-or-outcome-uncertain ]] &&
+    [[ ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
+       ${MVC24GC9_STAGE:-} == activation-intent-or-outcome-uncertain ]] &&
         mvc24gb2_lock_valid
 }
 
 mvc24gc5_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
-       ${UBS24GC9_STAGE:-} == activation-intent-or-outcome-uncertain ]] &&
+    [[ ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == bootstrap-or-activation-outcome-uncertain &&
+       ${MVC24GC9_STAGE:-} == activation-intent-or-outcome-uncertain ]] &&
         mvc24gb2_lock_valid
 }
 
 mvc24gc13_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == starting &&
-       ${UBS24GC17_STAGE:-} == firewall-transition-outcome-uncertain &&
-       ${UBS24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard ]] &&
+    [[ ${MVC24GCO_STAGE:-} == starting &&
+       ${MVC24GC17_STAGE:-} == firewall-transition-outcome-uncertain &&
+       ${MVC24GC9_STAGE:-} == active-nm-ipv4-observed-endpoint-only-guard ]] &&
         mvc24gb2_lock_valid
 }
 
 mvc24gc19_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_STAGE:-} == stopping &&
-       ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
-       ${UBS24GC19_STAGE:-} == refused-or-unverified ]] &&
+    [[ ${MVC24GCO_STAGE:-} == stopping &&
+       ${MVC24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
+       ${MVC24GC19_STAGE:-} == refused-or-unverified ]] &&
         mvc24gb2_lock_valid
 }
 
 mvc24gc23t_admission_witness() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    case ${UBS24GCO_STAGE:-} in
+    case ${MVC24GCO_STAGE:-} in
       completing|reconciling-completion) ;;
       *) return 1 ;;
     esac
@@ -160,7 +160,7 @@ mvc24gc23t_admission_witness() {
 
 mvc24gco_start_once() {
     (( $# == 2 )) || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == no ]] || return 1
+    [[ ${MVC24GCO_ATTEMPTED:-no} == no ]] || return 1
     mvc24gco_enabled || return 1
     local source_uuid=$1 underlay=$2
     mvc24ga_uuid_valid "$source_uuid" && mvc24gb1_valid_ifname "$underlay" || return 1
@@ -176,41 +176,41 @@ mvc24gco_start_once() {
         /run/mvc-completion; do
         [[ ! -e $live_root && ! -L $live_root ]] || return 1
     done
-    UBS24GCO_ATTEMPTED=yes
-    UBS24GCO_SOURCE_UUID=$source_uuid
-    UBS24GCO_UNDERLAY=$underlay
-    UBS24GCO_STAGE=starting
+    MVC24GCO_ATTEMPTED=yes
+    MVC24GCO_SOURCE_UUID=$source_uuid
+    MVC24GCO_UNDERLAY=$underlay
+    MVC24GCO_STAGE=starting
     mvc24gc17_execute_once "$source_uuid" "$underlay" || return 1
-    [[ ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
-       ${UBS24GC17_AUTHORITY:-} == none ]] || return 1
-    UBS24GCO_STAGE=protected-openvpn-observed
+    [[ ${MVC24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
+       ${MVC24GC17_AUTHORITY:-} == none ]] || return 1
+    MVC24GCO_STAGE=protected-openvpn-observed
     return 0
 }
 
 mvc24gco_stop_once() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == yes &&
-       ${UBS24GCO_STAGE:-} == protected-openvpn-observed &&
-       ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]] || return 1
-    UBS24GCO_STAGE=stopping
+    [[ ${MVC24GCO_ATTEMPTED:-no} == yes &&
+       ${MVC24GCO_STAGE:-} == protected-openvpn-observed &&
+       ${MVC24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]] || return 1
+    MVC24GCO_STAGE=stopping
     mvc24gc19_execute_once || return 1
-    [[ ${UBS24GC19_STAGE:-} == openvpn-stopped-c1-guard-retained-no-release-authority &&
-       ${UBS24GC19_AUTHORITY:-} == none ]] || return 1
-    UBS24GCO_STAGE=protected-stopped-c1-held-finalize-pending
+    [[ ${MVC24GC19_STAGE:-} == openvpn-stopped-c1-guard-retained-no-release-authority &&
+       ${MVC24GC19_AUTHORITY:-} == none ]] || return 1
+    MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending
     return 0
 }
 
 mvc24gco_complete_once() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    [[ ${UBS24GCO_ATTEMPTED:-no} == yes &&
-       ${UBS24GCO_STAGE:-} == protected-stopped-c1-held-finalize-pending &&
-       ${UBS24GC19_STAGE:-} == openvpn-stopped-c1-guard-retained-no-release-authority ]] || return 1
-    UBS24GCO_STAGE=completing
+    [[ ${MVC24GCO_ATTEMPTED:-no} == yes &&
+       ${MVC24GCO_STAGE:-} == protected-stopped-c1-held-finalize-pending &&
+       ${MVC24GC19_STAGE:-} == openvpn-stopped-c1-guard-retained-no-release-authority ]] || return 1
+    MVC24GCO_STAGE=completing
     mvc24gc23t_execute_once || return 1
-    [[ ${UBS24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
-    UBS24GCO_STAGE=completed-session-archived-sameboot-ready
+    [[ ${MVC24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
+    MVC24GCO_STAGE=completed-session-archived-sameboot-ready
     return 0
 }
 
@@ -225,10 +225,10 @@ mvc24gco_resume_completion_once() {
     [[ ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
        -f /run/mvc-disconnect/attempt &&
        ! -L /run/mvc-disconnect/attempt ]] || return 1
-    UBS24GCO_STAGE=completing
+    MVC24GCO_STAGE=completing
     mvc24gc23t_execute_once || return 1
-    [[ ${UBS24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
-    UBS24GCO_STAGE=completed-session-archived-sameboot-ready
+    [[ ${MVC24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
+    MVC24GCO_STAGE=completed-session-archived-sameboot-ready
     return 0
 }
 
@@ -237,10 +237,10 @@ mvc24gco_resume_completion_once() {
 mvc24gco_reconcile_completion_once() {
     (( $# == 0 )) || return 1
     mvc24gco_enabled || return 1
-    UBS24GCO_STAGE=reconciling-completion
+    MVC24GCO_STAGE=reconciling-completion
     mvc24gc23t_reconcile_once || return 1
-    [[ ${UBS24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
-    UBS24GCO_STAGE=completed-session-archived-sameboot-ready
+    [[ ${MVC24GC23T_STAGE:-} == completed-session-archived-sameboot-ready ]] || return 1
+    MVC24GCO_STAGE=completed-session-archived-sameboot-ready
     return 0
 }
 

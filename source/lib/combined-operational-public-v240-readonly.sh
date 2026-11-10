@@ -4,9 +4,9 @@
 # C23AX corrects real-host profile enumeration and active-session filtering; this module remains read-only.
 
 mvc24pub_reset() {
-    UBS24PUB_WG_UUID=
-    UBS24PUB_OVPN_UUID=
-    UBS24PUB_STATUS=unverified
+    MVC24PUB_WG_UUID=
+    MVC24PUB_OVPN_UUID=
+    MVC24PUB_STATUS=unverified
 }
 
 mvc24pub_nm_saved_uuids() {
@@ -64,30 +64,30 @@ mvc24pub_saved_profile_kind() {
 mvc24pub_bind_openvpn_name() {
     (( $# == 1 )) || return 1
     local ovpn_name=$1 ovpn_uuid ovpn_type ovpn_service
-    UBS24PUB_WG_UUID= UBS24PUB_OVPN_UUID=
+    MVC24PUB_WG_UUID= MVC24PUB_OVPN_UUID=
     mvc24_valid_name "$ovpn_name" || return 1
     ovpn_uuid=$(mvc24pub_resolve_saved_name_exact "$ovpn_name") || return 1
     ovpn_type=$(mvc24pub_nm_get "$ovpn_uuid" connection.type) || return 1
     ovpn_service=$(mvc24pub_nm_get "$ovpn_uuid" vpn.service-type) || return 1
     [[ $ovpn_type == vpn && $ovpn_service == org.freedesktop.NetworkManager.openvpn ]] || return 1
-    UBS24PUB_OVPN_UUID=$ovpn_uuid
+    MVC24PUB_OVPN_UUID=$ovpn_uuid
 }
 
 mvc24pub_bind_wireguard_name() {
     (( $# == 1 )) || return 1
     local wg_name=$1 wg_uuid wg_type
-    UBS24PUB_WG_UUID= UBS24PUB_OVPN_UUID=
+    MVC24PUB_WG_UUID= MVC24PUB_OVPN_UUID=
     mvc24_valid_name "$wg_name" || return 1
     wg_uuid=$(mvc24pub_resolve_saved_name_exact "$wg_name") || return 1
     wg_type=$(mvc24pub_nm_get "$wg_uuid" connection.type) || return 1
     [[ $wg_type == wireguard ]] || return 1
-    UBS24PUB_WG_UUID=$wg_uuid
+    MVC24PUB_WG_UUID=$wg_uuid
 }
 
 mvc24pub_bind_combined_names() {
     (( $# == 2 )) || return 1
     local wg_name=$1 ovpn_name=$2 wg_uuid ovpn_uuid wg_type ovpn_type ovpn_service
-    UBS24PUB_WG_UUID= UBS24PUB_OVPN_UUID=
+    MVC24PUB_WG_UUID= MVC24PUB_OVPN_UUID=
     mvc24_valid_name "$wg_name" && mvc24_valid_name "$ovpn_name" && [[ $wg_name != "$ovpn_name" ]] || return 1
     wg_uuid=$(mvc24pub_resolve_saved_name_exact "$wg_name") || return 1
     ovpn_uuid=$(mvc24pub_resolve_saved_name_exact "$ovpn_name") || return 1
@@ -97,8 +97,8 @@ mvc24pub_bind_combined_names() {
     ovpn_service=$(mvc24pub_nm_get "$ovpn_uuid" vpn.service-type) || return 1
     [[ $wg_type == wireguard && $ovpn_type == vpn &&
        $ovpn_service == org.freedesktop.NetworkManager.openvpn ]] || return 1
-    UBS24PUB_WG_UUID=$wg_uuid
-    UBS24PUB_OVPN_UUID=$ovpn_uuid
+    MVC24PUB_WG_UUID=$wg_uuid
+    MVC24PUB_OVPN_UUID=$ovpn_uuid
 }
 
 mvc24pub_list_readonly() {
@@ -167,13 +167,13 @@ mvc24pub_baseline_clean_readonly() {
 # the strict public session/transaction observer authenticates it.
 mvc24pub_status_readonly() {
     (( $# == 0 )) || return 2
-    UBS24PUB_STATUS=unverified
+    MVC24PUB_STATUS=unverified
     if mvc24pub_baseline_clean_readonly; then
-        UBS24PUB_STATUS=baseline-clean
+        MVC24PUB_STATUS=baseline-clean
         printf '%s\n' 'Managed v2.4 session: none; controller guard: OFF (baseline networking).'
         return 0
     fi
-    UBS24PUB_STATUS=state-present-needs-strict-public-observer
+    MVC24PUB_STATUS=state-present-needs-strict-public-observer
     printf '%s\n' 'Managed v2.4 state is present; status remains conservative and does not itself grant lifecycle authority.'
     printf '%s\n' 'RESULT: UNVERIFIED — disconnect will independently authenticate exact same-boot ownership before any mutation; use recovery inspection for ambiguous/interrupted state.'
     return 0

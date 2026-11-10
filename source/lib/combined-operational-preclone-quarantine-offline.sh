@@ -6,10 +6,10 @@
 # witnesses, and neither a PASS nor the export grants operational authority.
 
 mvc24op_qg_reset() {
-    UBS24OP_QG_FINDING=unverified
-    UBS24OP_QG_AUTHORITY=none
-    UBS24OP_QG_COVERAGE=host-ip-output-forward-and-linux-bridge-forward-only
-    UBS24OP_QG_NAMESPACE_STATUS=unmanaged-external-egress-unsupported
+    MVC24OP_QG_FINDING=unverified
+    MVC24OP_QG_AUTHORITY=none
+    MVC24OP_QG_COVERAGE=host-ip-output-forward-and-linux-bridge-forward-only
+    MVC24OP_QG_NAMESPACE_STATUS=unmanaged-external-egress-unsupported
 }
 
 # Snapshot is a private nft -j -n -s list ruleset FILE, not a shell string.
@@ -33,7 +33,7 @@ mvc24op_qg_preflight_snapshot() {
             select(type == "object" and owned(.)))] | length) == 0 and
         ([.nftables[] | .flowtable? | select(. != null)] | length) == 0
     ' -- "$1" >/dev/null 2>&1 || return 1
-    UBS24OP_QG_FINDING=offline-prestate-has-no-quarantine-object
+    MVC24OP_QG_FINDING=offline-prestate-has-no-quarantine-object
 }
 
 # A precise, conservative witness: exactly two owned tables and three empty
@@ -73,15 +73,15 @@ mvc24op_qg_postshape_snapshot() {
             .key != "metainfo") | .value | select(type == "object" and owned(.))] | length) == 0 and
         ([.nftables[] | .flowtable? | select(. != null)] | length) == 0
     ' -- "$1" >/dev/null 2>&1 || return 1
-    UBS24OP_QG_FINDING=offline-quarantine-policy-shape-matches
+    MVC24OP_QG_FINDING=offline-quarantine-policy-shape-matches
 }
 
 # Pure export of a reviewable reference file. Never executes it.
 mvc24op_qg_export_reference() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
-    [[ -n ${UBS24OP_QG_REFERENCE:-} && -f $UBS24OP_QG_REFERENCE &&
-       ! -L $UBS24OP_QG_REFERENCE ]] || return 1
-    cmp -s -- "$1" "$UBS24OP_QG_REFERENCE" || return 1
+    [[ -n ${MVC24OP_QG_REFERENCE:-} && -f $MVC24OP_QG_REFERENCE &&
+       ! -L $MVC24OP_QG_REFERENCE ]] || return 1
+    cmp -s -- "$1" "$MVC24OP_QG_REFERENCE" || return 1
     cat -- "$1"
 }
 

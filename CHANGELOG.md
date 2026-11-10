@@ -7,6 +7,7 @@
 - Publish independent recovery tools as `/root/mvc-emergency-rollback` and `/root/mvc-dual-recovery`.
 - Move same-boot runtime roots to `/run/mvc-*` and MVC-owned B4 nftables tables to the `mvc_preclone_*` namespace.
 - Migrate lowercase internal Bash function/helper names from the legacy `ubs24*` namespace to `mvc24*` without changing persistent record formats.
+- Migrate uppercase internal Bash variable/constant names from the legacy `UBS24*` namespace to `MVC24*` without changing persistent record formats.
 - Allow authenticated `disconnect` to reconcile a published combined session when OpenVPN has disappeared while WireGuard survives.
 - Allow authenticated `disconnect` to reconcile the inverse case where WireGuard has disappeared while OpenVPN remains healthy.
 - Preserve same-boot ownership authentication and fail-closed behavior; no automatic reconnect or watchdog was added.
