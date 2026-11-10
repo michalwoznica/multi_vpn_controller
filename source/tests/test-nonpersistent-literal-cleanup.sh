@@ -67,16 +67,11 @@ else
   fail 'production source comments use Multi VPN Controller identity'
 fi
 
-# R4 deliberately freezes authenticated journal/signature formats for R5.
-signature_set=$(cd "$ROOT" && rg -o --no-filename --glob '!source/tests/test-nonpersistent-literal-cleanup.sh' \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' source | sort -u)
-signature_sha=$(printf '%s\n' "$signature_set" | sha256sum | awk '{print $1}')
-signature_count=$(cd "$ROOT" && rg -o --no-filename --glob '!source/tests/test-nonpersistent-literal-cleanup.sh' \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' source | wc -l)
-if [[ $signature_sha == 9d17676190a036ba7baef655cff8795f7df6ffdc5de835df36adb5f67781f88c && $signature_count == 59 ]]; then
-  pass 'authenticated persistent record signatures remain frozen for R5'
+# Persistent authenticated record namespace is now owned by the dedicated R5 tests.
+if [[ -f $ROOT/source/tests/test-persistent-foundation-namespace.sh ]]; then
+  pass 'persistent record namespace delegated to R5 regression'
 else
-  fail 'authenticated persistent record signatures remain frozen for R5'
+  fail 'persistent record namespace delegated to R5 regression'
 fi
 
 # Legacy installed names remain only as deliberate installer/test migration compatibility.

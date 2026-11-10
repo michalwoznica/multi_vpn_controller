@@ -76,7 +76,7 @@ mvc24gb2_records_valid() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    [[ ${prepared[0]} == ubs-v240-b2-host-prepare-v1 &&
+    [[ ${prepared[0]} == mvc-b2-host-prepare-v1 &&
        ${prepared[1]} == state=prepared-no-activation &&
        ${prepared[2]} == "boot=$boot" &&
        ${prepared[3]} == "userns=$userns" &&
@@ -88,7 +88,7 @@ mvc24gb2_records_valid() {
        ${prepared[9]} == "links=$(sha256sum "$dir/links.json" | cut -d' ' -f1)" &&
        ${prepared[10]} == "route4=$(sha256sum "$dir/routes4.json" | cut -d' ' -f1)" &&
        ${prepared[11]} == "route6=$(sha256sum "$dir/routes6.json" | cut -d' ' -f1)" ]] || return 1
-    [[ ${committed[0]} == ubs-v240-b2-host-commit-attempt-v1 &&
+    [[ ${committed[0]} == mvc-b2-host-commit-attempt-v1 &&
        ${committed[1]} == state=attempted-exactly-once &&
        ${committed[2]} == "boot=$boot" &&
        ${committed[3]} == "prepare=$(sha256sum "$dir/prepare-intent" | cut -d' ' -f1)" ]] || return 1
@@ -304,7 +304,7 @@ mvc24gb2_install_once() {
       cmp -s "$scratch/locked-route4" "$dir/routes4.json" &&
       cmp -s "$scratch/locked-route6" "$dir/routes6.json" || return 1
     stamp=$(mktemp "$dir/.prepare.XXXXXXXX") || return 1
-    printf '%s\n' ubs-v240-b2-host-prepare-v1 state=prepared-no-activation \
+    printf '%s\n' mvc-b2-host-prepare-v1 state=prepared-no-activation \
         "boot=$(cat /proc/sys/kernel/random/boot_id)" \
         "userns=$(readlink /proc/self/ns/user)" \
         "netns=$(readlink /proc/self/ns/net)" \
@@ -319,7 +319,7 @@ mvc24gb2_install_once() {
     ln -- "$stamp" "$dir/prepare-intent" || return 1
     rm -f -- "$stamp" || return 1
     stamp=$(mktemp "$dir/.attempt.XXXXXXXX") || return 1
-    printf '%s\n' ubs-v240-b2-host-commit-attempt-v1 state=attempted-exactly-once \
+    printf '%s\n' mvc-b2-host-commit-attempt-v1 state=attempted-exactly-once \
         "boot=$(cat /proc/sys/kernel/random/boot_id)" \
         "prepare=$(sha256sum "$dir/prepare-intent" | cut -d' ' -f1)" > "$stamp" || return 1
     chmod 400 "$stamp" || return 1

@@ -203,7 +203,7 @@ mvc24gc1_transition_once() {
     batch=$(sha256sum "$dir/transition.nft") || return 1
     (umask 077; set -C; : > "$dir/transition-attempt") || return 1
     chmod 400 "$dir/transition-attempt" || return 1
-    printf '%s\n' 'ubs-v240-c1-transition-attempt-v1' 'state=attempted-once' \
+    printf '%s\n' 'mvc-c1-transition-attempt-v1' 'state=attempted-once' \
         "boot=$boot" "prepare=${prepared%% *}" "commit=${committed%% *}" \
         "batch=${batch%% *}" > "$dir/transition-attempt" || return 1
     MVC24GC1_STAGE=transition-commit-attempted-no-vpn-authority

@@ -64,7 +64,7 @@ mvc24gc13_publish_failure_diagnostic() {
     expected_dns=$(mvc24gc13_diag_hash_value "${MVC24GC18_DNS_FINGERPRINT:-}") || return 1
     observed_dns=$(mvc24gc13_diag_hash_value "${MVC24GC18_OBS_DNS_FINGERPRINT:-}") || return 1
     if ! printf '%s\n' \
-      ubs-v240-c13-diagnostic-v1 \
+      mvc-c13-diagnostic-v1 \
       authority=none-non-authoritative-diagnostic-only \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "clone_uuid=$clone" "c13_attempt_sha=$attempt_sha" \
@@ -122,7 +122,7 @@ mvc24gc13_intent_valid() {
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     c7=$(mvc24gc13_hash_file /run/mvc-activation/attempt) || return 1
     c1=$(mvc24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
-    [[ ${records[0]} == ubs-v240-c13-output-transition-attempt-v1 &&
+    [[ ${records[0]} == mvc-c13-output-transition-attempt-v1 &&
        ${records[1]} == state=nft-commit-attempted-outcome-uncertain &&
        ${records[2]} == "boot=$boot" &&
        ${records[3]} == "userns=$userns" &&
@@ -174,7 +174,7 @@ mvc24gc13_publish_intent() {
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
     if ! printf '%s\n' \
-        ubs-v240-c13-output-transition-attempt-v1 \
+        mvc-c13-output-transition-attempt-v1 \
         state=nft-commit-attempted-outcome-uncertain \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c7=$c7" "c1=$c1" "candidate_sha=$hash" \

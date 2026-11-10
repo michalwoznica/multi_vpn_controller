@@ -59,7 +59,7 @@ mvc24gc7_read_intent() {
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     c1hash=$(sha256sum "$(mvc24gb2_runtime)/transition-attempt" 2>/dev/null) || return 1
     c1hash=${c1hash%% *}
-    [[ ${rows[0]} == ubs-v240-c7-openvpn-attempt-v1 &&
+    [[ ${rows[0]} == mvc-c7-openvpn-attempt-v1 &&
        ${rows[1]} == state=attempt-entered-once-activation-uncertain &&
        ${rows[2]} == "boot=$boot" &&
        ${rows[3]} == "userns=$userns" &&
@@ -112,7 +112,7 @@ mvc24gc7_publish_intent() {
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
     if ! printf '%s\n' \
-       'ubs-v240-c7-openvpn-attempt-v1' \
+       'mvc-c7-openvpn-attempt-v1' \
        'state=attempt-entered-once-activation-uncertain' \
        "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
        "c1=$c1hash" \

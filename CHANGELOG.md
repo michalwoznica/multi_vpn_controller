@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2.4.1
+- Migrate the first authenticated same-boot record chain (B2/C1/C7/C13) to version-independent `mvc-...-v1` record magic while preserving field schemas and downstream behavior.
+
 - Complete MVC-R4 non-persistent legacy literal cleanup: update residual public CLI messages, modular recovery identity, fixed-root seam, confirmation phrases, comments, and transient scratch names without changing authenticated journal signatures or legacy-install migration compatibility.
 
 - Adopt the **Multi VPN Controller** product identity and the `mvc` command.

@@ -92,7 +92,7 @@ mvc24gc3_transition_payload_valid() {
     mapfile -t recorded < "$dir/transition-attempt" || return 1
     (( ${#recorded[@]} == 6 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
-    [[ ${recorded[0]} == ubs-v240-c1-transition-attempt-v1 &&
+    [[ ${recorded[0]} == mvc-c1-transition-attempt-v1 &&
        ${recorded[1]} == state=attempted-once &&
        ${recorded[2]} == "boot=$boot" &&
        ${recorded[3]} == "prepare=$(sha256sum "$dir/prepare-intent" | cut -d' ' -f1)" &&

@@ -21,6 +21,7 @@ TESTS=(
   test-public-identity.sh
   test-runtime-identity.sh
   test-nonpersistent-literal-cleanup.sh
+  test-persistent-foundation-namespace.sh
 )
 
 passed=0
