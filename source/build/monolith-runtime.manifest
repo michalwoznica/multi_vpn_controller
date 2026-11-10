@@ -34,8 +34,8 @@ MODULE|029|7dd036df626035fa759a41556a33c462c1ba4a6f8716f759d1a534075064ea27|sour
 MODULE|030|dee584d869607d21d6356fa9f8f19044e65f17723c916f045982b457c457dfd3|source/lib/combined-operational-c13-journalled-output-commit.sh|ordered-runtime-module
 MODULE|031|3dfffa2bfa9c6223ae86fca3107aba92909ceb324831dab935588b69145f4802|source/lib/combined-operational-c15-output-reattachment.sh|ordered-runtime-module
 MODULE|032|b9ac2855619f239ba9c07869bc8eee87be1ee80cd3f13a518b2a33eae944b791|source/lib/combined-operational-c17-held-openvpn-vertical.sh|ordered-runtime-module
-MODULE|033|ac5514f3bf8fb6c784eecd26934e89aabdb0234e873fb48a4dbb764aeda53eaa|source/lib/combined-operational-c19-protected-openvpn-stop.sh|ordered-runtime-module
-MODULE|034|5540a4ce355f7829bfb8c929f10b9ead6200eff0d8ca8e7bed24ee12bdee9f08|source/lib/combined-operational-c23t-session-finalize.sh|ordered-runtime-module
+MODULE|033|d768cf016faf50abbcce2ade7f5b340fe2ec9d3f71f1660ea3927f464e3321c5|source/lib/combined-operational-c19-protected-openvpn-stop.sh|ordered-runtime-module
+MODULE|034|5e966f3c379507b53b88f5023f68ff64a032062e19c66ab043800361bfc7b03c|source/lib/combined-operational-c23t-session-finalize.sh|ordered-runtime-module
 MODULE|035|40ac0d4d4078433cf2ce45144cc7431bd6bba581c06163627b9af0ae4f7a36c5|source/lib/combined-operational-c4-local-admission.sh|ordered-runtime-module
 MODULE|036|655d77a0381148e4a8a9f3c8b23fa2b7156ea66b5ce707a54846d25c6a3dec79|source/lib/combined-preflight.sh|ordered-runtime-module
 MODULE|037|41766970792b70d3402d5918a23df9d00cc9378f7fb59b3d90534112b0ffd48e|source/lib/combined-networkmanager-backend.sh|ordered-runtime-module
@@ -49,7 +49,7 @@ MODULE|044|e29efa877a9d34cde9efb2c6471b21e5b5ce9b84780749eadd67af4c2193d6fc|sour
 MODULE|045|57043b37209e28f7815486b484087c3d670dfe6cc7dfcd741ebfc89b72f0321a|source/lib/combined-operational-public-v240-openvpn-early-reconcile.sh|ordered-runtime-module
 MODULE|046|5a7828c14a8a851256a38c9dd29d9067a8859eb42d3c40a9caf234f097ba5de1|source/lib/combined-operational-public-v240-readonly.sh|ordered-runtime-module
 MODULE|047|c91441c03326f18facd71affc388c311156135a0cc5ad4133c404bda9c44051d|source/lib/combined-operational-public-v240-connect.sh|ordered-runtime-module
-MODULE|048|954d7fcd38d3160841b0921862ece1a742de730e7ca86298cd1d4d3a496370dc|source/lib/combined-operational-public-v240-disconnect.sh|ordered-runtime-module
+MODULE|048|3ae46a363e5a5e3748db42788d64995660d1c741700fb4620828289078d91d9d|source/lib/combined-operational-public-v240-disconnect.sh|ordered-runtime-module
 MODULE|049|c9a2c5f8ea0c8a335a8743e6349c57e654b1a3b3016550728a1067b2ebabfc9b|source/lib/combined-controller-entry.sh|ordered-runtime-module
 ASSET|gvariant-awk|6b454021a543afb9593d9f06bdb8d5e15ee119f4ade30b776af6ad70ed718ac1|source/lib/combined-gvariant-settings-to-json.awk|embed-as-deterministic-runtime-resource
 ASSET|b4-bootstrap-nft|15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23|source/nftables/vpn-v240-preclone-quarantine-offline.nft|embed-as-deterministic-runtime-resource

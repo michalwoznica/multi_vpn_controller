@@ -58,11 +58,11 @@ remaining=$(cd "$ROOT" && rg -o --no-filename \
   source/lib source/tools source/build source/nftables | sort -u)
 remaining_sha=$(printf '%s\n' "$remaining" | sha256sum | awk '{print $1}')
 remaining_count=$(printf '%s\n' "$remaining" | sed '/^$/d' | wc -l)
-if [[ $remaining_count == 8 && $remaining_sha == 28199457b95cf4c65800ae407676c02de047617c0a186076b900e24b80e61b8b ]]; then
-  pass 'R5D-R5E and dormant legacy record magics remain frozen'
+if [[ $remaining_count == 3 && $remaining_sha == 68e834457ee1d2a1ab9af588e3961cabcf505dd80c54f69556ac9d58401843cb ]]; then
+  pass 'R5E and dormant legacy record magics remain frozen'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'R5D-R5E and dormant legacy record magics remain frozen'
+  fail 'R5E and dormant legacy record magics remain frozen'
 fi
 
 # The exact current D4 parser path must reject retired magic. Use the normal

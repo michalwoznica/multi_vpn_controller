@@ -358,7 +358,7 @@ mvc24gc23t_release_intent_valid() {
     c1=$(mvc24gc23t_sha /run/mvc-controller/transition-attempt) || return 1
     batch=$(mvc24gc23t_sha "$dir/release.nft") || return 1
     clone=${rows[7]#clone=} owner=${rows[8]#nm_owner=}
-    [[ ${rows[0]} == ubs-v240-c23t-release-intent-v1 &&
+    [[ ${rows[0]} == mvc-c23t-release-intent-v1 &&
        ${rows[1]} == state=nft-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "c19=$c19" &&
        ${rows[4]} == "c1=$c1" && ${rows[5]} == "batch=$batch" &&
@@ -386,7 +386,7 @@ mvc24gc23t_publish_release_intent() {
     c1=$(mvc24gc23t_sha /run/mvc-controller/transition-attempt) || return 1
     batch=$(mvc24gc23t_sha "$dir/release.nft") || return 1
     tmp=$(umask 077; mktemp "$dir/.intent.XXXXXXXX") || return 1
-    printf '%s\n' ubs-v240-c23t-release-intent-v1 \
+    printf '%s\n' mvc-c23t-release-intent-v1 \
       state=nft-delete-attempted-once-outcome-uncertain "boot=$boot" \
       "c19=$c19" "c1=$c1" "batch=$batch" \
       "source=$MVC24GC23T_SOURCE_UUID" "clone=$MVC24GC23T_CLONE_UUID" \
@@ -459,7 +459,7 @@ mvc24gc23t_clone_delete_intent_valid() {
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     release=$(mvc24gc23t_sha "$dir/release-intent") || return 1
     clone=${rows[5]#clone=} owner=${rows[6]#nm_owner=}
-    [[ ${rows[0]} == ubs-v240-c23t-clone-delete-intent-v1 &&
+    [[ ${rows[0]} == mvc-c23t-clone-delete-intent-v1 &&
        ${rows[1]} == state=nm-delete-attempted-once-outcome-uncertain &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "release=$release" &&
        ${rows[4]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
@@ -477,7 +477,7 @@ mvc24gc23t_publish_clone_delete_intent() {
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     release=$(mvc24gc23t_sha "$dir/release-intent") || return 1
     tmp=$(umask 077; mktemp "$dir/.clone-delete.XXXXXXXX") || return 1
-    printf '%s\n' ubs-v240-c23t-clone-delete-intent-v1 \
+    printf '%s\n' mvc-c23t-clone-delete-intent-v1 \
       state=nm-delete-attempted-once-outcome-uncertain "boot=$boot" \
       "release=$release" "source=$MVC24GC23T_SOURCE_UUID" \
       "clone=$MVC24GC23T_CLONE_UUID" "nm_owner=$MVC24GC23T_NM_OWNER" > "$tmp" || return 1
@@ -513,7 +513,7 @@ mvc24gc23t_archive_plan_valid() {
     clone=${rows[6]#clone=}
     expected="$(mvc24gc23t_archive_root)/$clone"
     archive=${rows[7]#archive=}
-    [[ ${rows[0]} == ubs-v240-c23t-archive-plan-v1 &&
+    [[ ${rows[0]} == mvc-c23t-archive-plan-v1 &&
        ${rows[1]} == state=completed-session-archive-pending &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "release=$release" &&
        ${rows[4]} == "delete=$del" && ${rows[5]} == source=* &&
@@ -542,7 +542,7 @@ mvc24gc23t_publish_archive_plan() {
     release=$(mvc24gc23t_sha "$dir/release-intent") || return 1
     del=$(mvc24gc23t_sha "$dir/clone-delete-intent") || return 1
     tmp=$(umask 077; mktemp "$dir/.archive.XXXXXXXX") || return 1
-    printf '%s\n' ubs-v240-c23t-archive-plan-v1 \
+    printf '%s\n' mvc-c23t-archive-plan-v1 \
       state=completed-session-archive-pending "boot=$boot" \
       "release=$release" "delete=$del" "source=$MVC24GC23T_SOURCE_UUID" \
       "clone=$MVC24GC23T_CLONE_UUID" "archive=$archive" > "$tmp" || return 1

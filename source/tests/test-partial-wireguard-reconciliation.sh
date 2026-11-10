@@ -97,7 +97,7 @@ mvc24pubd_disconnect_once && pass fresh-disconnect-partial-d4-succeeds || fail f
 # R4-pinned core identities after non-persistent literal cleanup.
 [[ $(sha256sum lib/combined-operational-d4-wireguard-parallel-live.sh | awk '{print $1}') == fd2e61c0b0433a96040fcc95719d4a90dcadef17986586a919e16ae60fae17e9 ]] && pass r5c-d4-source-identity || fail r5c-d4-source-identity
 [[ $(sha256sum lib/combined-operational-openvpn-composition.sh | awk '{print $1}') == 56ef654e061368fa16bd2ec69153ffb6710ef447fe3a1ede3231ae8b2e5d2ee4 ]] && pass r4-gco-source-identity || fail r4-gco-source-identity
-[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == ac5514f3bf8fb6c784eecd26934e89aabdb0234e873fb48a4dbb764aeda53eaa ]] && pass r4-c19-source-identity || fail r4-c19-source-identity
+[[ $(sha256sum lib/combined-operational-c19-protected-openvpn-stop.sh | awk '{print $1}') == d768cf016faf50abbcce2ade7f5b340fe2ec9d3f71f1660ea3927f464e3321c5 ]] && pass r5d-c19-source-identity || fail r5d-c19-source-identity
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
 (( F == 0 ))

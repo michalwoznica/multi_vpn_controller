@@ -310,7 +310,7 @@ mvc24pubd_parse_completed_session_marker() {
     [[ -f $plan && ! -L $plan && -f $release && ! -L $release && -f $delete && ! -L $delete ]] || return 1
     mapfile -t plan_rows < "$plan" || return 1
     (( ${#plan_rows[@]} == 8 )) || return 1
-    [[ ${plan_rows[0]} == ubs-v240-c23t-archive-plan-v1 &&
+    [[ ${plan_rows[0]} == mvc-c23t-archive-plan-v1 &&
        ${plan_rows[1]} == state=completed-session-archive-pending &&
        ${plan_rows[2]} == "boot=$boot" &&
        ${plan_rows[3]} == "release=$(mvc24pubd_hash_file "$release")" &&

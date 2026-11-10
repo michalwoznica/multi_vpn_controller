@@ -79,8 +79,8 @@ mvc24gc19_intent_valid() {
        $(stat -c '%u:%a:%h' -- "$dir/attempt") == 0:400:1 ]] || return 1
     first=$(sed -n '1p' -- "$dir/attempt") || return 1
     case $first in
-      ubs-v240-c19-openvpn-stop-v1) mvc24gc19_normal_intent_valid ;;
-      ubs-v241-c24a-openvpn-absent-stop-v1) mvc24gc19_absent_intent_valid ;;
+      mvc-c19-openvpn-stop-v1) mvc24gc19_normal_intent_valid ;;
+      mvc-c24a-openvpn-absent-stop-v1) mvc24gc19_absent_intent_valid ;;
       *) return 1 ;;
     esac
 }
@@ -104,7 +104,7 @@ mvc24gc19_normal_intent_valid() {
     mntns=$(readlink /proc/self/ns/mnt) || return 1
     c13=$(mvc24gc13_hash_file /run/mvc-output-transition/attempt) || return 1
     c1=$(mvc24gc13_hash_file /run/mvc-controller/transition-attempt) || return 1
-    [[ ${records[0]} == ubs-v240-c19-openvpn-stop-v1 &&
+    [[ ${records[0]} == mvc-c19-openvpn-stop-v1 &&
        ${records[1]} == state=handback-commit-attempted-outcome-uncertain &&
        ${records[2]} == "boot=$boot" &&
        ${records[3]} == "userns=$userns" &&
@@ -153,7 +153,7 @@ mvc24gc19_absent_intent_valid() {
     marker_sha=${records[12]#marker_sha=}
     mvc24gc13_sha_valid "$marker_sha" || return 1
     current_marker_sha=$(mvc24gc13_hash_file "$marker_path") || return 1
-    [[ ${records[0]} == ubs-v241-c24a-openvpn-absent-stop-v1 &&
+    [[ ${records[0]} == mvc-c24a-openvpn-absent-stop-v1 &&
        ${records[1]} == state=c11-handback-attempted-openvpn-already-absent &&
        ${records[2]} == "boot=$boot" &&
        ${records[3]} == "userns=$userns" &&
@@ -189,7 +189,7 @@ mvc24gc19_publish_intent() {
     digest=$(mvc24gc13_hash_file "$batch") || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
-    if ! printf '%s\n' ubs-v240-c19-openvpn-stop-v1 \
+    if ! printf '%s\n' mvc-c19-openvpn-stop-v1 \
         state=handback-commit-attempted-outcome-uncertain \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c13=$c13" "c1=$c1" "handback_sha=$digest" \
@@ -228,7 +228,7 @@ mvc24gc19_publish_absent_intent() {
     marker_sha=$(mvc24gc13_hash_file "$marker_path") || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
-    if ! printf '%s\n' ubs-v241-c24a-openvpn-absent-stop-v1 \
+    if ! printf '%s\n' mvc-c24a-openvpn-absent-stop-v1 \
         state=c11-handback-attempted-openvpn-already-absent \
         "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
         "c13=$c13" "c1=$c1" "handback_sha=$digest" \

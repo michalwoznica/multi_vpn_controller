@@ -27,7 +27,7 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R5C_WIREGUARD_RECOVERY_RECORD_NAMESPACE' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R5D_DISCONNECT_FINALIZATION_RECORD_NAMESPACE' <<<"$info" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$info"; then
     ok 'v2.4.1 provenance records candidate with physical proof pending'
 else
