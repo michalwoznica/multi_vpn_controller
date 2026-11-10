@@ -20,8 +20,7 @@ fixed_new=(
   mvc-public-early-retire-v1
 )
 
-# Every fixed R5B magic must now be present in the active producer/validator pair,
-# and no retired fixed R5B magic may remain in production source.
+# Every fixed schema magic must be present in the active producer/validator pair.
 missing=0
 for sig in "${fixed_new[@]}"; do
   count=$(rg -F "$sig" \
@@ -31,12 +30,6 @@ for sig in "${fixed_new[@]}"; do
 done
 if (( missing == 0 )); then pass 'fixed R5B producer/validator magics use MVC namespace'; else fail 'fixed R5B producer/validator magics use MVC namespace'; fi
 
-if ! rg -n 'ubs-v240-public-(preclone|early)' \
-  "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" "$ROOT/source/nftables" >/dev/null; then
-  pass 'retired R5B UBS magic absent from production source'
-else
-  fail 'retired R5B UBS magic absent from production source'
-fi
 
 # The generic early-intent producer/validator emits two additional persistent
 # schemas that a literal-only inventory cannot enumerate: stop and clone-delete.
@@ -61,26 +54,16 @@ for kind in stop clone-delete; do
   else
     fail "dynamic $kind intent emits and accepts MVC magic"
   fi
-  sed -i "1cubs-v240-public-early-${kind}-v1" "$path"
+  sed -i "1cinvalid-public-early-${kind}-v0" "$path"
   chmod 400 "$path"
   if mvc24pube_simple_intent_valid "$kind" "$path"; then
-    fail "dynamic $kind intent rejects retired UBS magic"
+    fail "dynamic $kind intent rejects synthetic invalid magic"
   else
-    pass "dynamic $kind intent rejects retired UBS magic"
+    pass "dynamic $kind intent rejects synthetic invalid magic"
   fi
   rm -f -- "$path"
 done
 
-# R5C-R5E plus the dormant combined-state magic must remain frozen.
-remaining=$(cd "$ROOT" && rg -o --no-filename \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u || true)
-if [[ -z $remaining ]]; then
-  pass 'no retired persistent UBS magic remains in production source'
-else
-  printf '%s\n' "$remaining" >&2
-  fail 'no retired persistent UBS magic remains in production source'
-fi
 
 printf 'RESULT: MVC-R5B preclone/early record namespace %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

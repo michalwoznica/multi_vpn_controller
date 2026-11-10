@@ -15,10 +15,10 @@ public_docs=(
   "$ROOT/docs/SECURITY_MODEL.md" "$ROOT/docs/TESTING.md"
 )
 
-if ! grep -HnE 'UBS VPN Controller|sudo[[:space:]]+ubs-vpn|/usr/local/sbin/ubs-vpn|/root/ubs-v240-(emergency|dual)' "${public_docs[@]}"; then
-    ok 'public documentation contains only MVC product/command/recovery identity'
+if grep -Hq 'Multi VPN Controller' "${public_docs[@]}"; then
+    ok 'public documentation identifies Multi VPN Controller'
 else
-    bad 'legacy public identity leaked into public documentation'
+    bad 'public documentation identifies Multi VPN Controller'
 fi
 
 for path in \
@@ -32,26 +32,7 @@ for path in \
     ok "expected MVC public tool exists: ${path#$ROOT/}"
 done
 
-old_public=(
-  "$ROOT/source/tools/vpn-v240"
-  "$ROOT/source/tools/install-v240-monolith.sh"
-  "$ROOT/source/tools/install-v241-monolith.sh"
-  "$ROOT/source/tools/verify-v240-state-readonly.sh"
-  "$ROOT/source/tools/recover-v240-host-guard-local.sh"
-  "$ROOT/source/tools/recover-v240-dual-local.sh"
-  "$ROOT/source/build/build-v240-monolith.sh"
-)
-old_found=0
-for path in "${old_public[@]}"; do
-    if [[ -e $path || -L $path ]]; then
-        printf 'LEGACY PUBLIC PATH: %s\n' "${path#$ROOT/}" >&2
-        old_found=1
-    fi
-done
-(( old_found == 0 )) && ok 'legacy public tool filenames are absent' || bad 'legacy public tool filenames remain'
-
 [[ -x $ROOT/dist/mvc ]] && ok 'generated public artifact is dist/mvc' || bad 'generated public artifact is dist/mvc'
-[[ ! -e $ROOT/dist/ubs-vpn && ! -L $ROOT/dist/ubs-vpn ]] && ok 'legacy generated artifact name is absent' || bad 'legacy generated artifact name remains'
 
 if [[ $($ROOT/dist/mvc version) == 'Multi VPN Controller 2.4.1' ]] &&
    $ROOT/dist/mvc --help | grep -Fq 'Multi VPN Controller 2.4.1' &&
@@ -62,12 +43,12 @@ else
 fi
 
 info=$($ROOT/dist/mvc --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R6D_FINAL_LEGACY_AUDIT' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R7_STANDALONE_PUBLIC_IDENTITY' <<<"$info" &&
    grep -Fxq 'emergency_recovery=/root/mvc-emergency-rollback' <<<"$info" &&
    grep -Fxq 'dual_recovery=/root/mvc-dual-recovery' <<<"$info"; then
-    ok 'generated provenance exposes MVC checkpoint and recovery paths'
+    ok 'generated provenance exposes standalone MVC checkpoint and recovery paths'
 else
-    bad 'generated provenance exposes MVC checkpoint and recovery paths'
+    bad 'generated provenance exposes standalone MVC checkpoint and recovery paths'
 fi
 
 printf 'RESULT: MVC public identity %d/%d checks passed\n' "$pass" "$((pass+fail))"

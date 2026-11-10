@@ -25,15 +25,9 @@ else
   fail 'public active producer/finalizer and disconnect consumers use MVC magic'
 fi
 
-if ! rg -F 'ubs-v240-public-transaction-v1' "$ROOT/source/lib" "$ROOT/source/tools" >/dev/null &&
-   ! rg -F 'ubs-v240-public-active-v1' "$ROOT/source/lib" "$ROOT/source/tools" >/dev/null; then
-  pass 'retired central public-session UBS magic absent from production source'
-else
-  fail 'retired central public-session UBS magic absent from production source'
-fi
 
-# Exercise the real transaction parser with the new schema and prove exact old
-# magic is rejected. The prepared state avoids any dependency on live tunnel journals.
+# Exercise the real transaction parser with the current schema and a synthetic
+# invalid schema. The prepared state avoids any dependency on live tunnel journals.
 export MVC24E_CODE_ROOT=$ROOT/source
 source "$ROOT/source/lib/combined-operational-public-composition.sh"
 T=$(mktemp -d /tmp/mvc-r5e.XXXXXXXX)
@@ -72,24 +66,14 @@ if mvc24pubd_parse_transaction_marker && [[ $MVC24PUBD_TRANSACTION_STATE == prep
 else
   fail 'real transaction parser accepts MVC public transaction magic'
 fi
-write_tx ubs-v240-public-transaction-v1
+write_tx invalid-public-transaction-v0
 mvc24pubd_reset
 if ! mvc24pubd_parse_transaction_marker; then
-  pass 'real transaction parser rejects retired UBS public transaction magic'
+  pass 'real transaction parser rejects synthetic invalid public transaction magic'
 else
-  fail 'real transaction parser rejects retired UBS public transaction magic'
+  fail 'real transaction parser rejects synthetic invalid public transaction magic'
 fi
 
-# R6A removes the final dormant legacy persistent magic.
-remaining=$(cd "$ROOT" && rg -o --no-filename \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u || true)
-if [[ -z $remaining ]]; then
-  pass 'no retired persistent UBS magic remains in production source'
-else
-  printf '%s\n' "$remaining" >&2
-  fail 'no retired persistent UBS magic remains in production source'
-fi
 
 printf 'RESULT: MVC-R5E public-session record namespace %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

@@ -1,9 +1,9 @@
 # Changelog
 
-- Complete final public-tree legacy compatibility audit; confine predecessor naming to installer migration compatibility, regression fixtures, and changelog history.
-
 ## 2.4.1
-- Rename the eight remaining `v240` runtime/loader module filenames to version-neutral names, updating only manifest/build/loader/test path references.
+- Make the public project standalone: remove predecessor-specific installer migration, hashes, runtime-root checks, and exact historical record fixtures from the Git-facing tree; retain one-time development-host migration details only in ignored handoff material.
+- Complete the final identity audit and keep current production/build/docs MVC-native.
+- Rename the eight remaining version-tagged runtime/loader module filenames to version-neutral names, updating only manifest/build/loader/test path references.
 
 - Rename the non-module nftables runtime resource and read-only OpenVPN helper to MVC-native filenames without changing their content or runtime behavior.
 
@@ -25,8 +25,8 @@
 - Generate the release artifact as `dist/mvc` and install it as `/usr/local/sbin/mvc`.
 - Publish independent recovery tools as `/root/mvc-emergency-rollback` and `/root/mvc-dual-recovery`.
 - Move same-boot runtime roots to `/run/mvc-*` and MVC-owned B4 nftables tables to the `mvc_preclone_*` namespace.
-- Migrate lowercase internal Bash function/helper names from the legacy `ubs24*` namespace to `mvc24*` without changing persistent record formats.
-- Migrate uppercase internal Bash variable/constant names from the legacy `UBS24*` namespace to `MVC24*` without changing persistent record formats.
+- Migrate lowercase internal Bash function/helper names from the previous lowercase helper namespace to `mvc24*` without changing persistent record formats.
+- Migrate uppercase internal Bash variable/constant names from the previous internal uppercase namespace to `MVC24*` without changing persistent record formats.
 - Allow authenticated `disconnect` to reconcile a published combined session when OpenVPN has disappeared while WireGuard survives.
 - Allow authenticated `disconnect` to reconcile the inverse case where WireGuard has disappeared while OpenVPN remains healthy.
 - Preserve same-boot ownership authentication and fail-closed behavior; no automatic reconnect or watchdog was added.

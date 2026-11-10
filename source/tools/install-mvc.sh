@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Multi VPN Controller 2.4.1 — release-candidate installer.
 # File-management only. Never mutates VPN/network state.
-# Lowercase internal functions use mvc24*; uppercase MVC24* variables and legacy migration roots remain intentionally.
+# Lowercase internal functions use mvc24*; uppercase internal variables use MVC24*.
 set -euo pipefail
 umask 077
 export LC_ALL=C
@@ -20,8 +20,8 @@ Without --root, manages:
   /root/mvc-emergency-rollback
   /root/mvc-dual-recovery
 
-The installer can migrate the exact approved pre-MVC 2.4.0 file set. Unknown
-existing files are never overwritten or removed.
+Existing MVC files are replaced only when their identity matches this package.
+Unknown existing files are never overwritten or removed.
 
 --root is for isolated fake-root testing only. It prefixes all managed paths and
 never inspects or mutates the real host network.
@@ -52,10 +52,6 @@ dual_src=$project_root/source/tools/recover-mvc-dual-local.sh
 manifest=$project_root/source/build/monolith-runtime.manifest
 builder=$project_root/source/build/build-mvc-monolith.sh
 
-# Exact physically proven pre-MVC 2.4.0 identities accepted only for migration.
-readonly MVC24I_LEGACY_CONTROLLER_SHA='a035bcdfca9eab009d9f7ad1455f519516109f95c0ecf4345db2633506f8a0ef'
-readonly MVC24I_LEGACY_EMERGENCY_SHA='e2de136ccdc43f70aebb83778c5ff09ee706e870d6ad4a7d0770aabcec3af8f9'
-readonly MVC24I_LEGACY_DUAL_SHA='a6222f917c8b4ecd8284887ec1a0895774c877ca985ebb575608f73ecce8a15a'
 
 mvc24i_target() {
     (( $# == 1 )) || return 1
@@ -64,9 +60,6 @@ mvc24i_target() {
 controller_dst=$(mvc24i_target /usr/local/sbin/mvc)
 emergency_dst=$(mvc24i_target /root/mvc-emergency-rollback)
 dual_dst=$(mvc24i_target /root/mvc-dual-recovery)
-legacy_controller_dst=$(mvc24i_target /usr/local/sbin/ubs-vpn)
-legacy_emergency_dst=$(mvc24i_target /root/ubs-v240-emergency-rollback)
-legacy_dual_dst=$(mvc24i_target /root/ubs-v240-dual-recovery)
 
 mvc24i_hash() { sha256sum -- "$1" | awk '{print $1}'; }
 mvc24i_info_value() {
@@ -90,7 +83,7 @@ mvc24i_package_verify() {
     builder_sha=$(mvc24i_hash "$builder")
     emergency_sha=$(mvc24i_hash "$emergency_src")
     dual_sha=$(mvc24i_hash "$dual_src")
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R6D_FINAL_LEGACY_AUDIT ]] || mvc24i_die 'controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R7_STANDALONE_PUBLIC_IDENTITY ]] || mvc24i_die 'controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v241-candidate-physical-pending ]] || mvc24i_die 'controller authority provenance mismatch'
     [[ $(mvc24i_info_value "$info" manifest_sha256) == "$manifest_sha" ]] || mvc24i_die 'controller/manifest provenance mismatch'
     [[ $(mvc24i_info_value "$info" builder_sha256) == "$builder_sha" ]] || mvc24i_die 'controller/builder provenance mismatch'
@@ -130,56 +123,15 @@ mvc24i_assert_existing_identity() {
     fi
 }
 
-mvc24i_legacy_presence_count() {
-    local p count=0
-    for p in "$legacy_controller_dst" "$legacy_emergency_dst" "$legacy_dual_dst"; do
-        [[ -e $p || -L $p ]] && count=$((count + 1))
-    done
-    printf '%s\n' "$count"
-}
-
-mvc24i_assert_legacy_identity() {
-    local count
-    count=$(mvc24i_legacy_presence_count)
-    (( count == 0 )) && return 0
-    (( count == 3 )) || mvc24i_die 'partial pre-MVC installation found; refusing automatic migration'
-    [[ -f $legacy_controller_dst && ! -L $legacy_controller_dst && $(stat -c %u:%g:%h -- "$legacy_controller_dst") == 0:0:1 ]] || \
-        mvc24i_die 'legacy controller target is unsafe'
-    [[ -f $legacy_emergency_dst && ! -L $legacy_emergency_dst && $(stat -c %u:%g:%h -- "$legacy_emergency_dst") == 0:0:1 ]] || \
-        mvc24i_die 'legacy emergency recovery target is unsafe'
-    [[ -f $legacy_dual_dst && ! -L $legacy_dual_dst && $(stat -c %u:%g:%h -- "$legacy_dual_dst") == 0:0:1 ]] || \
-        mvc24i_die 'legacy dual recovery target is unsafe'
-    [[ $(mvc24i_hash "$legacy_controller_dst") == "$MVC24I_LEGACY_CONTROLLER_SHA" ]] || mvc24i_die 'unrecognized legacy controller identity'
-    [[ $(mvc24i_hash "$legacy_emergency_dst") == "$MVC24I_LEGACY_EMERGENCY_SHA" ]] || mvc24i_die 'unrecognized legacy emergency recovery identity'
-    [[ $(mvc24i_hash "$legacy_dual_dst") == "$MVC24I_LEGACY_DUAL_SHA" ]] || mvc24i_die 'unrecognized legacy dual recovery identity'
-}
-
-mvc24i_retire_legacy_if_present() {
-    local count
-    count=$(mvc24i_legacy_presence_count)
-    (( count == 0 )) && return 0
-    mvc24i_assert_legacy_identity
-    rm -f -- "$legacy_controller_dst" "$legacy_emergency_dst" "$legacy_dual_dst"
-    [[ ! -e $legacy_controller_dst && ! -L $legacy_controller_dst &&
-       ! -e $legacy_emergency_dst && ! -L $legacy_emergency_dst &&
-       ! -e $legacy_dual_dst && ! -L $legacy_dual_dst ]] || \
-        mvc24i_die 'MVC installed successfully but legacy file retirement was incomplete'
-}
 
 mvc24i_assert_quiescent() {
     local rel p active
-    # Refuse maintenance if either MVC runtime state or recognized pre-MVC
-    # 2.4.x runtime state is present.  The latter matters during upgrades from
-    # the physically proven predecessor.
+    # Refuse package maintenance whenever MVC-owned runtime state is present.
     for rel in \
         /run/mvc-controller /run/mvc-activation \
         /run/mvc-output-transition /run/mvc-disconnect \
         /run/mvc-completion /run/mvc-wireguard \
-        /run/mvc-public-session \
-        /run/ubs-v240-controller /run/ubs-v240-activation \
-        /run/ubs-v240-output-transition /run/ubs-v240-disconnect \
-        /run/ubs-v240-completion /run/ubs-v240-wireguard \
-        /run/ubs-v240-public-session; do
+        /run/mvc-public-session; do
         p=$(mvc24i_target "$rel")
         [[ ! -e $p && ! -L $p ]] || mvc24i_die "managed runtime state is present; refuse package maintenance: $rel"
     done
@@ -213,7 +165,7 @@ mvc24i_verify_installed() {
     mvc24i_verify_one "$dual_dst" 700 "$dual_sha" 'dual recovery tool'
     [[ $($controller_dst version) == 'Multi VPN Controller 2.4.1' ]] || mvc24i_die 'installed controller version mismatch'
     info=$($controller_dst --monolith-build-info) || mvc24i_die 'installed controller provenance unreadable'
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R6D_FINAL_LEGACY_AUDIT ]] || mvc24i_die 'installed controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R7_STANDALONE_PUBLIC_IDENTITY ]] || mvc24i_die 'installed controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'installed emergency recovery identity mismatch'
     [[ $(mvc24i_info_value "$info" dual_recovery_sha256) == "$dual_sha" ]] || mvc24i_die 'installed dual recovery identity mismatch'
 }
@@ -239,7 +191,6 @@ mvc24i_install_or_update() {
     mvc24i_assert_target_replaceable "$emergency_dst"
     mvc24i_assert_target_replaceable "$dual_dst"
     mvc24i_assert_existing_identity
-    mvc24i_assert_legacy_identity
 
     emergency_tmp=$(mvc24i_stage_file "$emergency_src" "$emergency_dst" 700) || mvc24i_die 'failed to stage emergency recovery tool'
     dual_tmp=$(mvc24i_stage_file "$dual_src" "$dual_dst" 700) || { rm -f -- "$emergency_tmp"; mvc24i_die 'failed to stage dual recovery tool'; }
@@ -252,7 +203,6 @@ mvc24i_install_or_update() {
     mv -fT -- "$controller_tmp" "$controller_dst" || { rm -f -- "$controller_tmp"; mvc24i_die 'failed to commit controller; recovery tools may already be updated, which is fail-closed'; }
 
     mvc24i_verify_installed
-    mvc24i_retire_legacy_if_present
     printf 'RESULT: MULTI VPN CONTROLLER 2.4.1 FILE SET INSTALLED AND VERIFIED%s\n' "$( [[ $root_prefix == / ]] && printf '' || printf ' IN FAKE ROOT' )"
 }
 

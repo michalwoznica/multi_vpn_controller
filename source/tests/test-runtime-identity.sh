@@ -6,53 +6,43 @@ P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
 fail(){ printf 'FAIL: %s\n' "$1"; F=$((F+1)); }
 
-# Public/runtime-visible namespace must be MVC-native. The installer is allowed
-# to mention legacy /run/ubs-v240-* roots solely to refuse package maintenance
-# during migration from the physically proven predecessor.
-legacy_hits=$(
-  cd "$ROOT"
-  rg -n --hidden --glob '!.handoff/**' --glob '!dist/**' --glob '!source/tests/**' \
-    '/run/ubs-v240-|vpn_v240_preclone_|ubs-v240-prepared-|/dev/shm/ubs-v240-monolith-assets' . || :
-)
-if [[ -z $legacy_hits ]] || ! grep -vE '^\./source/tools/install-mvc\.sh:.*\/run\/ubs-v240-' <<<"$legacy_hits" | grep -q .; then
-  pass 'runtime-visible namespace contains no legacy UBS paths/tables outside installer migration guard'
-else
-  printf '%s\n' "$legacy_hits" >&2
-  fail 'runtime-visible namespace contains no legacy UBS paths/tables outside installer migration guard'
-fi
-
 rg -q '/run/mvc-public-session' "$ROOT/source/lib/combined-operational-public-composition.sh" &&
   rg -q '/run/mvc-wireguard' "$ROOT/source/lib/combined-operational-d4-wireguard-parallel-live.sh" &&
-  pass 'production session roots use mvc namespace' || fail 'production session roots use mvc namespace'
+  pass 'production session roots use MVC namespace' || fail 'production session roots use MVC namespace'
 
 rg -q 'mvc_preclone_quarantine' "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft" &&
   rg -q 'mvc_preclone_bridge' "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft" &&
   rg -q 'mvc_preclone_underlay' "$ROOT/source/lib/combined-operational-host-guard-transaction.sh" &&
-  pass 'B4 nftables tables use mvc namespace' || fail 'B4 nftables tables use mvc namespace'
+  pass 'B4 nftables tables use MVC namespace' || fail 'B4 nftables tables use MVC namespace'
 
-rg -q '/run/ubs-v240-controller' "$ROOT/source/tools/install-mvc.sh" &&
-  rg -q '/run/mvc-controller' "$ROOT/source/tools/install-mvc.sh" &&
-  pass 'installer refuses both legacy and MVC runtime roots during migration' || fail 'installer refuses both legacy and MVC runtime roots during migration'
+installer=$ROOT/source/tools/install-mvc.sh
+roots=(controller activation output-transition disconnect completion wireguard public-session)
+missing=0
+for r in "${roots[@]}"; do rg -Fq "/run/mvc-$r" "$installer" || missing=$((missing+1)); done
+[[ $missing -eq 0 ]] && pass 'installer quiescence guard covers all MVC runtime roots' || fail 'installer quiescence guard covers all MVC runtime roots'
 
+# Build the retired helper prefixes without embedding predecessor product literals in this public fixture.
+old_lower=$(printf '%s%s%s' 'ub' 's' '24')
+old_upper=$(printf '%s%s%s' 'UB' 'S' '24')
 if rg -q 'mvc24pub' "$ROOT/source/lib/combined-operational-public-connect.sh" &&
-   ! rg -n --glob '*.sh' '^(function[[:space:]]+)?ubs24[A-Za-z0-9_]+[[:space:]]*\(\)' "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
-  pass 'lowercase internal function namespace migrated to mvc24'
+   ! rg -n --glob '*.sh' "^(function[[:space:]]+)?${old_lower}[A-Za-z0-9_]+[[:space:]]*\\(\\)" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
+  pass 'lowercase internal function namespace is MVC-native'
 else
-  fail 'lowercase internal function namespace migrated to mvc24'
+  fail 'lowercase internal function namespace is MVC-native'
 fi
 
-if ! grep -q 'UBS ROUTE PROTOCOLS\|UBS NFT TABLES' "$ROOT/source/tools/verify-mvc-state-readonly.sh"; then
+if grep -Fq 'MVC ROUTE PROTOCOLS' "$ROOT/source/tools/verify-mvc-state-readonly.sh" &&
+   grep -Fq 'MVC NFT TABLES' "$ROOT/source/tools/verify-mvc-state-readonly.sh"; then
   pass 'verifier headings are MVC-native'
 else
   fail 'verifier headings are MVC-native'
 fi
 
-legacy_upper='UBS''24'
-if ! rg -n --glob '*.sh' "${legacy_upper}[A-Za-z0-9_]*" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
-  pass 'uppercase internal variable/constant namespace migrated to MVC24'
+if ! rg -n --glob '*.sh' "${old_upper}[A-Za-z0-9_]*" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
+  pass 'uppercase internal variable/constant namespace is MVC-native'
 else
-  fail 'uppercase internal variable/constant namespace migrated to MVC24'
+  fail 'uppercase internal variable/constant namespace is MVC-native'
 fi
 
-printf 'RESULT: MVC-R3B internal namespace %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC internal runtime identity %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

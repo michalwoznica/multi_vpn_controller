@@ -12,8 +12,6 @@ MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 
 [[ -f $NFT && ! -L $NFT ]] && pass 'MVC nftables support resource exists as regular file' || fail 'MVC nftables support resource exists as regular file'
 [[ -f $PROBE && ! -L $PROBE && -x $PROBE ]] && pass 'MVC OpenVPN read-only helper exists and is executable' || fail 'MVC OpenVPN read-only helper exists and is executable'
-[[ ! -e $ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft ]] && pass 'retired nftables support filename absent' || fail 'retired nftables support filename absent'
-[[ ! -e $ROOT/source/tools/check-v240-live-saved-ovpn-readonly.sh ]] && pass 'retired OpenVPN helper filename absent' || fail 'retired OpenVPN helper filename absent'
 
 nft_sha=$(sha256sum "$NFT" | awk '{print $1}')
 probe_sha=$(sha256sum "$PROBE" | awk '{print $1}')
@@ -28,15 +26,11 @@ else
   fail 'manifest pins MVC OpenVPN helper filename and content hash'
 fi
 
-old_refs=$(rg -l 'vpn-v240-preclone-quarantine-offline\.nft|check-v240-live-saved-ovpn-readonly\.sh' \
-  "$ROOT/source/build" "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/nftables" || true)
-[[ -z $old_refs ]] && pass 'production/build source has no retired support filenames' || { printf '%s\n' "$old_refs" >&2; fail 'production/build source has no retired support filenames'; }
-
-if rg -q '/usr/local/sbin/ubs-vpn|/root/ubs-v240-|/run/ubs-v240-' "$ROOT/source/tools/install-mvc.sh"; then
-  pass 'legacy installed UBS compatibility remains in installer'
+if rg -Fq '/run/mvc-controller' "$ROOT/source/tools/install-mvc.sh"; then
+  pass 'installer maintenance guard uses MVC runtime namespace'
 else
-  fail 'legacy installed UBS compatibility remains in installer'
+  fail 'installer maintenance guard uses MVC runtime namespace'
 fi
 
-printf 'RESULT: MVC-R6B support/resource filename migration %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC support/resource filenames %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

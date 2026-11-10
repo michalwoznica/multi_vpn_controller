@@ -62,4 +62,4 @@ The suite is hermetic and does not require live VPN activation.
 
 ## Internal compatibility names
 
-The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership uses `/run/mvc-*` and `mvc_preclone_*`. Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated record signatures are MVC-native and runtime module filenames are version-neutral. Explicit recognition of the physically proven pre-MVC installation remains only where required for safe migration compatibility.
+The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership uses `/run/mvc-*` and `mvc_preclone_*`. Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated record signatures are MVC-native and runtime module filenames are version-neutral. The public project contains no predecessor-specific migration compatibility; any private development-host migration is handled outside the Git-facing tree.

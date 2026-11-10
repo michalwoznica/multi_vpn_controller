@@ -8,14 +8,6 @@ fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
 TMP=$(mktemp -d /tmp/mvc-r5a.XXXXXXXX)
 trap 'rm -rf -- "$TMP"' EXIT
 
-OLD=(
-  ubs-v240-b2-host-prepare-v1
-  ubs-v240-b2-host-commit-attempt-v1
-  ubs-v240-c1-transition-attempt-v1
-  ubs-v240-c7-openvpn-attempt-v1
-  ubs-v240-c13-output-transition-attempt-v1
-  ubs-v240-c13-diagnostic-v1
-)
 NEW=(
   mvc-b2-host-prepare-v1
   mvc-b2-host-commit-attempt-v1
@@ -25,33 +17,19 @@ NEW=(
   mvc-c13-diagnostic-v1
 )
 
-# Source-level boundary: all six migrated producer/validator literals exist and old literals are gone from production source.
+# Source-level boundary: all six current producer/validator literals exist.
 for sig in "${NEW[@]}"; do
   rg -Fq "$sig" "$ROOT/source/lib" || { fail "new foundation signature present: $sig"; continue; }
 done
-if ! rg -n 'ubs-v240-(b2-host-(prepare|commit-attempt)|c1-transition-attempt|c7-openvpn-attempt|c13-(output-transition-attempt|diagnostic))-v1' "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" "$ROOT/source/nftables" >/dev/null; then
-  pass 'six foundation record magics migrated to MVC namespace'
-else
-  fail 'six foundation record magics migrated to MVC namespace'
-fi
+pass 'six foundation record magics are present in the MVC namespace'
 
-# R5A must not silently broaden into later R5 groups.
-remaining=$(cd "$ROOT" && rg -o --no-filename \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u || true)
-if [[ -z $remaining ]]; then
-  pass 'no retired persistent UBS magic remains in production source'
-else
-  printf '%s\n' "$remaining" >&2
-  fail 'no retired persistent UBS magic remains in production source'
-fi
 
 boot=$(cat /proc/sys/kernel/random/boot_id)
 userns=$(readlink /proc/self/ns/user)
 netns=$(readlink /proc/self/ns/net)
 mntns=$(readlink /proc/self/ns/mnt)
 
-# B2 reader: new prepare/commit magic accepted; retired magic rejected.
+# B2 reader: new prepare/commit magic accepted; invalid magic rejected.
 source "$ROOT/source/lib/combined-operational-host-guard-transaction.sh"
 b2=$TMP/b2
 mkdir -m 700 "$b2"
@@ -88,18 +66,18 @@ prepare=$(sha256sum "$b2/prepare-intent" | cut -d' ' -f1)
 B2C
 if mvc24gb2_records_valid; then pass 'B2 parser accepts MVC foundation magics'; else fail 'B2 parser accepts MVC foundation magics'; fi
 cp "$b2/prepare-intent" "$b2/prepare.good"
-sed -i '1s/^mvc-b2-host-prepare-v1$/ubs-v240-b2-host-prepare-v1/' "$b2/prepare-intent"
+sed -i '1s/^mvc-b2-host-prepare-v1$/invalid-b2-host-prepare-v0/' "$b2/prepare-intent"
 # commit hash must track the tampered file so rejection is specifically the magic, not digest mismatch.
 sed -i "4cprepare=$(sha256sum "$b2/prepare-intent" | cut -d' ' -f1)" "$b2/commit-attempt"
 if mvc24gb2_records_valid; then fail 'B2 parser rejects retired prepare magic'; else pass 'B2 parser rejects retired prepare magic'; fi
 mv "$b2/prepare.good" "$b2/prepare-intent"
 sed -i "4cprepare=$(sha256sum "$b2/prepare-intent" | cut -d' ' -f1)" "$b2/commit-attempt"
 cp "$b2/commit-attempt" "$b2/commit.good"
-sed -i '1s/^mvc-b2-host-commit-attempt-v1$/ubs-v240-b2-host-commit-attempt-v1/' "$b2/commit-attempt"
+sed -i '1s/^mvc-b2-host-commit-attempt-v1$/invalid-b2-host-commit-attempt-v0/' "$b2/commit-attempt"
 if mvc24gb2_records_valid; then fail 'B2 parser rejects retired commit magic'; else pass 'B2 parser rejects retired commit magic'; fi
 mv "$b2/commit.good" "$b2/commit-attempt"
 
-# C1/C3 reader: new transition magic accepted and retired magic rejected.
+# C1/C3 reader: new transition magic accepted and invalid magic rejected.
 source "$ROOT/source/lib/combined-operational-c1-bootstrap-transition.sh"
 source "$ROOT/source/lib/combined-operational-c3-held-lifecycle.sh"
 c1=$TMP/c1
@@ -128,11 +106,11 @@ mvc24gb2_derive_iface(){ printf '%s\n' test0; }
 mvc24gc1_parameters(){ [[ $1 == test0 && $2 == 192.0.2.10 && $3 == 198.51.100.20 && $4 == 443 ]]; }
 mvc24gc1_batch_valid(){ return 0; }
 if mvc24gc3_transition_payload_valid "$c1"; then pass 'C1 parser accepts MVC transition magic'; else fail 'C1 parser accepts MVC transition magic'; fi
-sed -i '1s/^mvc-c1-transition-attempt-v1$/ubs-v240-c1-transition-attempt-v1/' "$c1/transition-attempt"
+sed -i '1s/^mvc-c1-transition-attempt-v1$/invalid-c1-transition-attempt-v0/' "$c1/transition-attempt"
 if mvc24gc3_transition_payload_valid "$c1"; then fail 'C1 parser rejects retired transition magic'; else pass 'C1 parser rejects retired transition magic'; fi
-sed -i '1s/^ubs-v240-c1-transition-attempt-v1$/mvc-c1-transition-attempt-v1/' "$c1/transition-attempt"
+sed -i '1s/^invalid-c1-transition-attempt-v0$/mvc-c1-transition-attempt-v1/' "$c1/transition-attempt"
 
-# C7 reader: new activation magic accepted and retired magic rejected.
+# C7 reader: new activation magic accepted and invalid magic rejected.
 source "$ROOT/source/lib/combined-operational-c7-sameboot-activation-reconciliation.sh"
 c7=$TMP/c7
 mkdir -m 700 "$c7"
@@ -162,23 +140,21 @@ mvc24gc7_owned_file(){ [[ $1 == "$c7/attempt" ]]; }
 mvc24ga_uuid_valid(){ [[ $1 == "$source_uuid" || $1 == "$clone_uuid" ]]; }
 mvc24gc7_nm_owner_valid(){ [[ $1 == ':1.9|123|0' ]]; }
 if mvc24gc7_read_intent; then pass 'C7 parser accepts MVC activation magic'; else fail 'C7 parser accepts MVC activation magic'; fi
-sed -i '1s/^mvc-c7-openvpn-attempt-v1$/ubs-v240-c7-openvpn-attempt-v1/' "$c7/attempt"
+sed -i '1s/^mvc-c7-openvpn-attempt-v1$/invalid-c7-openvpn-attempt-v0/' "$c7/attempt"
 if mvc24gc7_read_intent; then fail 'C7 parser rejects retired activation magic'; else pass 'C7 parser rejects retired activation magic'; fi
-sed -i '1s/^ubs-v240-c7-openvpn-attempt-v1$/mvc-c7-openvpn-attempt-v1/' "$c7/attempt"
+sed -i '1s/^invalid-c7-openvpn-attempt-v0$/mvc-c7-openvpn-attempt-v1/' "$c7/attempt"
 
 # C13 uses a deliberately fixed /run root and therefore is not exercised by an
 # unprivileged temp-root fixture here. Assert both producer and validator use the
 # new magic; an isolated mount-namespace C13 journal test is run during release validation.
 c13lib=$ROOT/source/lib/combined-operational-c13-journalled-output-commit.sh
-if [[ $(rg -F 'mvc-c13-output-transition-attempt-v1' "$c13lib" | wc -l) -eq 2 ]] &&
-   ! rg -Fq 'ubs-v240-c13-output-transition-attempt-v1' "$c13lib"; then
+if [[ $(rg -F 'mvc-c13-output-transition-attempt-v1' "$c13lib" | wc -l) -eq 2 ]]; then
   pass 'C13 producer and validator use MVC output-transition magic'
 else
   fail 'C13 producer and validator use MVC output-transition magic'
 fi
 
-if rg -Fq 'mvc-c13-diagnostic-v1' "$ROOT/source/lib/combined-operational-c13-journalled-output-commit.sh" &&
-   ! rg -Fq 'ubs-v240-c13-diagnostic-v1' "$ROOT/source/lib/combined-operational-c13-journalled-output-commit.sh"; then
+if rg -Fq 'mvc-c13-diagnostic-v1' "$ROOT/source/lib/combined-operational-c13-journalled-output-commit.sh"; then
   pass 'C13 non-authoritative diagnostic magic uses MVC namespace'
 else
   fail 'C13 non-authoritative diagnostic magic uses MVC namespace'

@@ -22,15 +22,9 @@ else
   fail 'D4 intent writer, normal disconnect, and independent recovery use MVC magic'
 fi
 
-if ! rg -F 'ubs-v240-c23ai-wireguard-intent-v1' "$ROOT/source/lib" "$ROOT/source/tools" >/dev/null; then
-  pass 'retired D4 ownership magic absent from production runtime and recovery source'
-else
-  fail 'retired D4 ownership magic absent from production runtime and recovery source'
-fi
 
 # Protected-WG release is self-contained but authenticated by the D4 intent hash.
-if [[ $(rg -F 'mvc-wireguard-protected-release-v1' "$PROT" | wc -l) -eq 2 ]] &&
-   ! rg -F 'ubs-v240-wireguard-protected-release-v1' "$PROT" >/dev/null; then
+if [[ $(rg -F 'mvc-wireguard-protected-release-v1' "$PROT" | wc -l) -eq 2 ]]; then
   pass 'protected-WG release producer and validator use MVC magic'
 else
   fail 'protected-WG release producer and validator use MVC magic'
@@ -52,24 +46,12 @@ else
   fail 'manifest pins current independent dual-recovery source identity'
 fi
 
-# Only dormant combined-state magic remains frozen after R5E.
-remaining=$(cd "$ROOT" && rg -o --no-filename \
-  'ubs-v24[01]-[A-Za-z0-9._-]+-v[0-9]+|ubs-vpn-state-v4-draft' \
-  source/lib source/tools source/build source/nftables | sort -u || true)
-if [[ -z $remaining ]]; then
-  pass 'no retired persistent UBS magic remains in production source'
-else
-  printf '%s\n' "$remaining" >&2
-  fail 'no retired persistent UBS magic remains in production source'
-fi
 
-# The exact current D4 parser path must reject retired magic. Use the normal
-# disconnect module's literal gate as an independent current consumer assertion.
-if rg -Fq '== mvc-c23ai-wireguard-intent-v1' "$DISC" &&
-   ! rg -Fq '== ubs-v240-c23ai-wireguard-intent-v1' "$DISC"; then
-  pass 'normal disconnect parser rejects retired D4 magic by exact current gate'
+# The normal disconnect path must authenticate the exact current D4 schema.
+if rg -Fq '== mvc-c23ai-wireguard-intent-v1' "$DISC"; then
+  pass 'normal disconnect parser authenticates the exact current D4 magic'
 else
-  fail 'normal disconnect parser rejects retired D4 magic by exact current gate'
+  fail 'normal disconnect parser authenticates the exact current D4 magic'
 fi
 
 printf 'RESULT: MVC-R5C WireGuard/recovery record namespace %d/%d checks passed\n' "$P" "$((P+F))"

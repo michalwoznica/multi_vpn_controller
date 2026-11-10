@@ -41,4 +41,4 @@ The installed files are:
 /root/mvc-dual-recovery
 ```
 
-The installer also recognizes the exact approved pre-MVC 2.4.0 file set and can migrate it to the MVC filenames during a controlled update. Unrecognized existing files are never overwritten.
+The installer manages MVC installations only. Existing MVC files are replaced only when their identity matches the current package; unrecognized existing files are never overwritten.
