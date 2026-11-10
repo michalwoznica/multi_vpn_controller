@@ -169,7 +169,7 @@ mvc24pube_preclone_intent_valid() {
     tx=$(mvc24pube_sha "$runtime/transaction") || return 1
     prepare=$(mvc24pube_sha /run/mvc-controller/prepare-intent) || return 1
     commit=$(mvc24pube_sha /run/mvc-controller/commit-attempt) || return 1
-    [[ ${rows[0]} == ubs-v240-public-preclone-intent-v1 &&
+    [[ ${rows[0]} == mvc-public-preclone-intent-v1 &&
        ${rows[1]} == state=name-absent-bound-before-nm-clone-write &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
        ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" &&
@@ -209,7 +209,7 @@ mvc24pube_preclone_binding_valid() {
     [[ -f $path && ! -L $path && $(stat -c '%u:%a:%h' -- "$path") == '0:400:1' ]] || return 1
     mapfile -t rows < "$path" || return 1; (( ${#rows[@]} == 8 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)") || return 1
-    [[ ${rows[0]} == ubs-v240-public-preclone-binding-v1 && ${rows[1]} == state=raw-clone-uuid-observed-before-hardening &&
+    [[ ${rows[0]} == mvc-public-preclone-binding-v1 && ${rows[1]} == state=raw-clone-uuid-observed-before-hardening &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "preclone=$pre" && ${rows[4]} == "source_uuid=$MVC24PUBE_SOURCE_UUID" &&
        ${rows[5]} == "clone_name=$MVC24PUBE_PRECLONE_NAME" && ${rows[6]} == clone_uuid=* && ${rows[7]} == "nm_owner=$MVC24PUBE_NM_OWNER" ]] || return 1
     MVC24PUBE_PRECLONE_UUID=${rows[6]#clone_uuid=}
@@ -311,7 +311,7 @@ mvc24pube_preclone_delete_intent_valid() {
     [[ -f $path && ! -L $path && $(stat -c '%u:%a:%h' -- "$path") == '0:400:1' ]] || return 1
     mapfile -t rows < "$path" || return 1; (( ${#rows[@]} == 8 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)") || return 1
-    [[ ${rows[0]} == ubs-v240-public-preclone-delete-v1 && ${rows[1]} == state=delete-attempt-authorized-once &&
+    [[ ${rows[0]} == mvc-public-preclone-delete-v1 && ${rows[1]} == state=delete-attempt-authorized-once &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "preclone=$pre" && ${rows[4]} == "source=$MVC24PUBE_SOURCE_UUID" &&
        ${rows[5]} == "clone_name=$MVC24PUBE_PRECLONE_NAME" && ${rows[6]} == clone_uuid=* && ${rows[7]} == "nm_owner=$MVC24PUBE_NM_OWNER" ]] || return 1
     MVC24PUBE_PRECLONE_UUID=${rows[6]#clone_uuid=}; mvc24ga_uuid_valid "$MVC24PUBE_PRECLONE_UUID"
@@ -324,7 +324,7 @@ mvc24pube_preclone_publish_delete_intent() {
     [[ -n ${MVC24PUBE_PRECLONE_UUID:-} && ! -e $path && ! -L $path ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)") || return 1
     tmp="$(mvc24pube_runtime)/.preclone-delete.tmp"; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-preclone-delete-v1 state=delete-attempt-authorized-once "boot=$boot" "preclone=$pre" \
+    printf '%s\n' mvc-public-preclone-delete-v1 state=delete-attempt-authorized-once "boot=$boot" "preclone=$pre" \
       "source=$MVC24PUBE_SOURCE_UUID" "clone_name=$MVC24PUBE_PRECLONE_NAME" "clone_uuid=$MVC24PUBE_PRECLONE_UUID" "nm_owner=$MVC24PUBE_NM_OWNER" > "$tmp" || return 1
     mv -T -- "$tmp" "$path" || return 1; mvc24pube_preclone_delete_intent_valid
 }
@@ -355,7 +355,7 @@ mvc24pube_preclone_release_intent_valid() {
     mvc24gc23t_release_batch_valid "$batch" || return 1
     mapfile -t rows < "$intent" || return 1; (( ${#rows[@]} == 8 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)"); batch_sha=$(mvc24pube_sha "$batch") || return 1
-    [[ ${rows[0]} == ubs-v240-public-preclone-release-v1 && ${rows[1]} == state=owned-b4-delete-observation-driven &&
+    [[ ${rows[0]} == mvc-public-preclone-release-v1 && ${rows[1]} == state=owned-b4-delete-observation-driven &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "preclone=$pre" && ${rows[4]} == "batch=$batch_sha" &&
        ${rows[5]} == "source=$MVC24PUBE_SOURCE_UUID" && ${rows[6]} == "clone_name=$MVC24PUBE_PRECLONE_NAME" &&
        ( ${rows[7]} == guard=b2 || ${rows[7]} == guard=c1 ) ]]
@@ -382,7 +382,7 @@ mvc24pube_preclone_publish_release_intent() {
     fi
     boot=$(cat /proc/sys/kernel/random/boot_id); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)"); batch_sha=$(mvc24pube_sha "$batch") || return 1
     tmp="$(mvc24pube_runtime)/.preclone-release-intent.tmp"; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-preclone-release-v1 state=owned-b4-delete-observation-driven "boot=$boot" "preclone=$pre" "batch=$batch_sha" \
+    printf '%s\n' mvc-public-preclone-release-v1 state=owned-b4-delete-observation-driven "boot=$boot" "preclone=$pre" "batch=$batch_sha" \
       "source=$MVC24PUBE_SOURCE_UUID" "clone_name=$MVC24PUBE_PRECLONE_NAME" "guard=$MVC24PUBE_PRECLONE_GUARD" > "$tmp" || return 1
     mv -T -- "$tmp" "$intent" || return 1; mvc24pube_preclone_release_intent_valid
 }
@@ -409,7 +409,7 @@ mvc24pube_preclone_retire_intent_valid() {
     mapfile -t rows < "$path" || return 1; (( ${#rows[@]} == 15 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(mvc24pube_sha "$runtime/transaction"); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)"); release=$(mvc24pube_sha "$(mvc24pube_preclone_release_intent_path)") || return 1
-    [[ ${rows[0]} == ubs-v240-public-preclone-retire-v1 && ${rows[1]} == state=network-clean-runtime-retirement-pending &&
+    [[ ${rows[0]} == mvc-public-preclone-retire-v1 && ${rows[1]} == state=network-clean-runtime-retirement-pending &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" && ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" &&
        ${rows[6]} == "transaction=$tx" && ${rows[7]} == "preclone=$pre" && ${rows[8]} == "release=$release" &&
        ${rows[9]} == source=* && ${rows[10]} == clone_name=* && ${rows[11]} == token=* && ${rows[12]} == controller_entries=* &&
@@ -433,7 +433,7 @@ mvc24pube_preclone_publish_retire_intent() {
     boot=$(cat /proc/sys/kernel/random/boot_id); userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt) || return 1
     tx=$(mvc24pube_sha "$runtime/transaction"); pre=$(mvc24pube_sha "$(mvc24pube_preclone_intent_path)"); release=$(mvc24pube_sha "$(mvc24pube_preclone_release_intent_path)") || return 1
     tmp=$runtime/.preclone-retire.tmp; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-preclone-retire-v1 state=network-clean-runtime-retirement-pending \
+    printf '%s\n' mvc-public-preclone-retire-v1 state=network-clean-runtime-retirement-pending \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" "transaction=$tx" "preclone=$pre" "release=$release" \
       "source=$MVC24PUBE_SOURCE_UUID" "clone_name=$MVC24PUBE_PRECLONE_NAME" "token=$MVC24PUBE_PRECLONE_TOKEN" "controller_entries=$entries" "transition=$transition" \
       "nm_owner=$MVC24PUBE_NM_OWNER" > "$tmp" || return 1
@@ -539,7 +539,7 @@ mvc24pube_plan_valid() {
            $(stat -c '%u:%a:%h' -- /run/mvc-output-transition/attempt 2>/dev/null) == '0:400:1' ]] || return 1
         expected_c13=$(mvc24pube_sha /run/mvc-output-transition/attempt) || return 1
     fi
-    [[ ${rows[0]} == ubs-v240-public-early-openvpn-cleanup-v1 &&
+    [[ ${rows[0]} == mvc-public-early-openvpn-cleanup-v1 &&
        ${rows[1]} == state=cleanup-authorized-observation-driven &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
        ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" &&
@@ -575,7 +575,7 @@ mvc24pube_publish_plan() {
     tmp=$runtime/.early-plan.tmp
     : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
     printf '%s\n' \
-      ubs-v240-public-early-openvpn-cleanup-v1 \
+      mvc-public-early-openvpn-cleanup-v1 \
       state=cleanup-authorized-observation-driven \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "transaction=$tx" "c1=$c1" "c7=$c7" "c13=$c13" \
@@ -629,7 +629,7 @@ mvc24pube_publish_handback_intent() {
     chmod 400 -- "$tmp" || return 1; mv -T -- "$tmp" "$batch" || return 1
     plan_sha=$(mvc24pube_sha "$plan") || return 1; batch_sha=$(mvc24pube_sha "$batch") || return 1; boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     tmp=$runtime/.early-handback-intent.tmp; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-early-handback-v1 state=c11-to-c1-observation-driven "boot=$boot" "plan=$plan_sha" "batch=$batch_sha" "clone=$MVC24PUBE_CLONE_UUID" > "$tmp" || return 1
+    printf '%s\n' mvc-public-early-handback-v1 state=c11-to-c1-observation-driven "boot=$boot" "plan=$plan_sha" "batch=$batch_sha" "clone=$MVC24PUBE_CLONE_UUID" > "$tmp" || return 1
     mv -T -- "$tmp" "$intent" || return 1
 }
 
@@ -642,7 +642,7 @@ mvc24pube_handback_intent_valid() {
     boot=$(cat /proc/sys/kernel/random/boot_id); plan_sha=$(mvc24pube_sha "$plan"); batch_sha=$(mvc24pube_sha "$batch") || return 1
     # Bind the immutable candidate hash and let nft's parser validate the
     # generated C1 handback syntax; this is not the three-table release batch.
-    [[ ${rows[0]} == ubs-v240-public-early-handback-v1 && ${rows[1]} == state=c11-to-c1-observation-driven &&
+    [[ ${rows[0]} == mvc-public-early-handback-v1 && ${rows[1]} == state=c11-to-c1-observation-driven &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "plan=$plan_sha" && ${rows[4]} == "batch=$batch_sha" &&
        ${rows[5]} == "clone=$MVC24PUBE_CLONE_UUID" ]] && nft --check --file "$batch" >/dev/null 2>&1
 }
@@ -668,7 +668,7 @@ mvc24pube_publish_simple_intent() {
     [[ ! -e $path && ! -L $path ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     tmp=$runtime/.early-${kind}.tmp; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' "ubs-v240-public-early-${kind}-v1" state=observation-driven-cleanup "boot=$boot" "plan=$plan_sha" "source=$MVC24PUBE_SOURCE_UUID" "clone=$MVC24PUBE_CLONE_UUID" "nm_owner=$MVC24PUBE_NM_OWNER" > "$tmp" || return 1
+    printf '%s\n' "mvc-public-early-${kind}-v1" state=observation-driven-cleanup "boot=$boot" "plan=$plan_sha" "source=$MVC24PUBE_SOURCE_UUID" "clone=$MVC24PUBE_CLONE_UUID" "nm_owner=$MVC24PUBE_NM_OWNER" > "$tmp" || return 1
     mv -T -- "$tmp" "$path" || return 1
 }
 
@@ -678,7 +678,7 @@ mvc24pube_simple_intent_valid() {
     [[ -f $path && ! -L $path && $(stat -c '%u:%a:%h' -- "$path") == '0:400:1' ]] || return 1
     mapfile -t rows < "$path" || return 1; (( ${#rows[@]} == 7 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); plan_sha=$(mvc24pube_sha "$(mvc24pube_plan_path)") || return 1
-    [[ ${rows[0]} == "ubs-v240-public-early-${kind}-v1" && ${rows[1]} == state=observation-driven-cleanup &&
+    [[ ${rows[0]} == "mvc-public-early-${kind}-v1" && ${rows[1]} == state=observation-driven-cleanup &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "plan=$plan_sha" &&
        ${rows[4]} == "source=$MVC24PUBE_SOURCE_UUID" && ${rows[5]} == "clone=$MVC24PUBE_CLONE_UUID" &&
        ${rows[6]} == "nm_owner=$MVC24PUBE_NM_OWNER" ]]
@@ -769,7 +769,7 @@ mvc24pube_publish_release_intent() {
     chmod 400 -- "$tmp" || return 1; mv -T -- "$tmp" "$batch" || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); plan_sha=$(mvc24pube_sha "$(mvc24pube_plan_path)"); batch_sha=$(mvc24pube_sha "$batch") || return 1
     tmp=$runtime/.early-release-intent.tmp; : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-early-guard-release-v1 state=owned-b4-delete-observation-driven "boot=$boot" "plan=$plan_sha" "batch=$batch_sha" "clone=$MVC24PUBE_CLONE_UUID" > "$tmp" || return 1
+    printf '%s\n' mvc-public-early-guard-release-v1 state=owned-b4-delete-observation-driven "boot=$boot" "plan=$plan_sha" "batch=$batch_sha" "clone=$MVC24PUBE_CLONE_UUID" > "$tmp" || return 1
     mv -T -- "$tmp" "$intent" || return 1
 }
 
@@ -781,7 +781,7 @@ mvc24pube_release_intent_valid() {
     mvc24gc23t_release_batch_valid "$batch" || return 1
     mapfile -t rows < "$intent" || return 1; (( ${#rows[@]} == 6 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id); plan_sha=$(mvc24pube_sha "$(mvc24pube_plan_path)"); batch_sha=$(mvc24pube_sha "$batch") || return 1
-    [[ ${rows[0]} == ubs-v240-public-early-guard-release-v1 && ${rows[1]} == state=owned-b4-delete-observation-driven &&
+    [[ ${rows[0]} == mvc-public-early-guard-release-v1 && ${rows[1]} == state=owned-b4-delete-observation-driven &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "plan=$plan_sha" && ${rows[4]} == "batch=$batch_sha" &&
        ${rows[5]} == "clone=$MVC24PUBE_CLONE_UUID" ]]
 }
@@ -826,7 +826,7 @@ mvc24pube_retire_intent_valid() {
     tx_sha=$(mvc24pube_sha "$runtime/transaction") || return 1
     plan_sha=$(mvc24pube_sha "$(mvc24pube_plan_path)") || return 1
     release_sha=$(mvc24pube_sha "$(mvc24pube_release_intent_path)") || return 1
-    [[ ${rows[0]} == ubs-v240-public-early-retire-v1 &&
+    [[ ${rows[0]} == mvc-public-early-retire-v1 &&
        ${rows[1]} == state=network-clean-runtime-retirement-pending &&
        ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
        ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" &&
@@ -869,7 +869,7 @@ mvc24pube_publish_retire_intent() {
     release_sha=$(mvc24pube_sha "$(mvc24pube_release_intent_path)") || return 1
     tmp=$runtime/.early-retire-intent.tmp
     : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-early-retire-v1 \
+    printf '%s\n' mvc-public-early-retire-v1 \
       state=network-clean-runtime-retirement-pending \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "transaction=$tx_sha" "plan=$plan_sha" "release=$release_sha" \
@@ -911,7 +911,7 @@ mvc24pube_retire_plan_hashes() {
     [[ -f $plan && ! -L $plan ]] || return 1
     mapfile -t rows < "$plan" || return 1
     (( ${#rows[@]} == 14 )) || return 1
-    [[ ${rows[0]} == ubs-v240-public-early-openvpn-cleanup-v1 &&
+    [[ ${rows[0]} == mvc-public-early-openvpn-cleanup-v1 &&
        ${rows[1]} == state=cleanup-authorized-observation-driven &&
        ${rows[9]} == c13=* ]] || return 1
     MVC24PUBE_RETIRE_C1_SHA=${rows[7]#c1=}

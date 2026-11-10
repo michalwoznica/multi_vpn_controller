@@ -41,11 +41,11 @@ remaining=$(cd "$ROOT" && rg -o --no-filename \
   source/lib source/tools source/build source/nftables | sort -u)
 remaining_sha=$(printf '%s\n' "$remaining" | sha256sum | awk '{print $1}')
 remaining_count=$(printf '%s\n' "$remaining" | sed '/^$/d' | wc -l)
-if [[ $remaining_count == 19 && $remaining_sha == 6346769bb1ac43c961c8678e2fccd6166211aac4cc5a8dee7ffc22fd629de63f ]]; then
-  pass 'R5B-R5E and dormant legacy record magics remain frozen'
+if [[ $remaining_count == 10 && $remaining_sha == 657dcc54a28acdb91c68272823d741b87eb37b62ae48b2d62466f46af65c7e94 ]]; then
+  pass 'R5C-R5E and dormant legacy record magics remain frozen'
 else
   printf '%s\n' "$remaining" >&2
-  fail 'R5B-R5E and dormant legacy record magics remain frozen'
+  fail 'R5C-R5E and dormant legacy record magics remain frozen'
 fi
 
 boot=$(cat /proc/sys/kernel/random/boot_id)

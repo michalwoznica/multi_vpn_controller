@@ -22,6 +22,7 @@ TESTS=(
   test-runtime-identity.sh
   test-nonpersistent-literal-cleanup.sh
   test-persistent-foundation-namespace.sh
+  test-persistent-preclone-early-namespace.sh
 )
 
 passed=0

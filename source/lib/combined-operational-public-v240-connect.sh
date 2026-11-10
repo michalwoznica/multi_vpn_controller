@@ -301,7 +301,7 @@ mvc24pubc_publish_preclone_intent() {
     : > "$tmp" || return 1
     chmod 400 -- "$tmp" || return 1
     printf '%s\n' \
-      ubs-v240-public-preclone-intent-v1 \
+      mvc-public-preclone-intent-v1 \
       state=name-absent-bound-before-nm-clone-write \
       "boot=$boot" "userns=$userns" "netns=$netns" "mntns=$mntns" \
       "transaction=$tx" "controller_prepare=$prepare" "controller_commit=$commit" \
@@ -330,7 +330,7 @@ mvc24pubc_publish_preclone_binding() {
     pre=$(mvc24pubc_hash_file "$intent") || return 1
     tmp=$runtime/.preclone-binding.tmp
     : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
-    printf '%s\n' ubs-v240-public-preclone-binding-v1 state=raw-clone-uuid-observed-before-hardening \
+    printf '%s\n' mvc-public-preclone-binding-v1 state=raw-clone-uuid-observed-before-hardening \
       "boot=$boot" "preclone=$pre" "source_uuid=$source_uuid" "clone_name=$clone_name" \
       "clone_uuid=$clone_uuid" "nm_owner=$MVC24PUBC_NM_OWNER" > "$tmp" || return 1
     if ! mv -T -- "$tmp" "$path"; then rm -f -- "$tmp" >/dev/null 2>&1 || :; return 1; fi
