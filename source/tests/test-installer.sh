@@ -27,7 +27,7 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R2_RUNTIME_IDENTITY' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R3A_LOWERCASE_NAMESPACE' <<<"$info" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$info"; then
     ok 'v2.4.1 provenance records candidate with physical proof pending'
 else
@@ -35,9 +35,9 @@ else
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
-   grep -Fq 'ubs24e_dispatch "$@"' "$A" &&
-   ! grep -Fq 'ubs24mon_stage3b_refuse_lifecycle' "$A" &&
-   ! grep -Fq 'return 78' < <(awk '/^ubs24mon_stage5_main\(\)/,/^}/' "$A"); then
+   grep -Fq 'mvc24e_dispatch "$@"' "$A" &&
+   ! grep -Fq 'mvc24mon_stage3b_refuse_lifecycle' "$A" &&
+   ! grep -Fq 'return 78' < <(awk '/^mvc24mon_stage5_main\(\)/,/^}/' "$A"); then
     ok 'generated outer wrapper contains no Stage-3B lifecycle refusal and delegates to dispatcher'
 else
     bad 'generated outer wrapper contains no Stage-3B lifecycle refusal and delegates to dispatcher'
@@ -54,12 +54,12 @@ set -euo pipefail
 body=$BODY
 # shellcheck disable=SC1090
 source "$body"
-ubs24e_dispatch() {
+mvc24e_dispatch() {
     printf 'DISPATCH'
     printf '|%s' "$@"
     printf '\n'
 }
-ubs24mon_stage5_main "$@"
+mvc24mon_stage5_main "$@"
 SPY
 )
     printf '%s\n' "$out"

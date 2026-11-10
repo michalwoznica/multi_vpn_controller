@@ -6,7 +6,7 @@
 
 # Optional diagnostics never print profile contents or raw GVariant data.
 # Enabled only for a deliberate read-only probe invocation.
-ubs24gs_diag() {
+mvc24gs_diag() {
     [[ ${UBS24_GDBUS_SETTINGS_DIAG:-} == 1 ]] || return 0
     case ${1:-} in
         method-failed) printf 'DIAG: GetSettings D-Bus call failed or was denied\n' >&2 ;;
@@ -16,7 +16,7 @@ ubs24gs_diag() {
     esac
 }
 
-ubs24gs_capture_settings() {
+mvc24gs_capture_settings() {
     (( $# == 2 )) || return 1
     local object=$1 output=$2 raw='' decoder
     [[ ${UBS24S_LOCK_HELD:-} == 1 ]] || return 1
@@ -30,19 +30,19 @@ ubs24gs_capture_settings() {
       --dest org.freedesktop.NetworkManager \
       --object-path "$object" \
       --method org.freedesktop.NetworkManager.Settings.Connection.GetSettings \
-      2>/dev/null) || { ubs24gs_diag method-failed; return 1; }
+      2>/dev/null) || { mvc24gs_diag method-failed; return 1; }
     if (( ${#raw} == 0 || ${#raw} > 262144 )); then
-        ubs24gs_diag reply-size
+        mvc24gs_diag reply-size
         return 1
     fi
     if ! printf '%s\n' "$raw" | LC_ALL=C awk \
-      -v ubs24_variant_diag="${UBS24_GDBUS_SETTINGS_DIAG:-0}" \
+      -v mvc24_variant_diag="${UBS24_GDBUS_SETTINGS_DIAG:-0}" \
       -f "$decoder" > "$output"; then
-        ubs24gs_diag decoder-failed
+        mvc24gs_diag decoder-failed
         return 1
     fi
     if ! jq -e '.type == "a{sa{sv}}" and (.data | type) == "array" and (.data | length) == 1 and (.data[0] | type) == "object"' "$output" >/dev/null 2>&1; then
-        ubs24gs_diag shape-failed
+        mvc24gs_diag shape-failed
         return 1
     fi
 }

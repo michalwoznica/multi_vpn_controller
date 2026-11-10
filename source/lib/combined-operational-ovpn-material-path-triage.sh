@@ -4,13 +4,13 @@
 # The result describes caller-visible filesystem state at a moment in time;
 # it is NOT NM/OpenVPN file custody or TLS trust evidence.
 
-ubs24op_path_triage_reset() {
+mvc24op_path_triage_reset() {
     UBS24OP_TRIAGE_CA=unassessed
     UBS24OP_TRIAGE_TLS_CRYPT=unassessed
     UBS24OP_TRIAGE_STATE=unverified
 }
 
-ubs24op_path_triage_reference() {
+mvc24op_path_triage_reference() {
     (( $# == 2 )) || return 1
     local file=$1 key=$2 value item prefix index
     local -a components=()
@@ -19,7 +19,7 @@ ubs24op_path_triage_reference() {
 
     # First apply the existing conservative classifier. Re-examine even
     # readable paths to detect unsafe ancestor symlinks and path spelling.
-    ubs24op_material_reference "$file" "$key" || return 1
+    mvc24op_material_reference "$file" "$key" || return 1
     UBS24OP_TRIAGE_REF=$UBS24OP_MATERIAL_REF
     case $UBS24OP_TRIAGE_REF in
         absent|unsupported-reference|nonabsolute-or-inline) return 0 ;;
@@ -82,20 +82,20 @@ ubs24op_path_triage_reference() {
     fi
 }
 
-ubs24op_path_triage() {
-    ubs24op_path_triage_reset
+mvc24op_path_triage() {
+    mvc24op_path_triage_reset
     (( $# == 1 )) || return 1
     local file=$1
     # The existing preflight validates private capture metadata and rejects a
     # secrets dictionary; preserve that prerequisite rather than relaxing it.
-    ubs24op_material_preflight "$file" || return 1
-    ubs24op_path_triage_reference "$file" ca || return 1
+    mvc24op_material_preflight "$file" || return 1
+    mvc24op_path_triage_reference "$file" ca || return 1
     UBS24OP_TRIAGE_CA=$UBS24OP_TRIAGE_REF
-    ubs24op_path_triage_reference "$file" tls-crypt || return 1
+    mvc24op_path_triage_reference "$file" tls-crypt || return 1
     UBS24OP_TRIAGE_TLS_CRYPT=$UBS24OP_TRIAGE_REF
     UBS24OP_TRIAGE_STATE=caller-metadata-only-not-admitting
 }
 
-ubs24op_path_triage_authorize_nm_write() { return 1; }
-ubs24op_path_triage_authorize_activation() { return 1; }
-ubs24op_path_triage_authorize_nft() { return 1; }
+mvc24op_path_triage_authorize_nm_write() { return 1; }
+mvc24op_path_triage_authorize_activation() { return 1; }
+mvc24op_path_triage_authorize_nft() { return 1; }

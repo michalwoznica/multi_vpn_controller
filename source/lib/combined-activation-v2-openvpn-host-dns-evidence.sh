@@ -12,7 +12,7 @@
 # The caller must use /etc/resolv.conf and /etc/nsswitch.conf in any eventual
 # live integration; configurable paths below exist only for offline fixtures.
 
-ubs24ag2d_parse_direct_resolv() {
+mvc24ag2d_parse_direct_resolv() {
     UBS24AG2D_SERVERS=()
     (( $# == 1 )) || return 1
     local file=$1 line token count=0
@@ -47,7 +47,7 @@ ubs24ag2d_parse_direct_resolv() {
 # Read-only, init-system-neutral evidence for the Arch NSS conditional rule.
 # NameHasOwner never activates the destination. This proves only a transient
 # absence of a running resolved service; it does NOT prevent later activation.
-ubs24ag2d_resolve_unavailable() {
+mvc24ag2d_resolve_unavailable() {
     (( $# == 0 )) || return 1
     [[ ! -S /run/systemd/resolve/io.systemd.Resolve ]] || return 1
     local raw
@@ -59,7 +59,7 @@ ubs24ag2d_resolve_unavailable() {
     [[ $raw == '(false,)' ]]
 }
 
-ubs24ag2d_parse_hosts_nss() {
+mvc24ag2d_parse_hosts_nss() {
     (( $# == 1 )) || return 1
     UBS24AG2D_NSS_MODE=''
     local file=$1 line count=0 hosts=0
@@ -90,7 +90,7 @@ ubs24ag2d_parse_hosts_nss() {
 
 # Bind both content and resolved filesystem object identity, catching symlink
 # retargeting even if the replacement has identical contents.  No writes.
-ubs24ag2d_file_identity() {
+mvc24ag2d_file_identity() {
     UBS24AG2D_FILE_ID=''
     (( $# == 1 )) || return 1
     local file=$1 real metadata digest
@@ -104,32 +104,32 @@ ubs24ag2d_file_identity() {
     UBS24AG2D_FILE_ID="$real|$metadata|$digest"
 }
 
-ubs24ag2d_capture_host_dns() {
+mvc24ag2d_capture_host_dns() {
     UBS24AG2D_CAPTURE=''
     UBS24AG2D_DETAIL_STAGE=argument-check
     (( $# == 2 )) || return 1
     local resolv=$1 nss=$2 rbefore rafter nbefore nafter server
     local -a expected=() observed=()
     UBS24AG2D_DETAIL_STAGE=dependency-check
-    for server in wg23_validate_ipv4 ubs24d_get_vpn_resolver ubs24d_tunnel_source_for; do
+    for server in wg23_validate_ipv4 mvc24d_get_vpn_resolver mvc24d_tunnel_source_for; do
         declare -F -- "$server" >/dev/null || return 1
     done
     UBS24AG2D_DETAIL_STAGE=resolv-identity-before
-    ubs24ag2d_file_identity "$resolv" || return 1; rbefore=$UBS24AG2D_FILE_ID
+    mvc24ag2d_file_identity "$resolv" || return 1; rbefore=$UBS24AG2D_FILE_ID
     UBS24AG2D_DETAIL_STAGE=nss-identity-before
-    ubs24ag2d_file_identity "$nss" || return 1; nbefore=$UBS24AG2D_FILE_ID
+    mvc24ag2d_file_identity "$nss" || return 1; nbefore=$UBS24AG2D_FILE_ID
     UBS24AG2D_DETAIL_STAGE=nss-parse
-    ubs24ag2d_parse_hosts_nss "$nss" || return 1
+    mvc24ag2d_parse_hosts_nss "$nss" || return 1
     local mode=$UBS24AG2D_NSS_MODE
     if [[ $mode == arch-conditional ]]; then
         UBS24AG2D_DETAIL_STAGE=resolved-unavailable-before
-        ubs24ag2d_resolve_unavailable || return 1
+        mvc24ag2d_resolve_unavailable || return 1
     fi
     UBS24AG2D_DETAIL_STAGE=resolv-parse
-    ubs24ag2d_parse_direct_resolv "$resolv" || return 1
+    mvc24ag2d_parse_direct_resolv "$resolv" || return 1
     observed=("${UBS24AG2D_SERVERS[@]}")
     UBS24AG2D_DETAIL_STAGE=vpn-dns-discovery
-    ubs24d_get_vpn_resolver || return 1
+    mvc24d_get_vpn_resolver || return 1
     expected=("${UBS24D_VPN_DNS[@]}")
     UBS24AG2D_DETAIL_STAGE=dns-count-match
     (( ${#expected[@]} >= 1 && ${#expected[@]} <= 3 &&
@@ -138,15 +138,15 @@ ubs24ag2d_capture_host_dns() {
         UBS24AG2D_DETAIL_STAGE="dns-value-match-$((server + 1))"
         [[ ${expected[server]} == "${observed[server]}" ]] || return 1
         UBS24AG2D_DETAIL_STAGE="dns-route-verify-$((server + 1))"
-        ubs24d_tunnel_source_for "${expected[server]}" || return 1
+        mvc24d_tunnel_source_for "${expected[server]}" || return 1
     done
     UBS24AG2D_DETAIL_STAGE=resolv-identity-after
-    ubs24ag2d_file_identity "$resolv" || return 1; rafter=$UBS24AG2D_FILE_ID
+    mvc24ag2d_file_identity "$resolv" || return 1; rafter=$UBS24AG2D_FILE_ID
     UBS24AG2D_DETAIL_STAGE=nss-identity-after
-    ubs24ag2d_file_identity "$nss" || return 1; nafter=$UBS24AG2D_FILE_ID
+    mvc24ag2d_file_identity "$nss" || return 1; nafter=$UBS24AG2D_FILE_ID
     if [[ $mode == arch-conditional ]]; then
         UBS24AG2D_DETAIL_STAGE=resolved-unavailable-after
-        ubs24ag2d_resolve_unavailable || return 1
+        mvc24ag2d_resolve_unavailable || return 1
     fi
     UBS24AG2D_DETAIL_STAGE=file-identity-stability
     [[ $rbefore == "$rafter" && $nbefore == "$nafter" ]] || return 1
@@ -154,24 +154,24 @@ ubs24ag2d_capture_host_dns() {
     UBS24AG2D_CAPTURE="$rbefore|$nbefore|$mode|${expected[*]}"
 }
 
-ubs24ag2d_observe_host_dns_impl() {
+mvc24ag2d_observe_host_dns_impl() {
     (( $# == 8 )) || return 1
     local session=$1 state=$2 captures=$3 proc=$4 plugin=$5 openvpn=$6 resolv=$7 nss=$8
     local before state_before owner_before manifest_before
     [[ ${UBS24S_LOCK_HELD:-} == 1 && $session == /* && $state == /* &&
        $captures == /* && $proc == /* && $plugin == /* && $openvpn == /* &&
        $resolv == /* && $nss == /* ]] || return 1
-    declare -F ubs24ag2s_observe_openvpn_socket_locked >/dev/null || return 1
+    declare -F mvc24ag2s_observe_openvpn_socket_locked >/dev/null || return 1
     # This augments, and NEVER substitutes for, the owned-socket NM/route/
     # firewall observation. Host DNS is snapshotted on BOTH sides of it.
     state_before=$(sha256sum -- "$state") || return 1
     owner_before=$(sha256sum -- "$session/ownership") || return 1
     manifest_before=$(sha256sum -- "$session/ovpn-effective.json") || return 1
-    ubs24ag2d_capture_host_dns "$resolv" "$nss" || return 1
+    mvc24ag2d_capture_host_dns "$resolv" "$nss" || return 1
     before=$UBS24AG2D_CAPTURE
-    ubs24ag2s_observe_openvpn_socket_locked "$session" "$state" "$captures" "$proc" "$plugin" "$openvpn" || return 1
+    mvc24ag2s_observe_openvpn_socket_locked "$session" "$state" "$captures" "$proc" "$plugin" "$openvpn" || return 1
     [[ ${UBS24AG2S_OBSERVED:-} == partial-openvpn-udp-socket-and-nm-route-dns-only ]] || return 1
-    ubs24ag2d_capture_host_dns "$resolv" "$nss" || return 1
+    mvc24ag2d_capture_host_dns "$resolv" "$nss" || return 1
     [[ $UBS24AG2D_CAPTURE == "$before" ]] || return 1
     [[ $(sha256sum -- "$state") == "$state_before" &&
        $(sha256sum -- "$session/ownership") == "$owner_before" &&
@@ -185,12 +185,12 @@ ubs24ag2d_observe_host_dns_impl() {
     fi
 }
 
-ubs24ag2d_observe_host_dns_files_locked() {
+mvc24ag2d_observe_host_dns_files_locked() {
     UBS24AG2D_OBSERVED=''
     UBS24AG2D_CAPTURE=''
     UBS24AG2D_SERVERS=()
     UBS24AG2D_NSS_MODE=''
-    if ubs24ag2d_observe_host_dns_impl "$@"; then return 0; fi
+    if mvc24ag2d_observe_host_dns_impl "$@"; then return 0; fi
     UBS24AG2D_OBSERVED=''
     UBS24AG2D_CAPTURE=''
     UBS24AG2D_SERVERS=()
@@ -203,7 +203,7 @@ ubs24ag2d_observe_host_dns_files_locked() {
 
 # Pinned real-host entry point for eventual read-only runtime observation;
 # still NOT called by vpn-v240 or any activation-authority callback.
-ubs24ag2d_observe_host_dns_locked() {
+mvc24ag2d_observe_host_dns_locked() {
     (( $# == 6 )) || return 1
-    ubs24ag2d_observe_host_dns_files_locked "$@" /etc/resolv.conf /etc/nsswitch.conf
+    mvc24ag2d_observe_host_dns_files_locked "$@" /etc/resolv.conf /etc/nsswitch.conf
 }

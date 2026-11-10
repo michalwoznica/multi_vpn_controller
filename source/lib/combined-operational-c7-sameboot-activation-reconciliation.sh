@@ -5,7 +5,7 @@
 # retry, firewall release, DNS edit or traffic authority exists here.
 # An attempted nmcli operation may have completed despite a lost reply.
 
-ubs24gc7_reset() {
+mvc24gc7_reset() {
     UBS24GC7_ATTEMPTED=no
     UBS24GC7_STAGE=unverified
     UBS24GC7_AUTHORITY=none
@@ -13,51 +13,51 @@ ubs24gc7_reset() {
     UBS24GC7_SOURCE_SHA= UBS24GC7_CLONE_SHA= UBS24GC7_NM_OWNER=
 }
 
-ubs24gc7_runtime() { printf '%s\n' /run/mvc-activation; }
-ubs24gc7_run_tmpfs() { [[ $(stat -f -c %T /run) == tmpfs ]]; }
-ubs24gc7_fixed_b2_runtime() { [[ $(ubs24gb2_runtime) == /run/mvc-controller ]]; }
-ubs24gc7_owned_dir() {
+mvc24gc7_runtime() { printf '%s\n' /run/mvc-activation; }
+mvc24gc7_run_tmpfs() { [[ $(stat -f -c %T /run) == tmpfs ]]; }
+mvc24gc7_fixed_b2_runtime() { [[ $(mvc24gb2_runtime) == /run/mvc-controller ]]; }
+mvc24gc7_owned_dir() {
     (( $# == 1 )) && [[ -d $1 && ! -L $1 &&
         $(stat -c '%u:%a:%h' -- "$1" 2>/dev/null) == 0:700:2 ]]
 }
-ubs24gc7_owned_file() {
+mvc24gc7_owned_file() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 &&
         $(stat -c '%u:%a:%h' -- "$1" 2>/dev/null) == 0:400:1 ]]
 }
-ubs24gc7_admission_witness() { return 1; }
-ubs24gc7_authorize_public_activation() { return 1; }
-ubs24gc7_authorize_retry() { return 1; }
-ubs24gc7_authorize_cleanup() { return 1; }
-ubs24gc7_authorize_disarm() { return 1; }
-ubs24gc7_authorize_traffic() { return 1; }
-ubs24gc7_authorize_secret_export() { return 1; }
+mvc24gc7_admission_witness() { return 1; }
+mvc24gc7_authorize_public_activation() { return 1; }
+mvc24gc7_authorize_retry() { return 1; }
+mvc24gc7_authorize_cleanup() { return 1; }
+mvc24gc7_authorize_disarm() { return 1; }
+mvc24gc7_authorize_traffic() { return 1; }
+mvc24gc7_authorize_secret_export() { return 1; }
 
-ubs24gc7_hash_valid() { (( $# == 1 )) && [[ $1 =~ ^[a-f0-9]{64}$ ]]; }
-ubs24gc7_nm_owner_valid() {
+mvc24gc7_hash_valid() { (( $# == 1 )) && [[ $1 =~ ^[a-f0-9]{64}$ ]]; }
+mvc24gc7_nm_owner_valid() {
     (( $# == 1 )) && [[ $1 =~ ^:[0-9]+\.[0-9]+\|[0-9]+\|0$ ]]
 }
 
 # Parse a *fixed* root-owned record. The independent C3 journal and live
 # kernel/NM witnesses are always required as well; this record is NOT a grant.
 # One immutable record only: an incomplete or duplicate directory is ambiguous.
-ubs24gc7_read_intent() {
+mvc24gc7_read_intent() {
     (( $# == 0 )) || return 1
     UBS24GC7_SOURCE_UUID= UBS24GC7_CLONE_UUID=
     UBS24GC7_SOURCE_SHA= UBS24GC7_CLONE_SHA= UBS24GC7_NM_OWNER=
     local dir boot userns netns mntns c1hash
     local -a rows=() entries=()
-    dir=$(ubs24gc7_runtime) || return 1
-    ubs24gc7_owned_dir "$dir" || return 1
+    dir=$(mvc24gc7_runtime) || return 1
+    mvc24gc7_owned_dir "$dir" || return 1
     mapfile -d '' -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 -print0) || return 1
     (( ${#entries[@]} == 1 )) && [[ ${entries[0]} == "$dir/attempt" ]] || return 1
-    ubs24gc7_owned_file "$dir/attempt" || return 1
+    mvc24gc7_owned_file "$dir/attempt" || return 1
     mapfile -t rows < "$dir/attempt" || return 1
     (( ${#rows[@]} == 11 )) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c1hash=$(sha256sum "$(ubs24gb2_runtime)/transition-attempt" 2>/dev/null) || return 1
+    c1hash=$(sha256sum "$(mvc24gb2_runtime)/transition-attempt" 2>/dev/null) || return 1
     c1hash=${c1hash%% *}
     [[ ${rows[0]} == ubs-v240-c7-openvpn-attempt-v1 &&
        ${rows[1]} == state=attempt-entered-once-activation-uncertain &&
@@ -75,10 +75,10 @@ ubs24gc7_read_intent() {
     [[ $hashes == *'|clone_sha='* ]] || return 1
     source_sha=${hashes%%|clone_sha=*}
     clone_sha=${hashes#*|clone_sha=}
-    ubs24ga_uuid_valid "$source_uuid" && ubs24ga_uuid_valid "$clone_uuid" &&
+    mvc24ga_uuid_valid "$source_uuid" && mvc24ga_uuid_valid "$clone_uuid" &&
        [[ $source_uuid != "$clone_uuid" ]] &&
-       ubs24gc7_hash_valid "$source_sha" && ubs24gc7_hash_valid "$clone_sha" &&
-       ubs24gc7_nm_owner_valid "${rows[10]#nm_owner=}" || return 1
+       mvc24gc7_hash_valid "$source_sha" && mvc24gc7_hash_valid "$clone_sha" &&
+       mvc24gc7_nm_owner_valid "${rows[10]#nm_owner=}" || return 1
     UBS24GC7_SOURCE_UUID=$source_uuid
     UBS24GC7_CLONE_UUID=$clone_uuid
     UBS24GC7_SOURCE_SHA=$source_sha
@@ -90,24 +90,24 @@ ubs24gc7_read_intent() {
 # strictly ten-entry C3 firewall journal or overwrite an existing attempt.
 # A crash during directory/file creation leaves an ambiguous, non-retriable
 # record. The directory MUST be on /run tmpfs and is never cleaned here.
-ubs24gc7_publish_intent() {
+mvc24gc7_publish_intent() {
     (( $# == 0 )) || return 1
     local dir tmp boot userns netns mntns c1hash
-    ubs24gb2_root_scope && ubs24gc7_fixed_b2_runtime &&
-       ubs24gc3_transition_records_valid && ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness || return 1
-    ubs24gc7_nm_owner_valid "${UBS24GC5_NM_OWNER:-}" &&
-       ubs24ga_uuid_valid "${UBS24GA3_PREPARED_SOURCE_UUID:-}" &&
-       ubs24ga_uuid_valid "${UBS24GA3_PREPARED_CLONE_UUID:-}" &&
-       ubs24gc7_hash_valid "${UBS24GA3_SOURCE_SHA256:-}" &&
-       ubs24gc7_hash_valid "${UBS24GA3_DERIVATIVE_SHA256:-}" || return 1
-    ubs24gc7_run_tmpfs || return 1
-    dir=$(ubs24gc7_runtime) || return 1
+    mvc24gb2_root_scope && mvc24gc7_fixed_b2_runtime &&
+       mvc24gc3_transition_records_valid && mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
+    mvc24gc7_nm_owner_valid "${UBS24GC5_NM_OWNER:-}" &&
+       mvc24ga_uuid_valid "${UBS24GA3_PREPARED_SOURCE_UUID:-}" &&
+       mvc24ga_uuid_valid "${UBS24GA3_PREPARED_CLONE_UUID:-}" &&
+       mvc24gc7_hash_valid "${UBS24GA3_SOURCE_SHA256:-}" &&
+       mvc24gc7_hash_valid "${UBS24GA3_DERIVATIVE_SHA256:-}" || return 1
+    mvc24gc7_run_tmpfs || return 1
+    dir=$(mvc24gc7_runtime) || return 1
     [[ ! -e $dir && ! -L $dir ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    c1hash=$(sha256sum "$(ubs24gb2_runtime)/transition-attempt") || return 1
+    c1hash=$(sha256sum "$(mvc24gb2_runtime)/transition-attempt") || return 1
     c1hash=${c1hash%% *}
     (umask 077; mkdir -m 700 -- "$dir") || return 1
     tmp=$(umask 077; mktemp "$dir/.attempt.XXXXXXXX") || return 1
@@ -123,32 +123,32 @@ ubs24gc7_publish_intent() {
     chmod 400 -- "$tmp" || return 1
     [[ ! -e $dir/attempt && ! -L $dir/attempt ]] || return 1
     mv -T -- "$tmp" "$dir/attempt" || return 1
-    ubs24gc7_read_intent
+    mvc24gc7_read_intent
 }
 
 # A separate coordinator means C5 cannot begin before an attempt is recorded.
 # This function remains unreachable from all real-host and public entry points.
-ubs24gc7_attempt_once() {
+mvc24gc7_attempt_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GC7_ATTEMPTED:-no} == no ]] || return 1
     UBS24GC7_ATTEMPTED=yes
     UBS24GC7_STAGE=preflight-refused-or-uncertain
     UBS24GC7_AUTHORITY=none
-    ubs24gc7_admission_witness || return 1
+    mvc24gc7_admission_witness || return 1
     [[ ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
        ${UBS24GC3_AUTHORITY:-} == none &&
        ${UBS24GC5_ATTEMPTED:-no} == no ]] || return 1
     # The inherited typed GetSettings reader also requires this legacy flag.
     # Set it only as a dynamically scoped local AFTER verifying the genuine
     # C3 root-held flock; it cannot replace that independent lock witness.
-    ubs24gb2_root_scope && ubs24gc3_transition_records_valid || return 1
+    mvc24gb2_root_scope && mvc24gc3_transition_records_valid || return 1
     local UBS24S_LOCK_HELD=1
-    ubs24op_session_nm_identity || return 1
+    mvc24op_session_nm_identity || return 1
     UBS24GC5_NM_OWNER=$UBS24OP_SESSION_NM_IDENTITY
-    ubs24gc7_publish_intent || return 1
+    mvc24gc7_publish_intent || return 1
     UBS24GC7_STAGE=attempt-journalled-outcome-uncertain
-    ubs24gc5_activate_once || return 1
-    ubs24gc6_observe_active_once || return 1
+    mvc24gc5_activate_once || return 1
+    mvc24gc6_observe_active_once || return 1
     UBS24GC7_STAGE=active-nm-and-ipv4-observed-bootstrap-only
     UBS24GC7_AUTHORITY=none
 }
@@ -157,19 +157,19 @@ ubs24gc7_attempt_once() {
 # merely observes active NM/tun routing behind the still restrictive C1 guard.
 # Any bad journal, unknown NM state or missing/partial tunnel observation
 # returns DENY, leaving firewall/NM untouched and retaining all evidence.
-ubs24gc7_reconcile_readonly() {
+mvc24gc7_reconcile_readonly() {
     (( $# == 0 )) || return 1
     UBS24GC7_STAGE=unverified-ambiguous-manual-review
     UBS24GC7_AUTHORITY=none
-    [[ -z ${UBS24GB2_FD:-} ]] && ubs24gb2_root_scope || return 1
+    [[ -z ${UBS24GB2_FD:-} ]] && mvc24gb2_root_scope || return 1
     local fd dir nm1 nm2 route1 route2 result=1
-    dir=$(ubs24gb2_runtime) || return 1
-    ubs24gc7_fixed_b2_runtime || return 1
-    ubs24gb2_runtime_shape || return 1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gc7_fixed_b2_runtime || return 1
+    mvc24gb2_runtime_shape || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
     UBS24GB2_FD=$fd
-    if ubs24gc3_transition_records_valid && ubs24gc7_read_intent; then
+    if mvc24gc3_transition_records_valid && mvc24gc7_read_intent; then
         # Legacy read-only GDBus setting capture requires this flag. The
         # independently held kernel-verified C3 flock remains mandatory.
         # Bash local dynamic scope restores the caller's value on return.
@@ -184,19 +184,19 @@ ubs24gc7_reconcile_readonly() {
         UBS24GA3_STAGE=prepared-nonsecret-parity-only
         UBS24GA3_AUTHORITY=none
         UBS24GA2_STATE=quarantined-exact-nonsecret-settings-verified
-        if ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness &&
-           ubs24op_session_nm_identity &&
+        if mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness &&
+           mvc24op_session_nm_identity &&
            [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24GC7_NM_OWNER" ]]; then
-            nm1=$(ubs24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") &&
-            route1=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") &&
-            route2=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") &&
-            nm2=$(ubs24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") &&
+            nm1=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") &&
+            route1=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") &&
+            route2=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") &&
+            nm2=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") &&
             [[ -n $nm1 && $nm1 == "$nm2" && -n $route1 && $route1 == "$route2" ]] &&
-            ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness &&
-            ubs24gc7_read_intent && result=0
+            mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness &&
+            mvc24gc7_read_intent && result=0
         fi
     fi
-    ubs24gb2_close
+    mvc24gb2_close
     if (( result == 0 )); then
         UBS24GC7_STAGE=active-nm-and-ipv4-reobserved-bootstrap-only
         return 0

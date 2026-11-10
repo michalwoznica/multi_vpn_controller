@@ -4,7 +4,7 @@
 # Checks use the caller's privileges and are inherently raceable; the results
 # are observations only, NEVER authority for clone, firewall or activation.
 
-ubs24op_material_reset() {
+mvc24op_material_reset() {
     UBS24OP_MATERIAL_CA=unassessed
     UBS24OP_MATERIAL_TLS_CRYPT=unassessed
     UBS24OP_MATERIAL_NAME_CHECK=unassessed
@@ -15,7 +15,7 @@ ubs24op_material_reset() {
 
 # Return only safe static labels in UBS24OP_MATERIAL_REF. Paths may be private
 # and are kept inside this function; they are never printed or exported.
-ubs24op_material_reference() {
+mvc24op_material_reference() {
     UBS24OP_MATERIAL_REF=unassessed
     (( $# == 2 )) || return 1
     local file=$1 key=$2 value
@@ -54,8 +54,8 @@ ubs24op_material_reference() {
     fi
 }
 
-ubs24op_material_preflight() {
-    ubs24op_material_reset
+mvc24op_material_preflight() {
+    mvc24op_material_reset
     (( $# == 1 )) || return 1
     local file=$1 classification
     [[ -f $file && ! -L $file && -O $file && $(stat -c %a:%h -- "$file") == 600:1 ]] || return 1
@@ -68,9 +68,9 @@ ubs24op_material_preflight() {
         (.data[0].vpn | has("secrets") | not)
     ' "$file" >/dev/null 2>&1 || return 1
 
-    ubs24op_material_reference "$file" ca || return 1
+    mvc24op_material_reference "$file" ca || return 1
     UBS24OP_MATERIAL_CA=$UBS24OP_MATERIAL_REF
-    ubs24op_material_reference "$file" tls-crypt || return 1
+    mvc24op_material_reference "$file" tls-crypt || return 1
     UBS24OP_MATERIAL_TLS_CRYPT=$UBS24OP_MATERIAL_REF
 
     # Preserve all vendor options in the projection, but NEVER silently
@@ -107,6 +107,6 @@ ubs24op_material_preflight() {
     UBS24OP_MATERIAL_STATE=metadata-only-not-admitting
 }
 
-ubs24op_material_authorize_nm_write() { return 1; }
-ubs24op_material_authorize_activation() { return 1; }
-ubs24op_material_authorize_nft() { return 1; }
+mvc24op_material_authorize_nm_write() { return 1; }
+mvc24op_material_authorize_activation() { return 1; }
+mvc24op_material_authorize_nft() { return 1; }

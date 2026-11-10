@@ -6,9 +6,9 @@
 # verification, guarded DNS resolution, and failure-safe recovery.
 # This module NEVER unhooks nftables or changes IP routes.
 
-ubs24n_error() { printf 'MVC NetworkManager backend: %s\n' "$*" >&2; return 1; }
+mvc24n_error() { printf 'MVC NetworkManager backend: %s\n' "$*" >&2; return 1; }
 
-ubs24n_safe_path() {
+mvc24n_safe_path() {
     local path=${1:-}
     [[ -n "$path" && "$path" == /* && "$path" != *$'\n'* && "$path" != *$'\r'* ]]
 }
@@ -16,7 +16,7 @@ ubs24n_safe_path() {
 # Validate sections and keys whose duplication or presence would undermine
 # the expected routing or activation behaviour. Never print source secrets.
 # mode: wg|ovpn
-ubs24n_validate_source() {
+mvc24n_validate_source() {
     (( $# == 2 )) || return 1
     local mode=$1 path=$2
     [[ "$mode" == wg || "$mode" == ovpn ]] || return 1
@@ -81,17 +81,17 @@ ubs24n_validate_source() {
 
 # Securely materialise a rendered profile without replacing any existing
 # destination. The caller MUST choose a root-owned private runtime directory.
-ubs24n_render_private() {
+mvc24n_render_private() {
     (( $# >= 3 )) || return 1
     local mode=$1 source=$2 target=$3 temp
     shift 3
-    ubs24n_safe_path "$source" && ubs24n_safe_path "$target" || return 1
+    mvc24n_safe_path "$source" && mvc24n_safe_path "$target" || return 1
     [[ "$mode" == wg || "$mode" == ovpn ]] || return 1
     [[ -d "${target%/*}" && ! -e "$target" && ! -L "$target" ]] || return 1
-    ubs24n_validate_source "$mode" "$source" || { ubs24n_error 'Invalid source keyfile structure or conflicting routes.'; return 1; }
+    mvc24n_validate_source "$mode" "$source" || { mvc24n_error 'Invalid source keyfile structure or conflicting routes.'; return 1; }
     temp=$(mktemp "${target%/*}/.ubs-nm.XXXXXXXX") || return 1
     chmod 600 "$temp" || { rm -f -- "$temp"; return 1; }
-    if ! ubs24n_transform "$mode" "$source" "$@" > "$temp"; then
+    if ! mvc24n_transform "$mode" "$source" "$@" > "$temp"; then
         rm -f -- "$temp"
         return 1
     fi
@@ -105,27 +105,27 @@ ubs24n_render_private() {
 }
 
 # Parameters: wg SOURCE TARGET NEW_UUID PINNED_IP:PORT...
-ubs24n_make_wireguard() {
+mvc24n_make_wireguard() {
     (( $# >= 4 && $# <= 67 )) || return 1
     local source=$1 target=$2 uuid=$3 ep
     shift 3
-    ubs24_valid_uuid "$uuid" || return 1
-    for ep in "$@"; do ubs24_valid_endpoint "$ep" || return 1; done
-    ubs24n_render_private wg "$source" "$target" "$uuid" "$@"
+    mvc24_valid_uuid "$uuid" || return 1
+    for ep in "$@"; do mvc24_valid_endpoint "$ep" || return 1; done
+    mvc24n_render_private wg "$source" "$target" "$uuid" "$@"
 }
 
 # Parameters: ovpn SOURCE TARGET NEW_UUID PINNED_IP:PORT
-ubs24n_make_openvpn() {
+mvc24n_make_openvpn() {
     (( $# == 4 )) || return 1
     local source=$1 target=$2 uuid=$3 endpoint=$4
-    ubs24_valid_uuid "$uuid" && ubs24_valid_endpoint "$endpoint" || return 1
-    ubs24n_render_private ovpn "$source" "$target" "$uuid" "$endpoint"
+    mvc24_valid_uuid "$uuid" && mvc24_valid_endpoint "$endpoint" || return 1
+    mvc24n_render_private ovpn "$source" "$target" "$uuid" "$endpoint"
 }
 
 # Internal renderer. No eval/source of keyfile data. The only allowed
 # modifications are explicit profile identity, pinned endpoints, routing/DNS
 # suppression for WG, and DNS precedence for OpenVPN.
-ubs24n_transform() {
+mvc24n_transform() {
     local mode=$1 source=$2 uuid=$3
     shift 3
     local pins='' endpoint
@@ -227,10 +227,10 @@ ubs24n_transform() {
 
 # NetworkManager operations are deliberately separate from rendering so that
 # the controller can prepare the guard BEFORE bringing either VPN up.
-ubs24n_verify_profile() {
+mvc24n_verify_profile() {
     (( $# == 3 )) || return 1
     local uuid=$1 expected_type=$2 expected_id=$3 actual
-    ubs24_valid_uuid "$uuid" || return 1
+    mvc24_valid_uuid "$uuid" || return 1
     [[ "$expected_type" == wireguard || "$expected_type" == vpn ]] || return 1
     [[ "$expected_id" == vpnks-wg || "$expected_id" == vpnks-ovpn ]] || return 1
     [[ "$expected_type:$expected_id" == wireguard:vpnks-wg ||
@@ -243,7 +243,7 @@ ubs24n_verify_profile() {
     [[ "$actual" == "$expected_id" ]]
 }
 
-ubs24n_load_profile() {
+mvc24n_load_profile() {
     (( $# == 4 )) || return 1
     local file=$1 uuid=$2 type=$3 id=$4
     [[ -f "$file" && ! -L "$file" && "$(stat -c %a -- "$file")" == 600 ]] || return 1
@@ -251,30 +251,30 @@ ubs24n_load_profile() {
     # temporary name already owned by another session.
     if nmcli -g connection.uuid connection show uuid "$uuid" >/dev/null 2>&1 ||
        nmcli -g connection.uuid connection show id "$id" >/dev/null 2>&1; then
-        ubs24n_error 'Temporary UUID or profile name already exists.'
+        mvc24n_error 'Temporary UUID or profile name already exists.'
         return 1
     fi
     nmcli connection load "$file" || return 1
-    ubs24n_verify_profile "$uuid" "$type" "$id" ||
-        ubs24n_error 'Loaded connection does not match expected UUID/type/id.'
+    mvc24n_verify_profile "$uuid" "$type" "$id" ||
+        mvc24n_error 'Loaded connection does not match expected UUID/type/id.'
 }
 
-ubs24n_is_active() {
+mvc24n_is_active() {
     (( $# == 1 )) || return 1
     local uuid=$1 list
-    ubs24_valid_uuid "$uuid" || return 1
+    mvc24_valid_uuid "$uuid" || return 1
     list=$(nmcli -e no -t -f UUID connection show --active) || return 1
     grep -Fxq -- "$uuid" <<< "$list"
 }
 
-ubs24n_activate() {
+mvc24n_activate() {
     (( $# == 2 )) || return 1
     local uuid=$1 expected_type=$2 id
     [[ "$expected_type" == wireguard || "$expected_type" == vpn ]] || return 1
     id=$([[ "$expected_type" == wireguard ]] && printf vpnks-wg || printf vpnks-ovpn)
-    ubs24n_verify_profile "$uuid" "$expected_type" "$id" || return 1
-    ! ubs24n_is_active "$uuid" || return 1
+    mvc24n_verify_profile "$uuid" "$expected_type" "$id" || return 1
+    ! mvc24n_is_active "$uuid" || return 1
     # Caller MUST have previously verified the relevant active nftables guard.
     nmcli -w 60 connection up uuid "$uuid" || return 1
-    ubs24n_is_active "$uuid" || ubs24n_error 'nmcli up returned success but the temporary UUID is not active.'
+    mvc24n_is_active "$uuid" || mvc24n_error 'nmcli up returned success but the temporary UUID is not active.'
 }

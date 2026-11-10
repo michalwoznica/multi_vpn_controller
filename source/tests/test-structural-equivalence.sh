@@ -61,16 +61,16 @@ while IFS='|' read -r kind order sha rel detail; do
     while IFS= read -r line || [[ -n $line ]]; do
         case "$rel|$line" in
             'source/lib/combined-dbus-gdbus-settings.sh|    decoder=${BASH_SOURCE[0]%/*}/combined-gvariant-settings-to-json.awk')
-                line='    decoder=$(ubs24mon_runtime_asset_path gvariant-awk) || return 1'
+                line='    decoder=$(mvc24mon_runtime_asset_path gvariant-awk) || return 1'
                 ;;
             'source/lib/combined-operational-host-guard-transaction.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
-                line='    base=$(ubs24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
+                line='    base=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 ;;
             'source/lib/combined-operational-c3-held-lifecycle.sh|    policy=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1')
-                line='    policy=$(ubs24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
+                line='    policy=$(mvc24mon_runtime_asset_path b4-bootstrap-nft) || return 1'
                 ;;
             'source/lib/combined-operational-wireguard-protected-v240.sh|    base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd) || return 1')
-                line='    base=$(ubs24mon_runtime_asset_dir) || return 1'
+                line='    base=$(mvc24mon_runtime_asset_dir) || return 1'
                 ;;
         esac
         printf '%s\n' "$line" >> "$expected"
@@ -105,11 +105,11 @@ COMPARE=$TMP/functions-compare
 : > "$FUNCTIONS"
 while IFS='|' read -r kind order sha rel detail; do
     [[ $kind == MODULE ]] || continue
-    { grep -E '^(function[[:space:]]+)?ubs24[A-Za-z0-9_]+[[:space:]]*\(\)[[:space:]]*\{' "$ROOT/$rel" || true; } |
-        sed -E 's/^(function[[:space:]]+)?(ubs24[A-Za-z0-9_]+)[[:space:]]*\(\).*/\2/' >> "$FUNCTIONS"
+    { grep -E '^(function[[:space:]]+)?mvc24[A-Za-z0-9_]+[[:space:]]*\(\)[[:space:]]*\{' "$ROOT/$rel" || true; } |
+        sed -E 's/^(function[[:space:]]+)?(mvc24[A-Za-z0-9_]+)[[:space:]]*\(\).*/\2/' >> "$FUNCTIONS"
 done < "$MANIFEST"
 sort -u "$FUNCTIONS" -o "$FUNCTIONS"
-grep -Ev '^(ubs24gs_capture_settings|ubs24gb2_batch_valid|ubs24gc3_execute_once|ubs24gwg_policy_file|ubs24gc4_recovery_installed|ubs24gc4_source_preview)$' "$FUNCTIONS" > "$COMPARE"
+grep -Ev '^(mvc24gs_capture_settings|mvc24gb2_batch_valid|mvc24gc3_execute_once|mvc24gwg_policy_file|mvc24gc4_recovery_installed|mvc24gc4_source_preview)$' "$FUNCTIONS" > "$COMPARE"
 mkdir -m 700 "$TMP/modular-functions" "$TMP/generated-functions"
 ROOT="$ROOT" LIST="$COMPARE" OUT="$TMP/modular-functions" bash -c '
     set -e
@@ -145,24 +145,24 @@ fi
 # final module owner. Module-payload parity above then proves the generated
 # artifact has that same final definition owner/content.
 cat > "$TMP/override-owners" <<'OWNERS'
-ubs24ga2_capture_readback|combined-operational-ovpn-guarded-prepare.sh
-ubs24ga2_guard_witness|combined-operational-ovpn-guarded-prepare.sh
-ubs24ga2_source_witness|combined-operational-ovpn-guarded-prepare.sh
-ubs24ga_live_guard_witness|combined-operational-ovpn-guarded-prepare.sh
-ubs24ga_nm_source_witness|combined-operational-ovpn-guarded-prepare.sh
-ubs24ga_postclone_identity_hook|combined-operational-public-v240-connect.sh
-ubs24ga_preclone_intent_hook|combined-operational-public-v240-connect.sh
-ubs24gc13_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc17_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc19_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc23t_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc3_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc5_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc7_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gc9_admission_witness|combined-operational-openvpn-composition.sh
-ubs24gco_enabled|combined-operational-public-v240-disconnect.sh
-ubs24gd4_authority_witness|combined-operational-public-v240-disconnect.sh
-ubs24gd4_post_openvpn_cleanup_witness|combined-operational-public-v240-disconnect.sh
+mvc24ga2_capture_readback|combined-operational-ovpn-guarded-prepare.sh
+mvc24ga2_guard_witness|combined-operational-ovpn-guarded-prepare.sh
+mvc24ga2_source_witness|combined-operational-ovpn-guarded-prepare.sh
+mvc24ga_live_guard_witness|combined-operational-ovpn-guarded-prepare.sh
+mvc24ga_nm_source_witness|combined-operational-ovpn-guarded-prepare.sh
+mvc24ga_postclone_identity_hook|combined-operational-public-v240-connect.sh
+mvc24ga_preclone_intent_hook|combined-operational-public-v240-connect.sh
+mvc24gc13_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc17_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc19_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc23t_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc3_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc5_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc7_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gc9_admission_witness|combined-operational-openvpn-composition.sh
+mvc24gco_enabled|combined-operational-public-v240-disconnect.sh
+mvc24gd4_authority_witness|combined-operational-public-v240-disconnect.sh
+mvc24gd4_post_openvpn_cleanup_witness|combined-operational-public-v240-disconnect.sh
 OWNERS
 owner_ok=0
 owner_total=0
@@ -186,11 +186,11 @@ fi
 # Critical lifecycle/public entrypoints must be among the exact-parity set.
 critical_ok=1
 for fn in \
-    ubs24e_dispatch ubs24pubc_connect_once ubs24pubc_connect_openvpn_once \
-    ubs24pubc_connect_wireguard_protected_once ubs24pubc_connect_wireguard_split_once \
-    ubs24pubd_disconnect_once ubs24gco_start_once ubs24gco_stop_once ubs24gco_complete_once \
-    ubs24gd4_start_once ubs24gd4_stop_once ubs24gwg_start_once ubs24gwg_stop_once \
-    ubs24gws_start_once ubs24gws_stop_once; do
+    mvc24e_dispatch mvc24pubc_connect_once mvc24pubc_connect_openvpn_once \
+    mvc24pubc_connect_wireguard_protected_once mvc24pubc_connect_wireguard_split_once \
+    mvc24pubd_disconnect_once mvc24gco_start_once mvc24gco_stop_once mvc24gco_complete_once \
+    mvc24gd4_start_once mvc24gd4_stop_once mvc24gwg_start_once mvc24gwg_stop_once \
+    mvc24gws_start_once mvc24gws_stop_once; do
     [[ -f $TMP/generated-functions/$fn && -f $TMP/modular-functions/$fn ]] || critical_ok=0
 done
 (( critical_ok == 1 )) && ok 'critical dispatcher/coordinator/vertical entrypoints are included in exact final-function parity' || bad 'critical dispatcher/coordinator/vertical entrypoints are included in exact final-function parity'

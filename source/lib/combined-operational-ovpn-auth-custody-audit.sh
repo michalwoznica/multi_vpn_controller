@@ -3,7 +3,7 @@
 # metadata. NEVER GetSecrets, stat/open reference files, read private keys, or
 # grant permission to import, start VPNs, or change firewall.
 
-ubs24op_auth_audit_reset() {
+mvc24op_auth_audit_reset() {
     UBS24OP_AUTH_METHOD=unassessed
     UBS24OP_AUTH_PASSWORD=unassessed
     UBS24OP_AUTH_CERT_PASS=unassessed
@@ -15,8 +15,8 @@ ubs24op_auth_audit_reset() {
     UBS24OP_AUTH_STATE=unverified
 }
 
-ubs24op_auth_audit() {
-    ubs24op_auth_audit_reset
+mvc24op_auth_audit() {
+    mvc24op_auth_audit_reset
     (( $# == 1 )) || return 1
     local file=$1 summary=''
     [[ -f $file && ! -L $file && -O $file && $(stat -c %a:%h -- "$file") == 600:1 ]] || return 1
@@ -91,15 +91,15 @@ ubs24op_auth_audit() {
     UBS24OP_AUTH_STATE=read-only-references-only
 }
 
-ubs24op_auth_audit_authorize_nm_write() { return 1; }
-ubs24op_auth_audit_authorize_activation() { return 1; }
-ubs24op_auth_audit_authorize_nft() { return 1; }
+mvc24op_auth_audit_authorize_nm_write() { return 1; }
+mvc24op_auth_audit_authorize_activation() { return 1; }
+mvc24op_auth_audit_authorize_nft() { return 1; }
 
 # C8B: report ONLY extra OpenVPN `*-flags` field NAMES to diagnose an
 # otherwise non-admitting source profile. Never inspect/return any flag values.
 # Limit counts and character set before returning strings sourced from NM.
 # A name on this list does NOT make that flag safe or supported for activation.
-ubs24op_auth_extra_flag_names() {
+mvc24op_auth_extra_flag_names() {
     (( $# == 1 )) || return 1
     local file=$1 result
     [[ -f $file && ! -L $file && -O $file &&
@@ -127,7 +127,7 @@ ubs24op_auth_extra_flag_names() {
 # Return a fixed label. This reads GetSettings metadata, NEVER GetSecrets or the
 # secret itself; NM-owned (0) is not proof of secret availability, nor does
 # not-required (4) establish a future remote will never issue a challenge.
-ubs24op_auth_challenge_flag_class() {
+mvc24op_auth_challenge_flag_class() {
     (( $# == 1 )) || return 1
     local file=$1 result
     [[ -f $file && ! -L $file && -O $file &&

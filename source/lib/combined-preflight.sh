@@ -2,19 +2,19 @@
 # UBS VPN Controller v2.4.0 Phase C: read-only preflight helpers.
 # NO kernel mutations, no profile modifications, no credentials printed.
 # Source lib/dual-session.sh first.
-ubs24c_error() { printf 'MVC combined preflight: %s\n' "$*" >&2; return 1; }
+mvc24c_error() { printf 'MVC combined preflight: %s\n' "$*" >&2; return 1; }
 
-ubs24c_ip_number() {
+mvc24c_ip_number() {
     local addr=$1 a b c d
-    ubs24_valid_ip "$addr" || return 1
+    mvc24_valid_ip "$addr" || return 1
     IFS=. read -r a b c d <<< "$addr"
     UBS24C_IP_NUMBER=$(( (10#$a << 24) | (10#$b << 16) | (10#$c << 8) | 10#$d ))
 }
-ubs24c_parse_cidr() {
+mvc24c_parse_cidr() {
     local cidr=$1 network prefix
     [[ "$cidr" == */* && "$cidr" != */*/* ]] || return 1
     network=${cidr%/*}; prefix=${cidr##*/}
-    ubs24c_ip_number "$network" || return 1
+    mvc24c_ip_number "$network" || return 1
     [[ "$prefix" =~ ^(0|[1-9][0-9]?)$ ]] || return 1
     (( prefix <= 32 )) || return 1
     UBS24C_CIDR_NET=$UBS24C_IP_NUMBER
@@ -24,11 +24,11 @@ ubs24c_parse_cidr() {
     fi
     (( (UBS24C_CIDR_NET & UBS24C_CIDR_MASK) == UBS24C_CIDR_NET )) || return 1
 }
-ubs24c_cidr_contains() {
+mvc24c_cidr_contains() {
     local subnet=$1 address=$2 network mask
-    ubs24c_parse_cidr "$subnet" || return 1
+    mvc24c_parse_cidr "$subnet" || return 1
     network=$UBS24C_CIDR_NET mask=$UBS24C_CIDR_MASK
-    ubs24c_ip_number "$address" || return 1
+    mvc24c_ip_number "$address" || return 1
     (( (UBS24C_IP_NUMBER & mask) == network ))
 }
 
@@ -36,7 +36,7 @@ ubs24c_cidr_contains() {
 # property per peer, and reject duplicates/blank data as an unsafe profile.
 # NM keyfiles typically separate allowed-ips with semicolons; comma is also
 # accepted for compatibility. Never emit private-key or preshared-key lines.
-ubs24c_read_allowed_ips() {
+mvc24c_read_allowed_ips() {
     local source=$1 records item
     local -a tokens=()
     [[ -f "$source" && -r "$source" ]] || return 1
@@ -53,7 +53,7 @@ ubs24c_read_allowed_ips() {
             if (allowed_count == 1) print substr($0,13)
         }
         END { if (peer && allowed_count != 1) bad=1; if (!peers || peers > 64 || bad) exit 1 }
-    ' "$source") || { ubs24c_error 'Missing/duplicate allowed-ips or malformed peer sections.'; return 1; }
+    ' "$source") || { mvc24c_error 'Missing/duplicate allowed-ips or malformed peer sections.'; return 1; }
     [[ -n "$records" ]] || return 1
     # Preserve one entire record per peer: reject an empty element or an
     # unexpected separator instead of inventing a wider route policy.
@@ -78,9 +78,9 @@ ubs24c_read_allowed_ips() {
                 # NetworkManager validates the IPv6 address itself when the
                 # profile is loaded; never accept a broad IPv6 prefix here.
             else
-                ubs24c_parse_cidr "$token" || { ubs24c_error "Invalid IPv4 AllowedIPs: $token"; return 1; }
+                mvc24c_parse_cidr "$token" || { mvc24c_error "Invalid IPv4 AllowedIPs: $token"; return 1; }
                 # Reject broad captures, including the two /1 internet halves.
-                (( UBS24C_CIDR_PREFIX >= 8 )) || { ubs24c_error "Overly broad IPv4 AllowedIPs: $token"; return 1; }
+                (( UBS24C_CIDR_PREFIX >= 8 )) || { mvc24c_error "Overly broad IPv4 AllowedIPs: $token"; return 1; }
             fi
             tokens+=("$token")
         done
@@ -92,20 +92,20 @@ ubs24c_read_allowed_ips() {
 # Prevent WG peer routes from capturing OpenVPN's transport, the physical
 # gateway or the direct WG endpoints. Supports fully resolved numeric inputs.
 # Arguments: physical_gateway or '-', OpenVPN_IP, WG_IP...
-ubs24c_check_allowed_routes() {
+mvc24c_check_allowed_routes() {
     local gateway=${1:-} ovpn=${2:-} wg ep route
     shift "$(( $# >= 2 ? 2 : $# ))"
-    ubs24_valid_ip "$ovpn" || return 1
-    [[ "$gateway" == '-' ]] || ubs24_valid_ip "$gateway" || return 1
+    mvc24_valid_ip "$ovpn" || return 1
+    [[ "$gateway" == '-' ]] || mvc24_valid_ip "$gateway" || return 1
     (( $# >= 1 )) || return 1
     local -a sensitive=("$ovpn" "$@")
     [[ "$gateway" == '-' ]] || sensitive+=("$gateway")
-    for ep in "${sensitive[@]}"; do ubs24_valid_ip "$ep" || return 1; done
+    for ep in "${sensitive[@]}"; do mvc24_valid_ip "$ep" || return 1; done
     for route in "${UBS24C_ALLOWED_IPS[@]}"; do
         [[ "$route" != *:* ]] || continue
         for ep in "${sensitive[@]}"; do
-            if ubs24c_cidr_contains "$route" "$ep"; then
-                ubs24c_error "WireGuard AllowedIPs $route captures protected transport/gateway $ep"
+            if mvc24c_cidr_contains "$route" "$ep"; then
+                mvc24c_error "WireGuard AllowedIPs $route captures protected transport/gateway $ep"
                 return 1
             fi
         done
@@ -115,10 +115,10 @@ ubs24c_check_allowed_routes() {
 # Parse a simple, uncontended physical route, checking syntax rather than
 # allowing a VPN/tunnel/device or ambiguous nexthop. Result is captured in
 # UBS24C_IFACE, UBS24C_GATEWAY, UBS24C_SOURCE.
-ubs24c_parse_physical_route() {
+mvc24c_parse_physical_route() {
     local destination=${1:-} output=${2:-}
     UBS24C_IFACE='' UBS24C_GATEWAY='' UBS24C_SOURCE=''
-    ubs24_valid_ip "$destination" || return 1
+    mvc24_valid_ip "$destination" || return 1
     [[ -n "$output" && "$output" != *$'\r'* ]] || return 1
     # iproute2 may indent its optional `cache` line and add trailing
     # whitespace. Validate the whole second line semantically, not by
@@ -152,8 +152,8 @@ ubs24c_parse_physical_route() {
             *) return 1 ;;
         esac
     done
-    ubs24_valid_ip "$src" || return 1
-    [[ -z "$via" ]] || ubs24_valid_ip "$via" || return 1
+    mvc24_valid_ip "$src" || return 1
+    [[ -z "$via" ]] || mvc24_valid_ip "$via" || return 1
     [[ "$dev" =~ ^[a-zA-Z0-9_.-]{1,15}$ ]] || return 1
     [[ "$dev" != lo && "$dev" != tun* && "$dev" != wg* && "$dev" != vpnks* ]] || return 1
     UBS24C_IFACE=$dev UBS24C_GATEWAY=${via:--} UBS24C_SOURCE=$src
@@ -163,7 +163,7 @@ ubs24c_parse_physical_route() {
 # separate the priority and selectors with either tabs or spaces depending
 # on version/formatting; match rule semantics rather than literal spacing.
 # Reject extra rules, priorities, selectors and trailing rule attributes.
-ubs24c_standard_ipv4_rules() {
+mvc24c_standard_ipv4_rules() {
     (( $# == 1 )) || return 1
     local -a lines expected_priorities=(0 32766 32767) expected_tables=(local main default)
     local i
@@ -177,9 +177,9 @@ ubs24c_standard_ipv4_rules() {
 }
 
 # Refuse changed uplink/gateway/source between preflight and activation.
-ubs24c_route_matches_snapshot() {
+mvc24c_route_matches_snapshot() {
     local dest=$1 output=$2 expected_dev=$3 expected_gw=$4 expected_src=$5
-    ubs24c_parse_physical_route "$dest" "$output" || return 1
+    mvc24c_parse_physical_route "$dest" "$output" || return 1
     [[ "$UBS24C_IFACE" == "$expected_dev" &&
        "$UBS24C_GATEWAY" == "$expected_gw" &&
        "$UBS24C_SOURCE" == "$expected_src" ]]

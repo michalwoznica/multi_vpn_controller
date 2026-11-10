@@ -4,40 +4,40 @@
 # protected WireGuard are admitted through separately authenticated coordinators.
 # WireGuard-only --split is admitted through its standalone compatibility coordinator.
 
-ubs24e_error() { printf 'Multi VPN Controller: %s\n' "$*" >&2; }
+mvc24e_error() { printf 'Multi VPN Controller: %s\n' "$*" >&2; }
 
 # This constant must only be changed when the connection and disconnection
 # paths have had full activation/rollback and real-network validation. No
 # environment variable, command-line flag or journal may override this gate.
-ubs24e_operational_ready() { return 1; }
+mvc24e_operational_ready() { return 1; }
 
 # The older broad operational gate remains deliberately off. Live authority is
 # narrower: only the exact dispatcher call frame can admit the public live
 # coordinators. An environment variable alone cannot satisfy this witness
 # because dispatch shadows it with a local value and the direct caller must be
-# ubs24e_dispatch.
-ubs24e_c23aw_live_ready() {
+# mvc24e_dispatch.
+mvc24e_c23aw_live_ready() {
     (( $# == 0 )) || return 1
     [[ ${UBS24E_DISPATCH_CONTEXT:-} == c23aw-explicit-combined-live &&
-       ${FUNCNAME[1]:-} == ubs24e_dispatch ]]
+       ${FUNCNAME[1]:-} == mvc24e_dispatch ]]
 }
 
 # Public preflight uses the exact same read-only admission/binding that precedes
 # live connect, but stops before any authority token or mutation is created.
 # This keeps diagnostics and the released connect coordinator on one path.
-ubs24e_preflight_adapter() {
+mvc24e_preflight_adapter() {
     (( $# == 3 )) && [[ $2 == --split ]] || return 2
-    ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
-    if ubs24pubc_preflight_readonly "$1" "$3"; then
+    mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
+    if mvc24pubc_preflight_readonly "$1" "$3"; then
         printf '%s\n' 'PASS: exact public combined-mode read-only admission'
         printf '%s\n' 'RESULT: READ-ONLY MVC COMBINED SESSION ELIGIBLE — NO HOST CHANGES'
         return 0
     fi
-    ubs24e_error "Preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
+    mvc24e_error "Preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
     return 1
 }
 
-ubs24e_dispatch() {
+mvc24e_dispatch() {
     local verb=${1:-}
     case "$verb" in
         version|--version)
@@ -46,88 +46,88 @@ ubs24e_dispatch() {
             ;;
         preflight)
             # Explicit read-only admission verb; v2.3.0 is not involved.
-            (( EUID == 0 )) || { ubs24e_error 'Run preflight with sudo.'; return 1; }
+            (( EUID == 0 )) || { mvc24e_error 'Run preflight with sudo.'; return 1; }
             if (( $# == 2 )); then
                 local single_kind
-                ubs24_parse_command connect "$2" || return $?
-                ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
-                single_kind=$(ubs24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
-                    ubs24e_error 'Selected single profile is not an exact saved OpenVPN/WireGuard profile.'
+                mvc24_parse_command connect "$2" || return $?
+                mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
+                single_kind=$(mvc24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
+                    mvc24e_error 'Selected single profile is not an exact saved OpenVPN/WireGuard profile.'
                     return 2
                 }
                 if [[ $single_kind == wireguard ]]; then
-                    if ubs24gwg_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
+                    if mvc24gwg_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: exact public WireGuard-only protected read-only admission'
                         printf '%s\n' 'RESULT: READ-ONLY MVC WIREGUARD PROTECTED SESSION ELIGIBLE — NO HOST CHANGES'
                         return 0
                     fi
-                    ubs24e_error "WireGuard-only protected preflight failed at stage: ${UBS24GWG_STAGE:-unverified}"
+                    mvc24e_error "WireGuard-only protected preflight failed at stage: ${UBS24GWG_STAGE:-unverified}"
                     return 1
                 fi
-                if ubs24pubc_preflight_openvpn_readonly "$UBS24_PRIMARY_PROFILE"; then
+                if mvc24pubc_preflight_openvpn_readonly "$UBS24_PRIMARY_PROFILE"; then
                     printf '%s\n' 'PASS: exact public OpenVPN-only read-only admission'
                     printf '%s\n' 'RESULT: READ-ONLY MVC OPENVPN SESSION ELIGIBLE — NO HOST CHANGES'
                     return 0
                 fi
-                ubs24e_error "OpenVPN-only preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
+                mvc24e_error "OpenVPN-only preflight failed at stage: ${UBS24PUBC_STAGE:-unverified}; c4=${UBS24GC4_PREFLIGHT_STAGE:-unverified}"
                 return 1
             fi
             if (( $# == 3 )) && [[ "$3" == --split ]]; then
                 local split_kind
-                ubs24_parse_command connect "$2" "$3" || return $?
+                mvc24_parse_command connect "$2" "$3" || return $?
                 [[ "$UBS24_MODE" == split ]] || return 2
-                ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
-                split_kind=$(ubs24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
-                    ubs24e_error 'Selected split profile is not an exact saved WireGuard profile.'
+                mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
+                split_kind=$(mvc24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
+                    mvc24e_error 'Selected split profile is not an exact saved WireGuard profile.'
                     return 2
                 }
-                [[ $split_kind == wireguard ]] || { ubs24e_error '--split is supported only for WireGuard.'; return 2; }
-                if ubs24gws_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
+                [[ $split_kind == wireguard ]] || { mvc24e_error '--split is supported only for WireGuard.'; return 2; }
+                if mvc24gws_preflight_readonly "$UBS24_PRIMARY_PROFILE"; then
                     printf '%s\n' 'PASS: exact public WireGuard-only split read-only admission'
                     printf '%s\n' 'RESULT: READ-ONLY MVC WIREGUARD SPLIT SESSION ELIGIBLE — NO HOST CHANGES'
                     return 0
                 fi
-                ubs24e_error "WireGuard-only split preflight failed at stage: ${UBS24GWS_STAGE:-unverified}"
+                mvc24e_error "WireGuard-only split preflight failed at stage: ${UBS24GWS_STAGE:-unverified}"
                 return 1
             fi
             (( $# == 4 )) && [[ "$3" == --split ]] || {
-                ubs24e_error 'Usage: mvc preflight OPENVPN | preflight WIREGUARD | preflight WIREGUARD --split | preflight WIREGUARD --split OPENVPN'
+                mvc24e_error 'Usage: mvc preflight OPENVPN | preflight WIREGUARD | preflight WIREGUARD --split | preflight WIREGUARD --split OPENVPN'
                 return 2
             }
-            ubs24_parse_command connect "$2" "$3" "$4" || return $?
+            mvc24_parse_command connect "$2" "$3" "$4" || return $?
             [[ "$UBS24_MODE" == combined ]] || return 2
-            ubs24e_preflight_adapter "$UBS24_PRIMARY_PROFILE" --split "$UBS24_OVPN_PROFILE"
+            mvc24e_preflight_adapter "$UBS24_PRIMARY_PROFILE" --split "$UBS24_OVPN_PROFILE"
             ;;
         list)
             (( $# == 1 )) || return 2
-            (( EUID == 0 )) || { ubs24e_error 'Run list with sudo.'; return 1; }
-            ubs24pub_list_readonly
+            (( EUID == 0 )) || { mvc24e_error 'Run list with sudo.'; return 1; }
+            mvc24pub_list_readonly
             ;;
         status)
             (( $# == 1 )) || return 2
-            (( EUID == 0 )) || { ubs24e_error 'Run status with sudo.'; return 1; }
-            ubs24pub_status_readonly
+            (( EUID == 0 )) || { mvc24e_error 'Run status with sudo.'; return 1; }
+            mvc24pub_status_readonly
             ;;
         connect)
-            ubs24_parse_command "$@" || return $?
-            (( EUID == 0 )) || { ubs24e_error 'Run connect with sudo.'; return 1; }
+            mvc24_parse_command "$@" || return $?
+            (( EUID == 0 )) || { mvc24e_error 'Run connect with sudo.'; return 1; }
             case ${UBS24_MODE:-} in
                 protected)
                     local single_kind
-                    ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
-                    single_kind=$(ubs24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
-                        ubs24e_error 'Selected single profile is not an exact saved OpenVPN/WireGuard profile.'
+                    mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
+                    single_kind=$(mvc24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
+                        mvc24e_error 'Selected single profile is not an exact saved OpenVPN/WireGuard profile.'
                         return 2
                     }
                     local UBS24E_DISPATCH_CONTEXT=c23aw-explicit-combined-live
-                    ubs24e_c23aw_live_ready || { ubs24e_error 'Live dispatcher refused authority.'; return 78; }
+                    mvc24e_c23aw_live_ready || { mvc24e_error 'Live dispatcher refused authority.'; return 78; }
                     if [[ $single_kind == wireguard ]]; then
-                        if ubs24pubc_connect_wireguard_protected_once "$UBS24_PRIMARY_PROFILE"; then
+                        if mvc24pubc_connect_wireguard_protected_once "$UBS24_PRIMARY_PROFILE"; then
                             printf '%s\n' 'PASS: protected WireGuard-only session started'
                             printf '%s\n' 'RESULT: WIREGUARD PROTECTED SESSION ACTIVE — ordinary Internet is kill-switched; use vpn-v240 disconnect for authenticated same-boot teardown'
                             return 0
                         fi
-                    elif ubs24pubc_connect_openvpn_once "$UBS24_PRIMARY_PROFILE"; then
+                    elif mvc24pubc_connect_openvpn_once "$UBS24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: protected OpenVPN-only session started'
                         printf '%s\n' 'RESULT: OPENVPN SESSION ACTIVE — use vpn-v240 disconnect for authenticated same-boot teardown'
                         return 0
@@ -135,10 +135,10 @@ ubs24e_dispatch() {
                     ;;
                 combined)
                     [[ -n ${UBS24_PRIMARY_PROFILE:-} && -n ${UBS24_OVPN_PROFILE:-} ]] || return 2
-                    ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
+                    mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
                     local UBS24E_DISPATCH_CONTEXT=c23aw-explicit-combined-live
-                    ubs24e_c23aw_live_ready || { ubs24e_error 'Combined live dispatcher refused authority.'; return 78; }
-                    if ubs24pubc_connect_once "$UBS24_PRIMARY_PROFILE" "$UBS24_OVPN_PROFILE"; then
+                    mvc24e_c23aw_live_ready || { mvc24e_error 'Combined live dispatcher refused authority.'; return 78; }
+                    if mvc24pubc_connect_once "$UBS24_PRIMARY_PROFILE" "$UBS24_OVPN_PROFILE"; then
                         printf '%s\n' 'PASS: protected parallel OpenVPN + WireGuard session started'
                         printf '%s\n' 'RESULT: DUAL SESSION ACTIVE — use vpn-v240 disconnect for authenticated same-boot teardown'
                         return 0
@@ -146,16 +146,16 @@ ubs24e_dispatch() {
                     ;;
                 split)
                     [[ -n ${UBS24_PRIMARY_PROFILE:-} && -z ${UBS24_OVPN_PROFILE:-} ]] || return 2
-                    ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
+                    mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
                     local split_kind
-                    split_kind=$(ubs24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
-                        ubs24e_error 'Selected split profile is not an exact saved WireGuard profile.'
+                    split_kind=$(mvc24pub_saved_profile_kind "$UBS24_PRIMARY_PROFILE") || {
+                        mvc24e_error 'Selected split profile is not an exact saved WireGuard profile.'
                         return 2
                     }
-                    [[ $split_kind == wireguard ]] || { ubs24e_error '--split is supported only for WireGuard.'; return 2; }
+                    [[ $split_kind == wireguard ]] || { mvc24e_error '--split is supported only for WireGuard.'; return 2; }
                     local UBS24E_DISPATCH_CONTEXT=c23aw-explicit-combined-live
-                    ubs24e_c23aw_live_ready || { ubs24e_error 'Split live dispatcher refused authority.'; return 78; }
-                    if ubs24pubc_connect_wireguard_split_once "$UBS24_PRIMARY_PROFILE"; then
+                    mvc24e_c23aw_live_ready || { mvc24e_error 'Split live dispatcher refused authority.'; return 78; }
+                    if mvc24pubc_connect_wireguard_split_once "$UBS24_PRIMARY_PROFILE"; then
                         printf '%s\n' 'PASS: WireGuard-only split session started'
                         printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION ACTIVE — ordinary Internet remains on the physical underlay; use vpn-v240 disconnect for authenticated same-boot teardown'
                         return 0
@@ -165,22 +165,22 @@ ubs24e_dispatch() {
             esac
             case ${UBS24PUBC_STAGE:-unverified} in
                 *-auto-cleaned-baseline|connect-failed-clean-baseline-restored)
-                    ubs24e_error "Connect failed at stage: ${UBS24PUBC_STAGE}; authenticated cleanup completed."
+                    mvc24e_error "Connect failed at stage: ${UBS24PUBC_STAGE}; authenticated cleanup completed."
                     printf '%s\n' 'RESULT: CONNECT FAILED — AUTHENTICATED CLEANUP COMPLETE; BASELINE RESTORED'
                     ;;
                 *)
-                    ubs24e_error "Connect failed at stage: ${UBS24PUBC_STAGE:-unverified}; authenticated state may remain. Run vpn-v240 disconnect once; if it refuses, inspect packaged recovery tools."
+                    mvc24e_error "Connect failed at stage: ${UBS24PUBC_STAGE:-unverified}; authenticated state may remain. Run vpn-v240 disconnect once; if it refuses, inspect packaged recovery tools."
                     ;;
             esac
             return 1
             ;;
         disconnect)
-            ubs24_parse_command "$@" || return $?
-            (( EUID == 0 )) || { ubs24e_error 'Run disconnect with sudo.'; return 1; }
-            ubs24pub_process_initialize || { ubs24e_error 'Public process initialization failed.'; return 1; }
+            mvc24_parse_command "$@" || return $?
+            (( EUID == 0 )) || { mvc24e_error 'Run disconnect with sudo.'; return 1; }
+            mvc24pub_process_initialize || { mvc24e_error 'Public process initialization failed.'; return 1; }
             local UBS24E_DISPATCH_CONTEXT=c23aw-explicit-combined-live
-            ubs24e_c23aw_live_ready || { ubs24e_error 'Combined live dispatcher refused authority.'; return 78; }
-            if ubs24pubd_disconnect_once; then
+            mvc24e_c23aw_live_ready || { mvc24e_error 'Combined live dispatcher refused authority.'; return 78; }
+            if mvc24pubd_disconnect_once; then
                 case ${UBS24PUBD_STAGE:-unverified} in
                     already-clean-baseline|public-partial-session-clean-no-mutation)
                         printf '%s\n' 'PASS: no managed v2.4 session requires teardown'
@@ -209,11 +209,11 @@ ubs24e_dispatch() {
                 esac
                 return 0
             fi
-            ubs24e_error "Disconnect failed at stage: ${UBS24PUBD_STAGE:-unverified}; authenticated state may remain. Do not retry blindly; inspect packaged recovery tools."
+            mvc24e_error "Disconnect failed at stage: ${UBS24PUBD_STAGE:-unverified}; authenticated state may remain. Do not retry blindly; inspect packaged recovery tools."
             return 1
             ;;
         *)
-            ubs24e_error 'Usage: vpn-v240 {version|preflight OPENVPN|preflight WIREGUARD|preflight WIREGUARD --split|preflight WG --split OVPN|list|status|connect OPENVPN|connect WIREGUARD|connect WIREGUARD --split|connect WG --split OVPN|disconnect}'
+            mvc24e_error 'Usage: vpn-v240 {version|preflight OPENVPN|preflight WIREGUARD|preflight WIREGUARD --split|preflight WG --split OVPN|list|status|connect OPENVPN|connect WIREGUARD|connect WIREGUARD --split|connect WG --split OVPN|disconnect}'
             return 2
             ;;
     esac
@@ -223,8 +223,8 @@ ubs24e_dispatch() {
 # own uid and stubs the fs-type accessor; the production wrapper uses uid 0.
 # The future live controller must validate this under the process lock BEFORE
 # creating session data. This routine NEVER creates a directory or file.
-ubs24e_fs_type() { stat -f -c %T -- "$1"; }
-ubs24e_runtime_root_valid() {
+mvc24e_fs_type() { stat -f -c %T -- "$1"; }
+mvc24e_runtime_root_valid() {
     (( $# == 2 )) || return 1
     local root=$1 uid=$2 entry name mode
     [[ "$root" == /* && "$root" != / && "$root" != */ &&
@@ -241,7 +241,7 @@ ubs24e_runtime_root_valid() {
     [[ -d "$root" && ! -L "$root" ]] || return 1
     [[ $(stat -c %u -- "$root") == "$uid" &&
        $(stat -c %a -- "$root") == 700 &&
-       $(ubs24e_fs_type "$root") == tmpfs ]] || return 1
+       $(mvc24e_fs_type "$root") == tmpfs ]] || return 1
     for entry in "$root"/* "$root"/.[!.]* "$root"/..?*; do
         [[ -e "$entry" || -L "$entry" ]] || continue
         name=${entry##*/}
@@ -262,16 +262,16 @@ ubs24e_runtime_root_valid() {
     done
 }
 
-ubs24e_production_root_valid() {
+mvc24e_production_root_valid() {
     (( $# == 0 )) || return 1
     # /run must be the real root-controlled tmpfs, not an attacker-supplied
     # alternate runtime or a symlink. This does not prepare the directory.
     [[ -d /run && ! -L /run &&
        $(stat -c %u -- /run) == 0 &&
-       $(ubs24e_fs_type /run) == tmpfs ]] || return 1
+       $(mvc24e_fs_type /run) == tmpfs ]] || return 1
     local perms
     perms=$(stat -c %a -- /run) || return 1
     [[ "$perms" =~ ^[0-7]{3,4}$ ]] || return 1
     (( (8#$perms & 0022) == 0 )) || return 1
-    ubs24e_runtime_root_valid /run/ubs-vpn-controller-v240 0
+    mvc24e_runtime_root_valid /run/ubs-vpn-controller-v240 0
 }

@@ -17,7 +17,7 @@
 # Requires: dual-session.sh, wireguard-peers.sh, combined-preflight.sh,
 # combined-networkmanager-backend.sh, combined-operational-d2-...-readonly.sh.
 
-ubs24gd3_reset() {
+mvc24gd3_reset() {
     UBS24GD3_STAGE=unverified
     UBS24GD3_TEMP_NAME=vpnks-wg
     UBS24GD3_TEMP_UUID=
@@ -32,7 +32,7 @@ ubs24gd3_reset() {
     UBS24GD3_ROUTE_DEL_ARGS=()
 }
 
-ubs24gd3_valid_temp_ifname() {
+mvc24gd3_valid_temp_ifname() {
     (( $# == 1 )) || return 1
     local iface=$1
     [[ $iface =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,14}$ &&
@@ -42,7 +42,7 @@ ubs24gd3_valid_temp_ifname() {
 # First dual vertical intentionally accepts exactly one IPv4 local address.
 # This matches a common single-address WireGuard profile style while
 # avoiding assumptions about multi-address source selection until it is needed.
-ubs24gd3_keyfile_ipv4_source() {
+mvc24gd3_keyfile_ipv4_source() {
     (( $# == 1 )) || return 1
     local file=$1 raw addr cidr count=0
     [[ -f $file && ! -L $file && -r $file ]] || return 1
@@ -67,37 +67,37 @@ ubs24gd3_keyfile_ipv4_source() {
     (( count == 1 ))
 }
 
-ubs24gd3_private_ipv4_prefix() {
+mvc24gd3_private_ipv4_prefix() {
     (( $# == 1 )) || return 1
     local prefix=$1 network plen
-    [[ $prefix != *:* ]] && ubs24c_parse_cidr "$prefix" || return 1
+    [[ $prefix != *:* ]] && mvc24c_parse_cidr "$prefix" || return 1
     network=$((UBS24C_CIDR_NET))
     plen=$UBS24C_CIDR_PREFIX
     if (( plen >= 8 )); then
-        ubs24c_cidr_contains 10.0.0.0/8 "${prefix%/*}" && return 0
+        mvc24c_cidr_contains 10.0.0.0/8 "${prefix%/*}" && return 0
     fi
     if (( plen >= 12 )); then
-        ubs24c_cidr_contains 172.16.0.0/12 "${prefix%/*}" && return 0
+        mvc24c_cidr_contains 172.16.0.0/12 "${prefix%/*}" && return 0
     fi
     if (( plen >= 16 )); then
-        ubs24c_cidr_contains 192.168.0.0/16 "${prefix%/*}" && return 0
+        mvc24c_cidr_contains 192.168.0.0/16 "${prefix%/*}" && return 0
     fi
     return 1
 }
 
-ubs24gd3_endpoint_not_captured() {
+mvc24gd3_endpoint_not_captured() {
     (( $# >= 2 )) || return 1
     local endpoint=$1 prefix
     shift
     wg23_validate_ipv4 "$endpoint" || return 1
     for prefix in "$@"; do
-        [[ $prefix != *:* ]] && ! ubs24c_cidr_contains "$prefix" "$endpoint" || return 1
+        [[ $prefix != *:* ]] && ! mvc24c_cidr_contains "$prefix" "$endpoint" || return 1
     done
 }
 
 # Build argv only; do not execute ip. The future live gate may invoke this
 # vector exactly once after publishing an immutable intent.
-ubs24gd3_prepare_endpoint_route() {
+mvc24gd3_prepare_endpoint_route() {
     (( $# == 4 )) || return 1
     local endpoint=$1 underlay=$2 gateway=$3 source=$4
     wg23_validate_ipv4 "$endpoint" && wg23_validate_ipv4 "$source" || return 1
@@ -121,20 +121,20 @@ ubs24gd3_prepare_endpoint_route() {
 # Copy source keyfile verbatim except the temporary connection identity,
 # interface name/autoconnect, and the single peer endpoint. No secret value is
 # parsed, printed, or copied outside the caller-provided root-only output file.
-ubs24gd3_write_pinned_profile() {
+mvc24gd3_write_pinned_profile() {
     (( $# == 8 )) || return 1
     local source=$1 source_uuid=$2 underlay=$3 endpoint_ip=$4 endpoint_port=$5
     local temp_name=$6 temp_uuid=$7 out=$8 source_port
-    ubs24gd2_validate_keyfile "$source" "$source_uuid" "$underlay" || return 1
+    mvc24gd2_validate_keyfile "$source" "$source_uuid" "$underlay" || return 1
     (( ${#UBS24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
     source_port=${UBS24GD2_ENDPOINT_PORTS[0]}
     wg23_validate_ipv4 "$endpoint_ip" || return 1
     [[ $endpoint_port =~ ^[0-9]+$ && $endpoint_port == "$source_port" ]] || return 1
-    ubs24gd3_valid_temp_ifname "$temp_name" || return 1
-    ubs24_valid_uuid "$temp_uuid" || return 1
+    mvc24gd3_valid_temp_ifname "$temp_name" || return 1
+    mvc24_valid_uuid "$temp_uuid" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
-    ubs24gd3_endpoint_not_captured "$endpoint_ip" "${UBS24GD2_ALLOWED_IPS[@]}" || return 1
+    mvc24gd3_endpoint_not_captured "$endpoint_ip" "${UBS24GD2_ALLOWED_IPS[@]}" || return 1
 
     awk -v name="$temp_name" -v uuid="$temp_uuid" -v endpoint="$endpoint_ip:$endpoint_port" '
       function finish_connection() {
@@ -169,11 +169,11 @@ ubs24gd3_write_pinned_profile() {
     UBS24GD3_WG_SOURCE=$source
     UBS24GD3_ENDPOINT_IP=$endpoint_ip
     UBS24GD3_ENDPOINT_PORT=$endpoint_port
-    ubs24gd3_keyfile_ipv4_source "$out" || return 1
+    mvc24gd3_keyfile_ipv4_source "$out" || return 1
     UBS24GD3_STAGE=pinned-temporary-profile-plan-ready-no-authority
 }
 
-ubs24gd3_guard_parameters() {
+mvc24gd3_guard_parameters() {
     (( $# >= 10 )) || return 1
     local underlay=$1 underlay_source=$2 ovpn_ip=$3 ovpn_port=$4
     local ovpn_tunnel=$5 ovpn_source=$6 wg_tunnel=$7 wg_source=$8 wg_ip=$9 wg_port=${10}
@@ -187,14 +187,14 @@ ubs24gd3_guard_parameters() {
     [[ $ovpn_port =~ ^[0-9]+$ && $wg_port =~ ^[0-9]+$ ]] || return 1
     (( 10#$ovpn_port >= 1 && 10#$ovpn_port <= 65535 && 10#$wg_port >= 1 && 10#$wg_port <= 65535 )) || return 1
     [[ $ovpn_tunnel == tun-vpnks ]] || return 1
-    ubs24gd3_valid_temp_ifname "$wg_tunnel" && [[ $wg_tunnel != "$underlay" ]] || return 1
+    mvc24gd3_valid_temp_ifname "$wg_tunnel" && [[ $wg_tunnel != "$underlay" ]] || return 1
     (( $# >= 1 && $# <= 512 )) || return 1
-    ubs24gd2_disjoint_ipv4_prefixes "$@" || return 1
-    ubs24gd3_endpoint_not_captured "$ovpn_ip" "$@" || return 1
-    ubs24gd3_endpoint_not_captured "$wg_ip" "$@" || return 1
+    mvc24gd2_disjoint_ipv4_prefixes "$@" || return 1
+    mvc24gd3_endpoint_not_captured "$ovpn_ip" "$@" || return 1
+    mvc24gd3_endpoint_not_captured "$wg_ip" "$@" || return 1
     for prefix in "$@"; do
-        ubs24gd3_private_ipv4_prefix "$prefix" || return 1
-        ! ubs24c_cidr_contains "$prefix" "$underlay_source" || return 1
+        mvc24gd3_private_ipv4_prefix "$prefix" || return 1
+        ! mvc24c_cidr_contains "$prefix" "$underlay_source" || return 1
     done
 }
 
@@ -202,13 +202,13 @@ ubs24gd3_guard_parameters() {
 # pinned WG transport, unrestricted OpenVPN tunnel egress, and WG egress only
 # to the selected profile's AllowedIPs. Netdev gets ARP plus the two pinned
 # physical transport endpoints. FORWARD/bridge remain untouched/default-drop.
-ubs24gd3_write_parallel_guard_candidate() {
+mvc24gd3_write_parallel_guard_candidate() {
     (( $# >= 11 )) || return 1
     local underlay=$1 underlay_source=$2 ovpn_ip=$3 ovpn_port=$4
     local ovpn_tunnel=$5 ovpn_source=$6 wg_tunnel=$7 wg_source=$8 wg_ip=$9 wg_port=${10} out=${11}
     shift 11
     local prefix
-    ubs24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
+    mvc24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
       "$ovpn_tunnel" "$ovpn_source" "$wg_tunnel" "$wg_source" "$wg_ip" "$wg_port" "$@" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
@@ -237,10 +237,10 @@ ubs24gd3_write_parallel_guard_candidate() {
     UBS24GD3_STAGE=parallel-guard-plan-ready-no-authority
 }
 
-ubs24gd3_authorize_activation() { return 1; }
-ubs24gd3_authorize_firewall() { return 1; }
-ubs24gd3_authorize_routes() { return 1; }
-ubs24gd3_authorize_profile_publish() { return 1; }
-ubs24gd3_authorize_cleanup() { return 1; }
-ubs24gd3_authorize_recovery() { return 1; }
-ubs24gd3_authorize_disarm() { return 1; }
+mvc24gd3_authorize_activation() { return 1; }
+mvc24gd3_authorize_firewall() { return 1; }
+mvc24gd3_authorize_routes() { return 1; }
+mvc24gd3_authorize_profile_publish() { return 1; }
+mvc24gd3_authorize_cleanup() { return 1; }
+mvc24gd3_authorize_recovery() { return 1; }
+mvc24gd3_authorize_disarm() { return 1; }

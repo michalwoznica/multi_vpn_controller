@@ -6,17 +6,17 @@
 # Do not source it from public/real-host entry points. Never call GetSecrets,
 # nmcli --show-secrets, activate, delete, modify, nft, DNS or recovery here.
 
-ubs24gc8_reset() {
+mvc24gc8_reset() {
     UBS24GC8_STAGE=unverified
     UBS24GC8_AUTHORITY=none
 }
 
-ubs24gc8_authorize_activation() { return 1; }
-ubs24gc8_authorize_secret_access() { return 1; }
-ubs24gc8_authorize_prompt() { return 1; }
-ubs24gc8_authorize_firewall() { return 1; }
-ubs24gc8_authorize_cleanup() { return 1; }
-ubs24gc8_authorize_recovery() { return 1; }
+mvc24gc8_authorize_activation() { return 1; }
+mvc24gc8_authorize_secret_access() { return 1; }
+mvc24gc8_authorize_prompt() { return 1; }
+mvc24gc8_authorize_firewall() { return 1; }
+mvc24gc8_authorize_cleanup() { return 1; }
+mvc24gc8_authorize_recovery() { return 1; }
 
 # Use the actual NetworkManager "http-proxy-password-flags" spelling. All
 # unknown *-flags fail closed rather than being silently considered safe.
@@ -28,12 +28,12 @@ ubs24gc8_authorize_recovery() { return 1; }
 # it is not proof that a required credential is absent. A future challenge
 # could still require a prompt, so this cannot establish no-prompt operation.
 # All primary/proxy/cert unsaved or agent-owned flags remain rejected.
-ubs24gc8_metadata_policy() {
+mvc24gc8_metadata_policy() {
     (( $# == 2 )) || return 1
     local snapshot=$1 expected_uuid=$2
     [[ -s $snapshot && -f $snapshot && ! -L $snapshot && -O $snapshot &&
        $(stat -c '%a:%h' -- "$snapshot" 2>/dev/null) == 600:1 ]] || return 1
-    ubs24ga_uuid_valid "$expected_uuid" || return 1
+    mvc24ga_uuid_valid "$expected_uuid" || return 1
     jq -e --arg uuid "$expected_uuid" '
         .type == "a{sa{sv}}" and (.data|type == "array" and length == 1) and
         .data[0].connection.uuid == {type:"s",data:$uuid} and
@@ -56,7 +56,7 @@ ubs24gc8_metadata_policy() {
     ' -- "$snapshot" >/dev/null 2>&1
 }
 
-ubs24gc8_same_flags() {
+mvc24gc8_same_flags() {
     (( $# == 2 )) || return 1
     # Compare only secret-policy flags and authentication type: other profile
     # fields have already been checked against A3's exact derivative fingerprint.
@@ -80,25 +80,25 @@ ubs24gc8_same_flags() {
 # and C5's independent A3 source/derivative identity witness. Captures only
 # GetSettings (which excludes secrets) in private tmpfs and erases snapshots.
 # A positive result means metadata continuity only, never no-prompt proof.
-ubs24gc8_preflight_locked() {
-    ubs24gc8_reset
+mvc24gc8_preflight_locked() {
+    mvc24gc8_reset
     (( $# == 0 )) || return 1
-    declare -F ubs24op_settings_fingerprint >/dev/null &&
-        declare -F ubs24op_settings_equal_except_runtime_timestamp >/dev/null || return 1
+    declare -F mvc24op_settings_fingerprint >/dev/null &&
+        declare -F mvc24op_settings_equal_except_runtime_timestamp >/dev/null || return 1
     [[ ${UBS24GC5_ATTEMPTED:-no} == no &&
        ${UBS24GC3_STAGE:-} == pinned-bootstrap-verified-no-vpn-authority &&
        ${UBS24GC3_AUTHORITY:-} == none ]] || return 1
-    ubs24gb2_root_scope && ubs24gb2_lock_valid &&
-       ubs24gc3_transition_records_valid &&
-       ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness || return 1
+    mvc24gb2_root_scope && mvc24gb2_lock_valid &&
+       mvc24gc3_transition_records_valid &&
+       mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || return 1
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local path source_uuid clone_uuid owner_before owner_after
     local item digest success=1 cleanup=1
     source_uuid=${UBS24GA3_PREPARED_SOURCE_UUID:-}
     clone_uuid=${UBS24GA3_PREPARED_CLONE_UUID:-}
-    ubs24ga_uuid_valid "$source_uuid" && ubs24ga_uuid_valid "$clone_uuid" &&
+    mvc24ga_uuid_valid "$source_uuid" && mvc24ga_uuid_valid "$clone_uuid" &&
         [[ $source_uuid != "$clone_uuid" ]] || return 1
-    ubs24op_session_nm_identity || return 1
+    mvc24op_session_nm_identity || return 1
     owner_before=$UBS24OP_SESSION_NM_IDENTITY
     [[ $owner_before == *'|0' ]] || return 1
     path=$(umask 077; mktemp -d /dev/shm/ubs-v240-c8.XXXXXXXX) || return 1
@@ -107,25 +107,25 @@ ubs24gc8_preflight_locked() {
         if ! (umask 077; set -C; : > "$path/$item.json"); then success=0; break; fi
     done
     if (( success == 1 )); then
-        ubs24ga3_capture_source "$source_uuid" "$path/source1.json" &&
-        ubs24ga3_capture_source "$source_uuid" "$path/source2.json" &&
-        ubs24ga3_capture_clone "$clone_uuid" "$path/clone1.json" &&
-        ubs24ga3_capture_clone "$clone_uuid" "$path/clone2.json" &&
-        ubs24op_settings_equal_except_runtime_timestamp "$path/source1.json" "$path/source2.json" &&
-        ubs24op_settings_equal_except_runtime_timestamp "$path/clone1.json" "$path/clone2.json" &&
-        ubs24gc8_metadata_policy "$path/source1.json" "$source_uuid" &&
-        ubs24gc8_metadata_policy "$path/clone1.json" "$clone_uuid" &&
-        ubs24gc8_same_flags "$path/source1.json" "$path/clone1.json" || success=0
+        mvc24ga3_capture_source "$source_uuid" "$path/source1.json" &&
+        mvc24ga3_capture_source "$source_uuid" "$path/source2.json" &&
+        mvc24ga3_capture_clone "$clone_uuid" "$path/clone1.json" &&
+        mvc24ga3_capture_clone "$clone_uuid" "$path/clone2.json" &&
+        mvc24op_settings_equal_except_runtime_timestamp "$path/source1.json" "$path/source2.json" &&
+        mvc24op_settings_equal_except_runtime_timestamp "$path/clone1.json" "$path/clone2.json" &&
+        mvc24gc8_metadata_policy "$path/source1.json" "$source_uuid" &&
+        mvc24gc8_metadata_policy "$path/clone1.json" "$clone_uuid" &&
+        mvc24gc8_same_flags "$path/source1.json" "$path/clone1.json" || success=0
     fi
     if (( success == 1 )); then
-        digest=$(ubs24op_settings_fingerprint "$path/source1.json") || success=0
+        digest=$(mvc24op_settings_fingerprint "$path/source1.json") || success=0
         [[ $digest == "${UBS24GA3_SOURCE_SHA256:-}" ]] || success=0
-        digest=$(ubs24op_settings_fingerprint "$path/clone1.json") || success=0
+        digest=$(mvc24op_settings_fingerprint "$path/clone1.json") || success=0
         [[ $digest == "${UBS24GA3_DERIVATIVE_SHA256:-}" ]] || success=0
-        ubs24op_session_nm_identity || success=0
+        mvc24op_session_nm_identity || success=0
         owner_after=${UBS24OP_SESSION_NM_IDENTITY:-}
         [[ $owner_after == "$owner_before" ]] &&
-            ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness || success=0
+            mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness || success=0
     fi
     for item in source1 source2 clone1 clone2; do
         if [[ -e $path/$item.json || -L $path/$item.json ]]; then

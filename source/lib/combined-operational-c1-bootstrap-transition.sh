@@ -6,20 +6,20 @@
 # No clone, VPN start, policy disarm or cleanup authority is conferred.
 # Requires B1/B2 libraries sourced first. Bash-only production dependencies.
 
-ubs24gc1_reset() {
+mvc24gc1_reset() {
     UBS24GC1_ATTEMPTED=no
     UBS24GC1_STAGE=unverified
     UBS24GC1_AUTHORITY=none
 }
 
-ubs24gc1_guard_witness() {
-    declare -F ubs24gc2_guard_witness >/dev/null && ubs24gc2_guard_witness
+mvc24gc1_guard_witness() {
+    declare -F mvc24gc2_guard_witness >/dev/null && mvc24gc2_guard_witness
 }
-ubs24gc1_endpoint_witness() {
-    declare -F ubs24gc2_endpoint_witness >/dev/null && ubs24gc2_endpoint_witness "$@"
+mvc24gc1_endpoint_witness() {
+    declare -F mvc24gc2_endpoint_witness >/dev/null && mvc24gc2_endpoint_witness "$@"
 }
 
-ubs24gc1_ipv4() {
+mvc24gc1_ipv4() {
     (( $# == 1 )) && [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
     local -a octets
     IFS=. read -r -a octets <<< "$1"
@@ -30,23 +30,23 @@ ubs24gc1_ipv4() {
     done
 }
 
-ubs24gc1_port() {
+mvc24gc1_port() {
     (( $# == 1 )) && [[ $1 =~ ^[1-9][0-9]{0,4}$ ]] && (( 10#$1 <= 65535 ))
 }
 
-ubs24gc1_parameters() {
+mvc24gc1_parameters() {
     (( $# == 4 )) || return 1
-    ubs24gb1_valid_ifname "$1" && ubs24gc1_ipv4 "$2" &&
-       ubs24gc1_ipv4 "$3" && ubs24gc1_port "$4" && [[ $2 != "$3" ]]
+    mvc24gb1_valid_ifname "$1" && mvc24gc1_ipv4 "$2" &&
+       mvc24gc1_ipv4 "$3" && mvc24gc1_port "$4" && [[ $2 != "$3" ]]
 }
 
 # Exactly eight statements, in ONE nft --file transaction. Forwarding hooks
 # remain unchanged (drop). Base-chain policy remains drop, even on an error.
 # Explicit ARP is required for IPv4 next-hop discovery; not arbitrary IP/DNS.
-ubs24gc1_write_batch() {
+mvc24gc1_write_batch() {
     (( $# == 5 )) || return 1
     local iface=$1 source=$2 remote=$3 port=$4 out=$5
-    ubs24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
+    mvc24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == '600:1' ]] || return 1
     {
@@ -61,13 +61,13 @@ ubs24gc1_write_batch() {
     } > "$out"
 }
 
-ubs24gc1_batch_valid() {
+mvc24gc1_batch_valid() {
     (( $# == 5 )) || return 1
     local expected=$5 scratch
     [[ -f $expected && ! -L $expected ]] || return 1
     scratch=$(mktemp "$(dirname -- "$expected")/.ubs-v240-c1-verify.XXXXXXXX") || return 1
     chmod 600 "$scratch" || { rm -f "$scratch"; return 1; }
-    ubs24gc1_write_batch "$1" "$2" "$3" "$4" "$scratch" || { rm -f "$scratch"; return 1; }
+    mvc24gc1_write_batch "$1" "$2" "$3" "$4" "$scratch" || { rm -f "$scratch"; return 1; }
     cmp -s "$scratch" "$expected"
     local ok=$?
     rm -f "$scratch"
@@ -80,10 +80,10 @@ ubs24gc1_batch_valid() {
 # lowers source-rule syntax to kernel expressions. The small explicit whitelist
 # below strips only those precise narrowing matches (IPv4/TCP), never arbitrary
 # expressions, verdicts, or wildcard protocol values. A mismatch stays closed.
-ubs24gc1_postshape_observation() {
+mvc24gc1_postshape_observation() {
     (( $# == 5 )) || return 1
     local file=$1 iface=$2 source=$3 remote=$4 port=$5
-    ubs24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
+    mvc24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
     [[ -f $file && ! -L $file ]] || return 1
     jq -e --arg iface "$iface" --arg src "$source" --arg dst "$remote" --argjson port "$port" '
        def matchv($left;$right): {match:{op:"==",left:$left,right:$right}};
@@ -162,40 +162,40 @@ ubs24gc1_postshape_observation() {
 # Journal published before the SINGLE commit attempt. If nft returns an error
 # after issuing the command, do not retry, delete any guard, or assume failure.
 # The root runtime remains for later independent reconciliation.
-ubs24gc1_transition_once() {
+mvc24gc1_transition_once() {
     (( $# == 4 )) || return 1
     [[ ${UBS24GC1_ATTEMPTED:-no} == no ]] || return 1
     UBS24GC1_ATTEMPTED=yes
     UBS24GC1_STAGE=blocked-unverified
     UBS24GC1_AUTHORITY=none
     local iface=$1 source=$2 remote=$3 port=$4 dir scratch first second fbefore fafter
-    ubs24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
-    ubs24gb2_root_scope && ubs24gb2_lock_valid && ubs24gb2_attest || return 1
+    mvc24gc1_parameters "$iface" "$source" "$remote" "$port" || return 1
+    mvc24gb2_root_scope && mvc24gb2_lock_valid && mvc24gb2_attest || return 1
     [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
-    [[ $(ubs24gb2_derive_iface) == "$iface" ]] || return 1
-    ubs24gc1_guard_witness && ubs24gc1_endpoint_witness "$iface" "$source" "$remote" "$port" || return 1
-    dir=$(ubs24gb2_runtime) || return 1
+    [[ $(mvc24gb2_derive_iface) == "$iface" ]] || return 1
+    mvc24gc1_guard_witness && mvc24gc1_endpoint_witness "$iface" "$source" "$remote" "$port" || return 1
+    dir=$(mvc24gb2_runtime) || return 1
     [[ ! -e $dir/transition.nft && ! -L $dir/transition.nft &&
        ! -e $dir/transition-attempt && ! -L $dir/transition-attempt ]] || return 1
     scratch=$(mktemp -d /run/mvc-c1.XXXXXXXX) || return 1
     chmod 700 "$scratch" || return 1
     (umask 077; : > "$scratch/transition.nft") || return 1
     chmod 600 "$scratch/transition.nft" || return 1
-    ubs24gc1_write_batch "$iface" "$source" "$remote" "$port" "$scratch/transition.nft" || return 1
+    mvc24gc1_write_batch "$iface" "$source" "$remote" "$port" "$scratch/transition.nft" || return 1
     nft --check --file "$scratch/transition.nft" >/dev/null 2>&1 || return 1
     first=$scratch/pre1.json; second=$scratch/pre2.json
-    ubs24gb1_capture_nft "$first" && ubs24gb1_capture_nft "$second" &&
-       cmp -s "$first" "$second" && ubs24gb2_poststate_valid "$first" "$iface" || return 1
-    fbefore=$(ubs24gb2_foreign_projection "$dir/prestate.json") || return 1
-    fafter=$(ubs24gb2_foreign_projection "$first") || return 1
+    mvc24gb1_capture_nft "$first" && mvc24gb1_capture_nft "$second" &&
+       cmp -s "$first" "$second" && mvc24gb2_poststate_valid "$first" "$iface" || return 1
+    fbefore=$(mvc24gb2_foreign_projection "$dir/prestate.json") || return 1
+    fafter=$(mvc24gb2_foreign_projection "$first") || return 1
     [[ $fbefore == "$fafter" ]] || return 1
     # Confirm ownership and provenance again before irreversible publication.
-    ubs24gb2_attest && ubs24gc1_guard_witness &&
-        ubs24gc1_endpoint_witness "$iface" "$source" "$remote" "$port" || return 1
+    mvc24gb2_attest && mvc24gc1_guard_witness &&
+        mvc24gc1_endpoint_witness "$iface" "$source" "$remote" "$port" || return 1
     (umask 077; set -C; : > "$dir/transition.nft") || return 1
     chmod 400 "$dir/transition.nft" || return 1
     cp "$scratch/transition.nft" "$dir/transition.nft" || return 1
-    ubs24gc1_batch_valid "$iface" "$source" "$remote" "$port" "$dir/transition.nft" || return 1
+    mvc24gc1_batch_valid "$iface" "$source" "$remote" "$port" "$dir/transition.nft" || return 1
     local boot prepared committed batch
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     prepared=$(sha256sum "$dir/prepare-intent") || return 1
@@ -208,11 +208,11 @@ ubs24gc1_transition_once() {
         "batch=${batch%% *}" > "$dir/transition-attempt" || return 1
     UBS24GC1_STAGE=transition-commit-attempted-no-vpn-authority
     nft --file "$dir/transition.nft" >/dev/null 2>&1 || return 1
-    ubs24gb1_capture_nft "$scratch/post1.json" &&
-       ubs24gb1_capture_nft "$scratch/post2.json" &&
+    mvc24gb1_capture_nft "$scratch/post1.json" &&
+       mvc24gb1_capture_nft "$scratch/post2.json" &&
        cmp -s "$scratch/post1.json" "$scratch/post2.json" &&
-       ubs24gc1_postshape_observation "$scratch/post1.json" "$iface" "$source" "$remote" "$port" || return 1
-    fafter=$(ubs24gb2_foreign_projection "$scratch/post1.json") || return 1
+       mvc24gc1_postshape_observation "$scratch/post1.json" "$iface" "$source" "$remote" "$port" || return 1
+    fafter=$(mvc24gb2_foreign_projection "$scratch/post1.json") || return 1
     [[ $fbefore == "$fafter" ]] || return 1
     # Still not a security-admitting witness: exact kernel rule expressions and
     # independent NM source/endpoint binding need validation before C1 can be
@@ -222,8 +222,8 @@ ubs24gc1_transition_once() {
     rm -rf -- "$scratch" || return 1
 }
 
-ubs24gc1_authorize_clone() { return 1; }
-ubs24gc1_authorize_activation() { return 1; }
-ubs24gc1_authorize_cleanup() { return 1; }
-ubs24gc1_authorize_disarm() { return 1; }
-ubs24gc1_authorize_recovery() { return 1; }
+mvc24gc1_authorize_clone() { return 1; }
+mvc24gc1_authorize_activation() { return 1; }
+mvc24gc1_authorize_cleanup() { return 1; }
+mvc24gc1_authorize_disarm() { return 1; }
+mvc24gc1_authorize_recovery() { return 1; }

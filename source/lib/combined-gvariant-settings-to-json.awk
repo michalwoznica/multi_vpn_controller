@@ -3,7 +3,7 @@
 # Only a typed, non-secret a{sa{sv}} subset is accepted. Unknown signatures fail closed.
 # Diagnostics reveal only static grammar categories, never actual network values.
 function fail(reason) {
-  if (ubs24_variant_diag == 1 && !reported++) {
+  if (mvc24_variant_diag == 1 && !reported++) {
     if (reason == "") reason="unsupported token or structure"
     print "DIAG: decoder category: " reason > "/dev/stderr"
   }
@@ -258,7 +258,7 @@ function variant(    hint,kind,v,c,ann) {
     pos++;ann=""
     while(pos<=n && substr(src,pos,1) !~ /[ \t\r\n]/) { ann=ann substr(src,pos++,1);if(length(ann)>32)fail() }
     if(ann!="as"&&ann!="au"&&ann!="ay"&&ann!="aa{sv}"&&ann!="aau"&&ann!="aay"&&ann!="a(ayuayu)"&&ann!="a(ayuay)"&&ann!="a{ss}"&&ann!="a{sv}") {
-      if(ubs24_variant_diag == 1 && printable_signature(ann))
+      if(mvc24_variant_diag == 1 && printable_signature(ann))
         print "DIAG: unsupported GVariant type signature: @" ann > "/dev/stderr"
       fail("unsupported explicit type annotation")
     }
@@ -298,9 +298,9 @@ END {
   n=length(src);pos=1; serial=0
   # Explicitly selected shape. GetSettings and GetAppliedConnection have
   # different D-Bus result signatures; never infer/ignore the version field.
-  if (ubs24_variant_mode != "" && ubs24_variant_mode != "settings" && ubs24_variant_mode != "applied") exit 1
+  if (mvc24_variant_mode != "" && mvc24_variant_mode != "settings" && mvc24_variant_mode != "applied") exit 1
   take("("); result=dictionary("settings");take(",")
-  if (ubs24_variant_mode == "applied") {
+  if (mvc24_variant_mode == "applied") {
     word("uint64"); ver=number64()
     take(")")
     if(peek()!="") exit 1

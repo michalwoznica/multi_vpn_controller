@@ -7,7 +7,7 @@
 # NetworkManager GetSettings excludes secrets. This workflow proves only exact
 # non-secret settings under quarantine, never unattended authentication.
 
-ubs24ga3_reset() {
+mvc24ga3_reset() {
     UBS24GA3_STAGE=unverified
     UBS24GA3_AUTHORITY=none
     UBS24GA3_STEP=idle
@@ -22,44 +22,44 @@ ubs24ga3_reset() {
 }
 
 # The single missing live-authority integration is deliberately visible.
-ubs24ga3_guard_witness() {
+mvc24ga3_guard_witness() {
     # Missing C2 binding is a hard denial. This does not make A3 publicly
     # callable; the controller entry point remains locked.
-    declare -F ubs24gc2_guard_witness >/dev/null && ubs24gc2_guard_witness
+    declare -F mvc24gc2_guard_witness >/dev/null && mvc24gc2_guard_witness
 }
 
 # Read-only NetworkManager callbacks. Require a verified held controller lock,
 # NM owner identity and profile object identity at both ends of a capture.
-ubs24ga3_nm_identity() {
-    declare -F ubs24op_session_nm_identity >/dev/null || return 1
-    ubs24op_session_nm_identity || return 1
+mvc24ga3_nm_identity() {
+    declare -F mvc24op_session_nm_identity >/dev/null || return 1
+    mvc24op_session_nm_identity || return 1
     [[ ${UBS24OP_SESSION_NM_IDENTITY:-} == *'|0' ]]
 }
 
-ubs24ga3_capture_uuid() {
+mvc24ga3_capture_uuid() {
     (( $# == 3 )) || return 1
     local uuid=$1 output=$2 source_kind=$3 reply obj unsaved owner_before owner_after
     [[ $source_kind == saved-source || $source_kind == temporary-clone ]] || return 1
-    declare -F ubs24g_call_readonly >/dev/null &&
-        declare -F ubs24g_get_property >/dev/null &&
-        declare -F ubs24gs_capture_settings >/dev/null &&
-        declare -F ubs24ga_uuid_valid >/dev/null || return 1
-    ubs24ga_uuid_valid "$uuid" || return 1
+    declare -F mvc24g_call_readonly >/dev/null &&
+        declare -F mvc24g_get_property >/dev/null &&
+        declare -F mvc24gs_capture_settings >/dev/null &&
+        declare -F mvc24ga_uuid_valid >/dev/null || return 1
+    mvc24ga_uuid_valid "$uuid" || return 1
     [[ -f $output && ! -L $output && -O $output &&
        $(stat -c '%a:%h' -- "$output") == 600:1 && ! -s $output ]] || return 1
-    ubs24ga3_nm_identity || return 1
+    mvc24ga3_nm_identity || return 1
     owner_before=$UBS24OP_SESSION_NM_IDENTITY
-    reply=$(ubs24g_call_readonly org.freedesktop.NetworkManager \
+    reply=$(mvc24g_call_readonly org.freedesktop.NetworkManager \
         /org/freedesktop/NetworkManager/Settings \
         org.freedesktop.NetworkManager.Settings GetConnectionByUuid s "$uuid" o) || return 1
     [[ $reply =~ ^o\ \"(/org/freedesktop/NetworkManager/Settings/[0-9]+)\"$ ]] || return 1
     obj=${BASH_REMATCH[1]}
-    unsaved=$(ubs24g_get_property org.freedesktop.NetworkManager "$obj" \
+    unsaved=$(mvc24g_get_property org.freedesktop.NetworkManager "$obj" \
         org.freedesktop.NetworkManager.Settings.Connection Unsaved b) || return 1
     [[ $unsaved == 'b false' || $unsaved == 'b true' ]] || return 1
     [[ $source_kind != saved-source || $unsaved == 'b false' ]] || return 1
     [[ $source_kind != temporary-clone || $unsaved == 'b true' ]] || return 1
-    ubs24gs_capture_settings "$obj" "$output" || return 1
+    mvc24gs_capture_settings "$obj" "$output" || return 1
     [[ -s $output && $(stat -c '%a:%h' -- "$output") == 600:1 ]] || return 1
     jq -e --arg uuid "$uuid" '
         .type == "a{sa{sv}}" and (.data|type=="array" and length==1) and
@@ -68,29 +68,29 @@ ubs24ga3_capture_uuid() {
         .data[0].vpn["service-type"] == {type:"s",data:"org.freedesktop.NetworkManager.openvpn"} and
         (.data[0].vpn|has("secrets")|not)
     ' -- "$output" >/dev/null 2>&1 || return 1
-    ubs24ga3_nm_identity || return 1
+    mvc24ga3_nm_identity || return 1
     owner_after=$UBS24OP_SESSION_NM_IDENTITY
     [[ $owner_before == "$owner_after" ]] || return 1
-    reply=$(ubs24g_call_readonly org.freedesktop.NetworkManager \
+    reply=$(mvc24g_call_readonly org.freedesktop.NetworkManager \
         /org/freedesktop/NetworkManager/Settings \
         org.freedesktop.NetworkManager.Settings GetConnectionByUuid s "$uuid" o) || return 1
     [[ $reply == "o \"$obj\"" ]] || return 1
-    unsaved=$(ubs24g_get_property org.freedesktop.NetworkManager "$obj" \
+    unsaved=$(mvc24g_get_property org.freedesktop.NetworkManager "$obj" \
         org.freedesktop.NetworkManager.Settings.Connection Unsaved b) || return 1
     [[ $unsaved == 'b false' || $unsaved == 'b true' ]] || return 1
     [[ $source_kind != saved-source || $unsaved == 'b false' ]] &&
         [[ $source_kind != temporary-clone || $unsaved == 'b true' ]]
 }
 
-ubs24ga3_capture_source() { (( $# == 2 )) && ubs24ga3_capture_uuid "$1" "$2" saved-source; }
-ubs24ga3_capture_clone() { (( $# == 2 )) && ubs24ga3_capture_uuid "$1" "$2" temporary-clone; }
+mvc24ga3_capture_source() { (( $# == 2 )) && mvc24ga3_capture_uuid "$1" "$2" saved-source; }
+mvc24ga3_capture_clone() { (( $# == 2 )) && mvc24ga3_capture_uuid "$1" "$2" temporary-clone; }
 
-ubs24ga3_private_empty() {
+mvc24ga3_private_empty() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 && -O $1 && ! -s $1 ]] &&
         [[ $(stat -c '%a:%h' -- "$1" 2>/dev/null) == 600:1 ]]
 }
 
-ubs24ga3_source_format() {
+mvc24ga3_source_format() {
     (( $# == 2 )) || return 1
     local file=$1 uuid=$2
     [[ -s $file && -f $file && ! -L $file && -O $file &&
@@ -108,59 +108,59 @@ ubs24ga3_source_format() {
        .data[0].vpn["service-type"] == {type:"s",data:"org.freedesktop.NetworkManager.openvpn"} and
        (.data[0].vpn|has("secrets")|not)
     ' -- "$file" >/dev/null 2>&1 || return 1
-    ubs24op_candidate_plan "$file" 1 >/dev/null || return 1
+    mvc24op_candidate_plan "$file" 1 >/dev/null || return 1
 }
 
 # The A1/A2 witness callbacks are deliberately bound to this controller.
 # Unoverridden guard_witness() refuses every attempt on real hosts.
-ubs24ga_live_guard_witness() { ubs24ga3_guard_witness; }
-ubs24ga_nm_source_witness() { ubs24ga3_source_witness "$1"; }
-ubs24ga2_guard_witness() { ubs24ga3_guard_witness; }
-ubs24ga2_source_witness() {
+mvc24ga_live_guard_witness() { mvc24ga3_guard_witness; }
+mvc24ga_nm_source_witness() { mvc24ga3_source_witness "$1"; }
+mvc24ga2_guard_witness() { mvc24ga3_guard_witness; }
+mvc24ga2_source_witness() {
     (( $# == 1 )) && [[ $1 == "${UBS24GA3_SOURCE_FILE:-/nonexistent}" ]] &&
-        ubs24ga3_source_witness "${UBS24GA3_SOURCE_UUID:-}"
+        mvc24ga3_source_witness "${UBS24GA3_SOURCE_UUID:-}"
 }
-ubs24ga2_capture_readback() { ubs24ga3_capture_clone "$1" "$2"; }
+mvc24ga2_capture_readback() { mvc24ga3_capture_clone "$1" "$2"; }
 
-ubs24ga3_source_witness() {
+mvc24ga3_source_witness() {
     (( $# == 1 )) || return 1
     [[ $1 == "${UBS24GA3_SOURCE_UUID:-}" && -n $1 &&
        -n ${UBS24GA3_SOURCE_FILE:-} && -n ${UBS24GA3_SCRATCH:-} ]] || return 1
     local scratch=$UBS24GA3_SCRATCH current=$UBS24GA3_SCRATCH/current.json
-    ubs24ga3_guard_witness &&
+    mvc24ga3_guard_witness &&
         [[ -d $scratch && ! -L $scratch && -O $scratch &&
            $(stat -c %a -- "$scratch") == 700 ]] || return 1
-    ubs24ga3_private_empty "$current" || return 1
-    ubs24ga3_capture_source "$1" "$current" || return 1
-    ubs24ga3_source_format "$current" "$1" &&
+    mvc24ga3_private_empty "$current" || return 1
+    mvc24ga3_capture_source "$1" "$current" || return 1
+    mvc24ga3_source_format "$current" "$1" &&
         cmp -s -- "$current" "$UBS24GA3_SOURCE_FILE" || return 1
     : > "$current" || return 1
-    ubs24ga3_private_empty "$current" && ubs24ga3_guard_witness
+    mvc24ga3_private_empty "$current" && mvc24ga3_guard_witness
 }
 
-ubs24ga3_execute_locked() {
+mvc24ga3_execute_locked() {
     (( $# == 1 )) || return 1
     local source_uuid=$1 scratch=$UBS24GA3_SCRATCH item
     UBS24GA3_STEP=initial-guard-nm-identity
-    ubs24ga3_guard_witness && ubs24ga3_nm_identity || return 1
+    mvc24ga3_guard_witness && mvc24ga3_nm_identity || return 1
     UBS24GA3_STAGE=source-readonly-preflight
     UBS24GA3_STEP=create-private-evidence-files
     for item in source1 source2 current expected read1 read2; do
         (umask 077; set -C; : > "$scratch/$item.json") || return 1
-        ubs24ga3_private_empty "$scratch/$item.json" || return 1
+        mvc24ga3_private_empty "$scratch/$item.json" || return 1
     done
     UBS24GA3_STEP=source-readback-1
-    ubs24ga3_capture_source "$source_uuid" "$scratch/source1.json" || return 1
+    mvc24ga3_capture_source "$source_uuid" "$scratch/source1.json" || return 1
     UBS24GA3_STEP=source-readback-2
-    ubs24ga3_capture_source "$source_uuid" "$scratch/source2.json" || return 1
+    mvc24ga3_capture_source "$source_uuid" "$scratch/source2.json" || return 1
     UBS24GA3_STEP=source-readbacks-byte-stable
     cmp -s -- "$scratch/source1.json" "$scratch/source2.json" || return 1
     UBS24GA3_STEP=source-format
-    ubs24ga3_source_format "$scratch/source1.json" "$source_uuid" || return 1
+    mvc24ga3_source_format "$scratch/source1.json" "$source_uuid" || return 1
     UBS24GA3_SOURCE_UUID=$source_uuid
     UBS24GA3_SOURCE_FILE=$scratch/source1.json
     UBS24GA3_STEP=source-witness-before-clone
-    ubs24ga3_source_witness "$source_uuid" || return 1
+    mvc24ga3_source_witness "$source_uuid" || return 1
     # NetworkManager does not implement connection.autoconnect for VPN
     # profiles; VPN automatic start is expressed through connection.secondaries.
     # The source must still be a typed OpenVPN profile with no secondaries, and
@@ -169,18 +169,18 @@ ubs24ga3_execute_locked() {
     # then A2 explicitly hardens the derivative to autoconnect=false.
     UBS24GA3_STAGE=clone-attempted-no-activation-authority
     UBS24GA3_STEP=raw-temporary-clone
-    ubs24ga_clone_temporary_once "$source_uuid" || return 1
+    mvc24ga_clone_temporary_once "$source_uuid" || return 1
     UBS24GA3_STEP=source-witness-after-clone
-    ubs24ga3_source_witness "$source_uuid" || return 1
+    mvc24ga3_source_witness "$source_uuid" || return 1
     UBS24GA3_STEP=build-expected-derivative
-    ubs24op_preview_build "$scratch/source1.json" "$UBS24GA_CLONE_UUID" \
+    mvc24op_preview_build "$scratch/source1.json" "$UBS24GA_CLONE_UUID" \
         "$scratch/expected.json" >/dev/null || return 1
     UBS24GA3_STAGE=hardening-attempted-no-activation-authority
     UBS24GA3_STEP=a2-hardening
-    ubs24ga2_harden_once "$scratch/source1.json" "$scratch/expected.json" \
+    mvc24ga2_harden_once "$scratch/source1.json" "$scratch/expected.json" \
         "$scratch/read1.json" "$scratch/read2.json" || return 1
     UBS24GA3_STEP=source-and-guard-witness-after-a2
-    ubs24ga3_source_witness "$source_uuid" && ubs24ga3_guard_witness || return 1
+    mvc24ga3_source_witness "$source_uuid" && mvc24ga3_guard_witness || return 1
     UBS24GA3_STEP=a2-state-contract
     [[ ${UBS24GA2_STATE:-} == quarantined-exact-nonsecret-settings-verified &&
        ${UBS24GA2_AUTHORITY:-} == none && ${UBS24GA_AUTHORITY:-} == none ]] || return 1
@@ -191,9 +191,9 @@ ubs24ga3_execute_locked() {
     # NetworkManager connection.timestamp runtime metadata. That property is
     # read-only and may reset/update independently of profile configuration.
     UBS24GA3_STEP=source-fingerprint
-    source_hash=$(ubs24op_settings_fingerprint "$scratch/source1.json") || return 1
+    source_hash=$(mvc24op_settings_fingerprint "$scratch/source1.json") || return 1
     UBS24GA3_STEP=derivative-fingerprint
-    derivative_hash=$(ubs24op_settings_fingerprint "$scratch/read1.json") || return 1
+    derivative_hash=$(mvc24op_settings_fingerprint "$scratch/read1.json") || return 1
     UBS24GA3_SOURCE_SHA256=$source_hash
     UBS24GA3_DERIVATIVE_SHA256=$derivative_hash
     [[ $UBS24GA3_SOURCE_SHA256 =~ ^[0-9a-f]{64}$ &&
@@ -207,12 +207,12 @@ ubs24ga3_execute_locked() {
 
 # One-shot. Cleans only its own temporary *read-only evidence*. Never removes
 # an uncertain NM clone or guard. No retry after any NM write was attempted.
-ubs24ga3_prepare_once() {
+mvc24ga3_prepare_once() {
     (( $# == 1 )) || return 1
     [[ ${UBS24GA3_ATTEMPTED:-no} == no ]] || return 1
-    ubs24ga_uuid_valid "$1" || return 1
+    mvc24ga_uuid_valid "$1" || return 1
     UBS24GA3_ATTEMPTED=yes
-    ubs24ga3_reset
+    mvc24ga3_reset
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
     local scratch success=1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-a3.XXXXXXXX) || return 1
@@ -220,7 +220,7 @@ ubs24ga3_prepare_once() {
        $(stat -c %a -- "$scratch") == 700 ]] || return 1
     UBS24GA3_SCRATCH=$scratch
     local failure_stage=unverified
-    if ! ubs24ga3_execute_locked "$1"; then
+    if ! mvc24ga3_execute_locked "$1"; then
         success=0
         failure_stage=${UBS24GA3_STAGE:-unverified}
     fi
@@ -254,8 +254,8 @@ ubs24ga3_prepare_once() {
     return 1
 }
 
-ubs24ga3_authorize_activation() { return 1; }
-ubs24ga3_authorize_cleanup() { return 1; }
-ubs24ga3_authorize_guard_release() { return 1; }
-ubs24ga3_authorize_recovery() { return 1; }
-ubs24ga3_authorize_secret_export() { return 1; }
+mvc24ga3_authorize_activation() { return 1; }
+mvc24ga3_authorize_cleanup() { return 1; }
+mvc24ga3_authorize_guard_release() { return 1; }
+mvc24ga3_authorize_recovery() { return 1; }
+mvc24ga3_authorize_secret_export() { return 1; }

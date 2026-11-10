@@ -7,7 +7,7 @@ umask 077
 export LC_ALL=C
 
 # UBS24_MONOLITH_VERIFY_FUNCTIONS_BEGIN
-ubs24v_usage() {
+mvc24v_usage() {
     cat <<'USAGE'
 Usage: sudo ./source/tools/verify-mvc-state-readonly.sh [--no-internet-check]
 
@@ -21,17 +21,17 @@ cleanup authority, or permission to mutate controller/recovery state.
 USAGE
 }
 
-ubs24v_section() {
+mvc24v_section() {
     (( $# == 1 )) || return 2
     printf '\n=== %s ===\n' "$1"
 }
 
-ubs24v_run_observation() {
+mvc24v_run_observation() {
     (( $# >= 1 )) || return 2
     "$@" 2>&1 || printf '[command exit=%d]\n' "$?"
 }
 
-ubs24v_route_get() {
+mvc24v_route_get() {
     (( $# == 1 )) || return 2
     local destination=$1
     local output rc
@@ -51,20 +51,20 @@ ubs24v_route_get() {
 # Standalone default. The generated monolith deliberately overrides only this
 # callback so `verify` observes the monolith's own internal read-only status
 # path rather than invoking a sibling controller executable.
-ubs24v_controller_status() {
+mvc24v_controller_status() {
     (( $# == 1 )) || return 2
     "$1" status
 }
 
-ubs24v_main() {
+mvc24v_main() {
     local internet_check=yes
     case ${1-} in
         '') ;;
         --no-internet-check) internet_check=no ;;
-        -h|--help) ubs24v_usage; return 0 ;;
-        *) ubs24v_usage >&2; return 2 ;;
+        -h|--help) mvc24v_usage; return 0 ;;
+        *) mvc24v_usage >&2; return 2 ;;
     esac
-    [[ $# -le 1 ]] || { ubs24v_usage >&2; return 2; }
+    [[ $# -le 1 ]] || { mvc24v_usage >&2; return 2; }
 
     if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
         echo 'ERROR: run this read-only verifier as root (sudo).' >&2
@@ -125,16 +125,16 @@ ubs24v_main() {
         fi
     fi
 
-    ubs24v_section 'REPORT IDENTITY'
+    mvc24v_section 'REPORT IDENTITY'
     printf 'timestamp=%s\n' "$(date --iso-8601=seconds 2>/dev/null || date)"
     printf 'boot='; cat /proc/sys/kernel/random/boot_id 2>/dev/null || echo '[unavailable]'
     printf 'observed_shape=%s\n' "$observed_shape"
     printf 'NOTE: observed_shape is diagnostic only; disconnect/recovery authenticate independently.\n'
 
-    ubs24v_section 'CONTROLLER STATUS'
-    ubs24v_run_observation ubs24v_controller_status "$controller"
+    mvc24v_section 'CONTROLLER STATUS'
+    mvc24v_run_observation mvc24v_controller_status "$controller"
 
-    ubs24v_section 'ACTIVE CONNECTIONS'
+    mvc24v_section 'ACTIVE CONNECTIONS'
     if (( active_rc == 0 )); then
         [[ -n $active_rows ]] && printf '%s\n' "$active_rows" || echo 'none'
     else
@@ -142,7 +142,7 @@ ubs24v_main() {
         printf '[nmcli active inventory exit=%d]\n' "$active_rc"
     fi
 
-    ubs24v_section 'TEMPORARY MANAGED PROFILES'
+    mvc24v_section 'TEMPORARY MANAGED PROFILES'
     local temp_rows
     if (( saved_rc == 0 )); then
         temp_rows=$(awk -F: '$3 == "vpnks-ovpn" || $3 == "vpnks-wg" {print}' <<<"$saved_rows")
@@ -152,15 +152,15 @@ ubs24v_main() {
         printf '[nmcli saved inventory exit=%d]\n' "$saved_rc"
     fi
 
-    ubs24v_section 'MANAGED KERNEL LINKS'
+    mvc24v_section 'MANAGED KERNEL LINKS'
     local managed_links
     managed_links=$(ip -brief link show 2>&1 | grep -E '(^|[[:space:]])(tun-vpnks|vpnks-wg)(@|[[:space:]])' || :)
     [[ -n $managed_links ]] && printf '%s\n' "$managed_links" || echo 'none'
 
-    ubs24v_section 'ORDINARY INTERNET ROUTE'
-    ubs24v_route_get 1.1.1.1
+    mvc24v_section 'ORDINARY INTERNET ROUTE'
+    mvc24v_route_get 1.1.1.1
 
-    ubs24v_section 'MANAGED PRIVATE ROUTES'
+    mvc24v_section 'MANAGED PRIVATE ROUTES'
     local private_routes
     private_routes=$(
         {
@@ -170,7 +170,7 @@ ubs24v_main() {
     )
     [[ -n $private_routes ]] && printf '%s\n' "$private_routes" || echo 'none'
 
-    ubs24v_section 'MVC ROUTE PROTOCOLS'
+    mvc24v_section 'MVC ROUTE PROTOCOLS'
     local proto186 proto187
     echo '-- proto 186 --'
     proto186=$(ip -4 route show table all proto 186 2>&1 || :)
@@ -179,12 +179,12 @@ ubs24v_main() {
     proto187=$(ip -4 route show table all proto 187 2>&1 || :)
     [[ -n $proto187 ]] && printf '%s\n' "$proto187" || echo 'none'
 
-    ubs24v_section 'DEFAULT ROUTE'
+    mvc24v_section 'DEFAULT ROUTE'
     local default_rows
     default_rows=$(ip -4 route show default 2>&1 || :)
     [[ -n $default_rows ]] && printf '%s\n' "$default_rows" || echo 'none'
 
-    ubs24v_section 'DNS'
+    mvc24v_section 'DNS'
     if [[ -f $resolv_conf && ! -L $resolv_conf ]]; then
         cat -- "$resolv_conf"
     elif [[ -e $resolv_conf || -L $resolv_conf ]]; then
@@ -193,7 +193,7 @@ ubs24v_main() {
         echo 'resolv.conf unavailable'
     fi
 
-    ubs24v_section 'MVC NFT TABLES'
+    mvc24v_section 'MVC NFT TABLES'
     local filtered_tables
     if (( nft_rc == 0 )); then
         filtered_tables=$(grep -E '^table (inet laptop_base|inet mvc_preclone_quarantine|bridge mvc_preclone_bridge|netdev mvc_preclone_underlay)$' <<<"$nft_rows" || :)
@@ -204,7 +204,7 @@ ubs24v_main() {
         printf '[nft inventory exit=%d]\n' "$nft_rc"
     fi
 
-    ubs24v_section 'FIXED RUNTIME ROOTS'
+    mvc24v_section 'FIXED RUNTIME ROOTS'
     local p
     for p in \
         /run/mvc-controller \
@@ -222,7 +222,7 @@ ubs24v_main() {
         fi
     done
 
-    ubs24v_section 'INTERNET CHECK'
+    mvc24v_section 'INTERNET CHECK'
     local internet_result=skipped external_ip='' curl_rc
     if [[ $internet_check == no ]]; then
         echo 'skipped (--no-internet-check)'
@@ -242,25 +242,25 @@ ubs24v_main() {
         fi
     fi
 
-    ubs24v_section 'RECOVERY INSPECTION'
+    mvc24v_section 'RECOVERY INSPECTION'
     if (( has_ovpn == 1 || has_wg == 1 || has_tun == 1 )); then
         echo 'skipped while a managed VPN/WireGuard/tun session is active'
     else
         if [[ -x $dual_recovery ]]; then
             echo '-- dual recovery --'
-            ubs24v_run_observation "$dual_recovery" --inspect
+            mvc24v_run_observation "$dual_recovery" --inspect
         else
             echo "dual recovery unavailable: $dual_recovery"
         fi
         if [[ -x $emergency_recovery ]]; then
             echo '-- emergency rollback --'
-            ubs24v_run_observation "$emergency_recovery" --inspect
+            mvc24v_run_observation "$emergency_recovery" --inspect
         else
             echo "emergency rollback unavailable: $emergency_recovery"
         fi
     fi
 
-    ubs24v_section 'SUMMARY'
+    mvc24v_section 'SUMMARY'
     printf 'observed_shape=%s\n' "$observed_shape"
     printf 'managed_active: openvpn=%d wireguard=%d tun=%d\n' "$has_ovpn" "$has_wg" "$has_tun"
     printf 'b4_quarantine_tables=%d/3\n' "$b4_count"
@@ -269,4 +269,4 @@ ubs24v_main() {
 }
 # UBS24_MONOLITH_VERIFY_FUNCTIONS_END
 
-ubs24v_main "$@"
+mvc24v_main "$@"

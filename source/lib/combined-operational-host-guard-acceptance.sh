@@ -3,20 +3,20 @@
 # Must be sourced AFTER the B2 and B3 libraries; not imported by public vpn.
 # This is NOT an active VPN firewall transition and grants NO A3 authority.
 
-ubs24gb4_reset() {
+mvc24gb4_reset() {
     UBS24GB4_OPERATION=none
     UBS24GB4_APPROVAL=none
     UBS24GB4_ATTEMPTED=no
 }
 
-ubs24gb4_scope() {
+mvc24gb4_scope() {
     (( $# == 0 )) || return 1
     # TTY is not a proof of physical-host ownership. Block common remote shells.
     [[ -t 0 && -t 1 && -z ${SSH_CONNECTION:-} && -z ${SSH_TTY:-} ]] || return 1
-    ubs24gb2_root_scope
+    mvc24gb2_root_scope
 }
 
-ubs24gb4_no_active_vpn() {
+mvc24gb4_no_active_vpn() {
     (( $# == 0 )) || return 1
     # Acceptance operates only with all VPNs stopped, including unmanaged ones.
     local active wg_interfaces links nm_type pgrep_status
@@ -50,17 +50,17 @@ ubs24gb4_no_active_vpn() {
     fi
 }
 
-ubs24gb4_underlay() {
+mvc24gb4_underlay() {
     (( $# == 0 )) || return 1
     local iface
     iface=$(ip -j -4 route show table all | jq -er '
         [.[] | select(.dst == "default")] as $d |
         if ($d|length)==1 and ($d[0].dev|type)=="string" then $d[0].dev else empty end') || return 1
-    ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_valid_ifname "$iface" || return 1
     printf '%s\n' "$iface"
 }
 
-ubs24gb4_confirm() {
+mvc24gb4_confirm() {
     (( $# == 1 )) || return 1
     local expected=$1 entered=''
     [[ -r /dev/tty && -w /dev/tty ]] || return 1
@@ -73,60 +73,60 @@ ubs24gb4_confirm() {
 }
 
 # B3 calls this exactly once before disarm, with an already-held B2 lock.
-ubs24gb4_disarm_witness() {
+mvc24gb4_disarm_witness() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GB4_OPERATION:-} == release &&
        ${UBS24GB4_APPROVAL:-} == release-once ]] || return 1
     UBS24GB4_APPROVAL=consumed
-    ubs24gb4_scope && ubs24gb4_no_active_vpn && ubs24gb2_lock_valid
+    mvc24gb4_scope && mvc24gb4_no_active_vpn && mvc24gb2_lock_valid
 }
 
-ubs24gb4_install() {
+mvc24gb4_install() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GB4_ATTEMPTED:-no} == no ]] || return 1
     UBS24GB4_ATTEMPTED=yes
     UBS24GB4_OPERATION=install
     UBS24GB4_APPROVAL=none
     local iface confirmed_iface
-    ubs24gb4_scope && ubs24gb4_no_active_vpn || return 1
+    mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     [[ ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
-    iface=$(ubs24gb4_underlay) || return 1
-    ubs24gb4_confirm 'INSTALL UBS V240 DENY ALL' || return 1
+    iface=$(mvc24gb4_underlay) || return 1
+    mvc24gb4_confirm 'INSTALL UBS V240 DENY ALL' || return 1
     # Recheck immediately before calling the one-shot B2 transaction.
-    ubs24gb4_scope && ubs24gb4_no_active_vpn || return 1
-    confirmed_iface=$(ubs24gb4_underlay) || return 1
+    mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
+    confirmed_iface=$(mvc24gb4_underlay) || return 1
     [[ $iface == "$confirmed_iface" ]] || return 1
-    ubs24gb2_install_once "$iface" "$UBS24GB4_POLICY" || return 1
+    mvc24gb2_install_once "$iface" "$UBS24GB4_POLICY" || return 1
     [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only &&
        ${UBS24GB2_AUTHORITY:-} == none ]] || return 1
 }
 
-ubs24gb4_release() {
+mvc24gb4_release() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GB4_ATTEMPTED:-no} == no ]] || return 1
     UBS24GB4_ATTEMPTED=yes
     UBS24GB4_OPERATION=release
     UBS24GB4_APPROVAL=none
-    ubs24gb4_scope && ubs24gb4_no_active_vpn || return 1
-    ubs24gb2_reopen || return 1
+    mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
+    mvc24gb2_reopen || return 1
     [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
-    ubs24gb4_confirm 'RELEASE UBS V240 DENY ALL' || return 1
-    ubs24gb4_scope && ubs24gb4_no_active_vpn || return 1
+    mvc24gb4_confirm 'RELEASE UBS V240 DENY ALL' || return 1
+    mvc24gb4_scope && mvc24gb4_no_active_vpn || return 1
     UBS24GB4_APPROVAL=release-once
-    ubs24gb3_release_once || return 1
+    mvc24gb3_release_once || return 1
     [[ ${UBS24GB3_STAGE:-} == explicit-disarm-verified-owned-runtime-retired &&
        ${UBS24GB3_AUTHORITY:-} == none ]] || return 1
 }
 
-ubs24gb4_status() {
+mvc24gb4_status() {
     (( $# == 0 )) || return 1
-    ubs24gb2_root_scope || return 1
-    ubs24gb2_reopen || return 1
+    mvc24gb2_root_scope || return 1
+    mvc24gb2_reopen || return 1
     [[ ${UBS24GB2_STAGE:-} == host-deny-all-attested-observation-only ]] || return 1
 }
 
 # B4 does not authorise any tunnel activity or guard policy transition.
-ubs24gb4_authorize_clone() { return 1; }
-ubs24gb4_authorize_activation() { return 1; }
-ubs24gb4_authorize_recovery() { return 1; }
-ubs24gb4_authorize_policy_transition() { return 1; }
+mvc24gb4_authorize_clone() { return 1; }
+mvc24gb4_authorize_activation() { return 1; }
+mvc24gb4_authorize_recovery() { return 1; }
+mvc24gb4_authorize_policy_transition() { return 1; }

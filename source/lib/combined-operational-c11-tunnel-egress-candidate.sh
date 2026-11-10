@@ -5,46 +5,46 @@
 # Forward, bridge and netdev protections stay unchanged; IPv6 is not admitted.
 # DNS correctness, remote peer authenticity and teardown are NOT proven here.
 
-ubs24gc11_reset() {
+mvc24gc11_reset() {
     UBS24GC11_STAGE=unverified
     UBS24GC11_AUTHORITY=none
     UBS24GC11_TUNNEL=
     UBS24GC11_TUNNEL_SOURCE=
 }
-ubs24gc11_authorize_public_activation() { return 1; }
-ubs24gc11_authorize_traffic() { return 1; }
-ubs24gc11_authorize_commit() { return 1; }
-ubs24gc11_authorize_cleanup() { return 1; }
-ubs24gc11_authorize_disarm() { return 1; }
-ubs24gc11_authorize_retry() { return 1; }
-ubs24gc11_authorize_secret_export() { return 1; }
+mvc24gc11_authorize_public_activation() { return 1; }
+mvc24gc11_authorize_traffic() { return 1; }
+mvc24gc11_authorize_commit() { return 1; }
+mvc24gc11_authorize_cleanup() { return 1; }
+mvc24gc11_authorize_disarm() { return 1; }
+mvc24gc11_authorize_retry() { return 1; }
+mvc24gc11_authorize_secret_export() { return 1; }
 
 # B1 deliberately rejects tun*/wg* as PHYSICAL underlays. C11 must not
 # reuse that validator for the tunnel: doing so rejects every tun* candidate.
 # Keep both roles independently constrained; only the tunnel may use this
 # prefix, and only a kernel-valid, literal interface name is accepted.
-ubs24gc11_valid_tunnel_ifname() {
+mvc24gc11_valid_tunnel_ifname() {
     (( $# == 1 )) || return 1
     local tunnel=$1
     [[ $tunnel =~ ^tun[a-zA-Z0-9_.-]*$ && ${#tunnel} -le 15 ]]
 }
 
-ubs24gc11_parameters() {
+mvc24gc11_parameters() {
     (( $# == 6 )) || return 1
     local underlay=$1 source=$2 remote=$3 port=$4 tunnel=$5 tun_source=$6
-    ubs24gc1_parameters "$underlay" "$source" "$remote" "$port" || return 1
-    ubs24gc11_valid_tunnel_ifname "$tunnel" &&
-      [[ $tunnel != "$underlay" ]] && ubs24gc1_ipv4 "$tun_source" &&
+    mvc24gc1_parameters "$underlay" "$source" "$remote" "$port" || return 1
+    mvc24gc11_valid_tunnel_ifname "$tunnel" &&
+      [[ $tunnel != "$underlay" ]] && mvc24gc1_ipv4 "$tun_source" &&
       [[ $tun_source != "$source" ]] || return 1
 }
 
 # Exactly FIVE commands, as one prospective nft --file transaction.
 # Explicitly retains the existing pinned transport exception. No wildcard
 # WAN allow, no IPv6 allow, and NO changes to FORWARD, bridge or netdev hooks.
-ubs24gc11_write_candidate() {
+mvc24gc11_write_candidate() {
     (( $# == 7 )) || return 1
     local underlay=$1 source=$2 remote=$3 port=$4 tunnel=$5 tun_source=$6 out=$7
-    ubs24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
+    mvc24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == '600:1' ]] || return 1
     {
@@ -60,10 +60,10 @@ ubs24gc11_write_candidate() {
 # extra or changed owned rules, including permissive FORWARD, bridge, netdev,
 # IPv6 and physical-interface exceptions. Numeric EtherType ARP compatibility
 # is identical to kernel-confirmed C1 (symbolic, 2054, byte-swapped 1544).
-ubs24gc11_postshape_observation() {
+mvc24gc11_postshape_observation() {
     (( $# == 7 )) || return 1
     local file=$1 underlay=$2 source=$3 remote=$4 port=$5 tunnel=$6 tun_source=$7
-    ubs24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
+    mvc24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
     [[ -f $file && ! -L $file ]] || return 1
     jq -e --arg iface "$underlay" --arg src "$source" --arg dst "$remote" \
        --argjson port "$port" --arg tun "$tunnel" --arg tun_src "$tun_source" '
@@ -139,7 +139,7 @@ ubs24gc11_postshape_observation() {
 # Source the C9/C7/C6/C5 libraries first. This bridge generates only a
 # *prospective* nft batch. Even a successful positive candidate cannot be
 # installed: commit/traffic witnesses always deny; no nft writer is present.
-ubs24gc11_candidate_after_c9() {
+mvc24gc11_candidate_after_c9() {
     (( $# == 1 )) || return 1
     local out=$1 nm1 nm2 route1 route2 underlay source tunnel tun_source
     UBS24GC11_STAGE=unverified
@@ -153,29 +153,29 @@ ubs24gc11_candidate_after_c9() {
        ${UBS24GC8_AUTHORITY:-} == none &&
        ${UBS24GC6_STAGE:-} == nm-active-and-selected-ipv4-tun-observed-no-traffic-authority &&
        ${UBS24GC6_AUTHORITY:-} == none ]] || return 1
-    ubs24gb2_root_scope && ubs24gb2_lock_valid || return 1
+    mvc24gb2_root_scope && mvc24gb2_lock_valid || return 1
     # The typed GetSettings capture layer still requires the legacy
     # UBS24S_LOCK_HELD assertion. C9's dynamically scoped marker ends when C9
     # returns, but C11 runs later under the same genuine B2 flock. Re-bind the
     # marker only after independently proving that real lock here; the marker
     # itself grants no authority and cannot substitute for the flock witness.
     local UBS24S_LOCK_HELD=1
-    ubs24gc3_transition_records_valid && ubs24gc5_guard_witness &&
-       ubs24gc5_prepared_profile_witness && ubs24gc7_read_intent || return 1
+    mvc24gc3_transition_records_valid && mvc24gc5_guard_witness &&
+       mvc24gc5_prepared_profile_witness && mvc24gc7_read_intent || return 1
     [[ ${UBS24GC7_CLONE_UUID:-} == "${UBS24GA3_PREPARED_CLONE_UUID:-}" &&
        ${UBS24GC7_NM_OWNER:-} == "${UBS24GC5_NM_OWNER:-}" ]] || return 1
-    nm1=$(ubs24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
-    route1=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    route2=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    nm2=$(ubs24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
+    nm1=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
+    route1=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
+    route2=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
+    nm2=$(mvc24gc6_nm_ipv4_snapshot "$UBS24GC7_CLONE_UUID" "$UBS24GC7_NM_OWNER") || return 1
     [[ -n $nm1 && $nm1 == "$nm2" && $nm1 == "${UBS24GC6_NM_SNAPSHOT:-}" &&
        -n $route1 && $route1 == "$route2" && $route1 == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] || return 1
     IFS='|' read -r underlay source tunnel tun_source <<< "$route1"
-    ubs24gc11_parameters "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" &&
+    mvc24gc11_parameters "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" &&
        [[ $underlay == "$UBS24GC3_IFACE" && $source == "$UBS24GC3_SOURCE" ]] || return 1
-    ubs24gc5_guard_witness && ubs24gc5_prepared_profile_witness &&
-       ubs24gc3_transition_records_valid && ubs24gc7_read_intent || return 1
-    ubs24gc11_write_candidate "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" "$out" || return 1
+    mvc24gc5_guard_witness && mvc24gc5_prepared_profile_witness &&
+       mvc24gc3_transition_records_valid && mvc24gc7_read_intent || return 1
+    mvc24gc11_write_candidate "$underlay" "$source" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$tunnel" "$tun_source" "$out" || return 1
     UBS24GC11_TUNNEL=$tunnel UBS24GC11_TUNNEL_SOURCE=$tun_source
     UBS24GC11_STAGE=prospective-ipv4-host-tunnel-output-only-no-commit-authority
 }

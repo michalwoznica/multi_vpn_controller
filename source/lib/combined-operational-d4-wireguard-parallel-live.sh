@@ -30,7 +30,7 @@
 #
 # No blind mutation retry is performed after an ambiguous nft/NM/ip outcome.
 
-ubs24gd4_reset() {
+mvc24gd4_reset() {
     UBS24GD4_STAGE=idle
     UBS24GD4_DETAIL=none
     UBS24GD4_ATTEMPTED=no
@@ -54,7 +54,7 @@ ubs24gd4_reset() {
     UBS24GD4_HOLD_METRIC=4241
 }
 
-ubs24gd4_authority_witness() {
+mvc24gd4_authority_witness() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GCU_AUTHORITY:-none} == private-local-console &&
        ${UBS24GCU_APPROVAL:-none} == approved-process-local &&
@@ -63,18 +63,18 @@ ubs24gd4_authority_witness() {
        ${UBS24GCO_AUTHORITY:-none} == private-local-console &&
        ${UBS24GCO_STAGE:-} == protected-openvpn-observed &&
        ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]] || return 1
-    ubs24gb2_root_scope && ubs24gb2_lock_valid || return 1
-    ubs24gcu_live_admission_witness || return 1
+    mvc24gb2_root_scope && mvc24gb2_lock_valid || return 1
+    mvc24gcu_live_admission_witness || return 1
 }
 
-ubs24gd4_dependencies() {
+mvc24gd4_dependencies() {
     local cmd
     for cmd in awk chmod cmp find getent grep ip jq mktemp mv nft nmcli readlink rm rmdir sha256sum stat wg; do
         command -v "$cmd" >/dev/null 2>&1 || return 1
     done
 }
 
-ubs24gd4_hash_file() {
+mvc24gd4_hash_file() {
     (( $# == 1 )) || return 1
     local file=$1 hash tail
     [[ -f $file && ! -L $file ]] || return 1
@@ -83,12 +83,12 @@ ubs24gd4_hash_file() {
     printf '%s\n' "$hash"
 }
 
-ubs24gd4_private_runtime_absent() {
+mvc24gd4_private_runtime_absent() {
     [[ ! -e ${UBS24GD4_RUNTIME:-/run/mvc-wireguard} &&
        ! -L ${UBS24GD4_RUNTIME:-/run/mvc-wireguard} ]]
 }
 
-ubs24gd4_temp_profile_absent() {
+mvc24gd4_temp_profile_absent() {
     local name=${UBS24GD4_TEMP_NAME:-vpnks-wg} rows
     [[ ! -e ${UBS24GD4_TEMP_FILE:-/run/NetworkManager/system-connections/vpnks-wg.nmconnection} &&
        ! -L ${UBS24GD4_TEMP_FILE:-/run/NetworkManager/system-connections/vpnks-wg.nmconnection} ]] || return 1
@@ -96,7 +96,7 @@ ubs24gd4_temp_profile_absent() {
     ! awk -F: -v n="$name" '$1==n {found=1} END{exit(found?0:1)}' <<< "$rows"
 }
 
-ubs24gd4_write_marker() {
+mvc24gd4_write_marker() {
     (( $# == 1 )) || return 1
     local name=$1 dir=${UBS24GD4_RUNTIME:-}
     [[ $name =~ ^[a-z0-9-]+$ && -d $dir && ! -L $dir && -O $dir &&
@@ -106,10 +106,10 @@ ubs24gd4_write_marker() {
     chmod 400 -- "$dir/$name"
 }
 
-ubs24gd4_publish_intent() {
+mvc24gd4_publish_intent() {
     (( $# == 0 )) || return 1
     local dir=${UBS24GD4_RUNTIME:-} tmp boot userns netns mntns allowed
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ $(stat -f -c %T /run) == tmpfs &&
        -n ${UBS24GD4_SOURCE_UUID:-} && -n ${UBS24GD4_SOURCE_FILE:-} &&
        -n ${UBS24GD4_SOURCE_SHA:-} && -n ${UBS24GD4_TEMP_UUID:-} &&
@@ -117,7 +117,7 @@ ubs24gd4_publish_intent() {
        -n ${UBS24GD4_ENDPOINT_PORT:-} && -n ${UBS24GD4_UNDERLAY:-} &&
        -n ${UBS24GD4_UNDERLAY_SOURCE:-} && -n ${UBS24GD4_UNDERLAY_GATEWAY:-} &&
        ${#UBS24GD4_ALLOWED_IPS[@]} -ge 1 ]] || return 1
-    ubs24gd4_private_runtime_absent || return 1
+    mvc24gd4_private_runtime_absent || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
@@ -147,13 +147,13 @@ ubs24gd4_publish_intent() {
 # destination from falling back through OpenVPN while WG routes are not yet
 # installed or are being removed. Private destinations are therefore either
 # on vpnks-wg or fail-closed.
-ubs24gd4_write_parallel_guard_candidate() {
+mvc24gd4_write_parallel_guard_candidate() {
     (( $# >= 11 )) || return 1
     local underlay=$1 underlay_source=$2 ovpn_ip=$3 ovpn_port=$4
     local ovpn_tunnel=$5 ovpn_source=$6 wg_tunnel=$7 wg_source=$8 wg_ip=$9 wg_port=${10} out=${11}
     shift 11
     local prefix
-    ubs24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
+    mvc24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
       "$ovpn_tunnel" "$ovpn_source" "$wg_tunnel" "$wg_source" "$wg_ip" "$wg_port" "$@" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out && $(stat -c '%a:%h' -- "$out") == 600:1 ]] || return 1
     {
@@ -187,14 +187,14 @@ ubs24gd4_write_parallel_guard_candidate() {
 # Canonical exact verifier for the C23AI parallel guard candidate. It checks
 # only the three controller-owned tables and requires their complete shape;
 # foreign table preservation is checked separately against B2 prestate.
-ubs24gd4_parallel_guard_observation() {
+mvc24gd4_parallel_guard_observation() {
     (( $# >= 12 )) || return 1
     local file=$1 underlay=$2 underlay_source=$3 ovpn_ip=$4 ovpn_port=$5
     local ovpn_tunnel=$6 ovpn_source=$7 wg_tunnel=$8 wg_source=$9 wg_ip=${10} wg_port=${11}
     shift 11
     local prefixes_json
     [[ -f $file && ! -L $file ]] || return 1
-    ubs24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
+    mvc24gd3_guard_parameters "$underlay" "$underlay_source" "$ovpn_ip" "$ovpn_port" \
       "$ovpn_tunnel" "$ovpn_source" "$wg_tunnel" "$wg_source" "$wg_ip" "$wg_port" "$@" || return 1
     prefixes_json=$(printf '%s\n' "$@" | jq -R -s 'split("\n")|map(select(length>0))') || return 1
     jq -e --arg iface "$underlay" --arg src "$underlay_source" \
@@ -275,17 +275,17 @@ ubs24gd4_parallel_guard_observation() {
     ' "$file" >/dev/null 2>&1
 }
 
-ubs24gd4_foreign_policy_unchanged() {
+mvc24gd4_foreign_policy_unchanged() {
     (( $# == 1 )) || return 1
     local snapshot=$1 pre foreign_before foreign_after
-    pre=$(ubs24gb2_runtime) || return 1
+    pre=$(mvc24gb2_runtime) || return 1
     [[ $pre == /run/mvc-controller && -f $pre/prestate.json && ! -L $pre/prestate.json ]] || return 1
-    foreign_before=$(ubs24gb2_foreign_projection "$pre/prestate.json") || return 1
-    foreign_after=$(ubs24gb2_foreign_projection "$snapshot") || return 1
+    foreign_before=$(mvc24gb2_foreign_projection "$pre/prestate.json") || return 1
+    foreign_after=$(mvc24gb2_foreign_projection "$snapshot") || return 1
     [[ $foreign_before == "$foreign_after" ]]
 }
 
-ubs24gd4_endpoint_route_observed() {
+mvc24gd4_endpoint_route_observed() {
     (( $# == 0 )) || return 1
     local json get expected_gateway
     json=$(ip -j -N -4 route show exact "$UBS24GD4_ENDPOINT_IP/32" table main) || return 1
@@ -301,11 +301,11 @@ ubs24gd4_endpoint_route_observed() {
         ((.[0].multipath // [])|length) == 0
       ' <<< "$json" >/dev/null 2>&1 || return 1
     get=$(ip -4 route get "$UBS24GD4_ENDPOINT_IP") || return 1
-    ubs24b_route_get_matches "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_UNDERLAY" \
+    mvc24b_route_get_matches "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_UNDERLAY" \
       "$UBS24GD4_UNDERLAY_GATEWAY" "$UBS24GD4_UNDERLAY_SOURCE" "$get"
 }
 
-ubs24gd4_wg_nm_active() {
+mvc24gd4_wg_nm_active() {
     (( $# == 0 )) || return 1
     local line
     line=$(nmcli --wait 10 --colors no -t -f NAME,UUID,TYPE,DEVICE connection show --active 2>/dev/null |
@@ -313,7 +313,7 @@ ubs24gd4_wg_nm_active() {
     [[ $line == "$UBS24GD4_TEMP_NAME:$UBS24GD4_TEMP_UUID:wireguard:$UBS24GD4_TEMP_NAME" ]]
 }
 
-ubs24gd4_wg_kernel_endpoint() {
+mvc24gd4_wg_kernel_endpoint() {
     (( $# == 0 )) || return 1
     local fw endpoints key ep extra
     fw=$(LC_ALL=C wg show "$UBS24GD4_TEMP_NAME" fwmark 2>/dev/null) || return 1
@@ -324,7 +324,7 @@ ubs24gd4_wg_kernel_endpoint() {
     [[ $key =~ ^[A-Za-z0-9+/]{43}=$ && $ep == "$UBS24GD4_ENDPOINT_IP:$UBS24GD4_ENDPOINT_PORT" ]]
 }
 
-ubs24gd4_route_get_json_matches() {
+mvc24gd4_route_get_json_matches() {
     (( $# == 3 )) || return 1
     local target=$1 dev=$2 source=$3 json
     json=$(ip -j -4 route get "$target") || return 1
@@ -334,7 +334,7 @@ ubs24gd4_route_get_json_matches() {
     ' <<< "$json" >/dev/null 2>&1
 }
 
-ubs24gd4_openvpn_default_route_observed() {
+mvc24gd4_openvpn_default_route_observed() {
     (( $# == 0 )) || return 1
     local json
     json=$(ip -j -4 route get 1.1.1.1) || return 1
@@ -343,32 +343,32 @@ ubs24gd4_openvpn_default_route_observed() {
     ' <<< "$json" >/dev/null 2>&1
 }
 
-ubs24gd4_dual_active_observed() {
+mvc24gd4_dual_active_observed() {
     (( $# == 0 )) || return 1
     local scratch first second prefix target route_now
-    ubs24gd4_authority_witness || return 1
-    ubs24gd4_wg_nm_active && ubs24gd4_wg_kernel_endpoint && ubs24gd4_endpoint_route_observed || return 1
-    route_now=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
+    mvc24gd4_authority_witness || return 1
+    mvc24gd4_wg_nm_active && mvc24gd4_wg_kernel_endpoint && mvc24gd4_endpoint_route_observed || return 1
+    route_now=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
     [[ $route_now == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] || return 1
-    ubs24gd4_openvpn_default_route_observed || return 1
+    mvc24gd4_openvpn_default_route_observed || return 1
     for prefix in "${UBS24GD4_ALLOWED_IPS[@]}"; do
         target=${prefix%/*}
-        ubs24gd4_route_get_json_matches "$target" "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" || return 1
+        mvc24gd4_route_get_json_matches "$target" "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" || return 1
     done
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-observe.XXXXXXXX) || return 1
     first=$scratch/first.json second=$scratch/second.json
-    if ! ubs24gb1_capture_nft "$first" || ! ubs24gb1_capture_nft "$second" ||
+    if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" ||
        ! cmp -s -- "$first" "$second" ||
-       ! ubs24gd4_parallel_guard_observation "$first" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
+       ! mvc24gd4_parallel_guard_observation "$first" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
           "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" \
           "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" \
-          "${UBS24GD4_ALLOWED_IPS[@]}" || ! ubs24gd4_foreign_policy_unchanged "$first"; then
+          "${UBS24GD4_ALLOWED_IPS[@]}" || ! mvc24gd4_foreign_policy_unchanged "$first"; then
         rm -rf -- "$scratch"; return 1
     fi
     rm -rf -- "$scratch"
 }
 
-ubs24gd4_wg_down_observed() {
+mvc24gd4_wg_down_observed() {
     (( $# == 0 )) || return 1
     local i
     for ((i=0; i<20; i++)); do
@@ -383,14 +383,14 @@ ubs24gd4_wg_down_observed() {
     return 1
 }
 
-ubs24gd4_prepare_from_preflight() {
+mvc24gd4_prepare_from_preflight() {
     (( $# == 8 )) || return 1
     local wg_uuid=$1 source_file=$2 source_sha=$3 wg_source=$4 underlay=$5 underlay_source=$6 gateway=$7 temp_uuid=$8
     [[ ${UBS24GD4_ATTEMPTED:-no} == no ]] || return 1
-    ubs24gd4_dependencies && ubs24gd4_private_runtime_absent && ubs24gd4_temp_profile_absent || return 1
-    ubs24_valid_uuid "$wg_uuid" && ubs24_valid_uuid "$temp_uuid" &&
-      [[ -f $source_file && ! -L $source_file && $(ubs24gd4_hash_file "$source_file") == "$source_sha" ]] || return 1
-    wg23_validate_ipv4 "$wg_source" && ubs24gb1_valid_ifname "$underlay" && wg23_validate_ipv4 "$underlay_source" || return 1
+    mvc24gd4_dependencies && mvc24gd4_private_runtime_absent && mvc24gd4_temp_profile_absent || return 1
+    mvc24_valid_uuid "$wg_uuid" && mvc24_valid_uuid "$temp_uuid" &&
+      [[ -f $source_file && ! -L $source_file && $(mvc24gd4_hash_file "$source_file") == "$source_sha" ]] || return 1
+    wg23_validate_ipv4 "$wg_source" && mvc24gb1_valid_ifname "$underlay" && wg23_validate_ipv4 "$underlay_source" || return 1
     [[ $gateway == - ]] || wg23_validate_ipv4 "$gateway" || return 1
     UBS24GD4_SOURCE_UUID=$wg_uuid UBS24GD4_SOURCE_FILE=$source_file UBS24GD4_SOURCE_SHA=$source_sha
     UBS24GD4_WG_SOURCE=$wg_source UBS24GD4_UNDERLAY=$underlay UBS24GD4_UNDERLAY_SOURCE=$underlay_source
@@ -402,43 +402,43 @@ ubs24gd4_prepare_from_preflight() {
 # current resolver is therefore the protected OpenVPN DNS path attested by C17.
 # The first bounded answer is selected; the user's current profile has one A
 # record. Multiple-peer/multi-address selection remains future scope.
-ubs24gd4_resolve_protected_endpoint() {
+mvc24gd4_resolve_protected_endpoint() {
     (( $# == 0 )) || return 1
     local host port ip prefix
-    ubs24gd4_authority_witness || return 1
-    [[ $(ubs24gd4_hash_file "$UBS24GD4_SOURCE_FILE") == "$UBS24GD4_SOURCE_SHA" ]] || return 1
-    ubs24gd2_validate_keyfile "$UBS24GD4_SOURCE_FILE" "$UBS24GD4_SOURCE_UUID" "$UBS24GD4_UNDERLAY" || return 1
+    mvc24gd4_authority_witness || return 1
+    [[ $(mvc24gd4_hash_file "$UBS24GD4_SOURCE_FILE") == "$UBS24GD4_SOURCE_SHA" ]] || return 1
+    mvc24gd2_validate_keyfile "$UBS24GD4_SOURCE_FILE" "$UBS24GD4_SOURCE_UUID" "$UBS24GD4_UNDERLAY" || return 1
     (( ${#UBS24GD2_ENDPOINT_HOSTS[@]} == 1 && ${#UBS24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
-    ubs24gd3_keyfile_ipv4_source "$UBS24GD4_SOURCE_FILE" || return 1
+    mvc24gd3_keyfile_ipv4_source "$UBS24GD4_SOURCE_FILE" || return 1
     [[ $UBS24GD3_WG_SOURCE_IP == "$UBS24GD4_WG_SOURCE" ]] || return 1
     host=${UBS24GD2_ENDPOINT_HOSTS[0]} port=${UBS24GD2_ENDPOINT_PORTS[0]}
-    ubs24gd2_resolve_ipv4_candidates "$host" || return 1
+    mvc24gd2_resolve_ipv4_candidates "$host" || return 1
     (( ${#UBS24GD2_RESOLVED_IPS[@]} >= 1 && ${#UBS24GD2_RESOLVED_IPS[@]} <= 16 )) || return 1
     ip=${UBS24GD2_RESOLVED_IPS[0]}
     for prefix in "${UBS24GD2_ALLOWED_IPS[@]}"; do
-        ubs24gd3_private_ipv4_prefix "$prefix" && ! ubs24c_cidr_contains "$prefix" "$ip" || return 1
+        mvc24gd3_private_ipv4_prefix "$prefix" && ! mvc24c_cidr_contains "$prefix" "$ip" || return 1
     done
     UBS24GD4_ENDPOINT_IP=$ip UBS24GD4_ENDPOINT_PORT=$port
     UBS24GD4_ALLOWED_IPS=("${UBS24GD2_ALLOWED_IPS[@]}")
     UBS24GD4_STAGE=protected-endpoint-resolved-no-wireguard-mutation-yet
 }
 
-ubs24gd4_publish_profile() {
+mvc24gd4_publish_profile() {
     (( $# == 0 )) || return 1
     local scratch temp hash loaded_uuid loaded_type loaded_iface
-    ubs24gd4_authority_witness && ubs24gd4_private_runtime_absent && ubs24gd4_temp_profile_absent || return 1
+    mvc24gd4_authority_witness && mvc24gd4_private_runtime_absent && mvc24gd4_temp_profile_absent || return 1
     [[ ${UBS24GD4_STAGE:-} == protected-endpoint-resolved-no-wireguard-mutation-yet ]] || return 1
     scratch=$(umask 077; mktemp -d /run/mvc-c23ai-profile.XXXXXXXX) || return 1
     temp=$scratch/pinned.nmconnection
     (umask 077; : > "$temp") || { rmdir "$scratch"; return 1; }
     chmod 600 -- "$temp" || { rm -rf -- "$scratch"; return 1; }
-    if ! ubs24gd3_write_pinned_profile "$UBS24GD4_SOURCE_FILE" "$UBS24GD4_SOURCE_UUID" "$UBS24GD4_UNDERLAY" \
+    if ! mvc24gd3_write_pinned_profile "$UBS24GD4_SOURCE_FILE" "$UBS24GD4_SOURCE_UUID" "$UBS24GD4_UNDERLAY" \
        "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" "$UBS24GD4_TEMP_NAME" "$UBS24GD4_TEMP_UUID" "$temp"; then
         rm -rf -- "$scratch"; return 1
     fi
     UBS24GD4_STAGE=pinned-profile-built-no-publish-yet
-    ubs24gd4_publish_intent || { rm -rf -- "$scratch"; return 1; }
-    ubs24gd4_write_marker profile-publish-attempt || { rm -rf -- "$scratch"; return 1; }
+    mvc24gd4_publish_intent || { rm -rf -- "$scratch"; return 1; }
+    mvc24gd4_write_marker profile-publish-attempt || { rm -rf -- "$scratch"; return 1; }
     [[ ! -e $UBS24GD4_TEMP_FILE && ! -L $UBS24GD4_TEMP_FILE ]] || { rm -rf -- "$scratch"; return 1; }
     mv -T -- "$temp" "$UBS24GD4_TEMP_FILE" || { rm -rf -- "$scratch"; return 1; }
     rmdir -- "$scratch" || return 1
@@ -452,59 +452,59 @@ ubs24gd4_publish_profile() {
     UBS24GD4_STAGE=pinned-profile-loaded-inactive
 }
 
-ubs24gd4_add_endpoint_route() {
+mvc24gd4_add_endpoint_route() {
     (( $# == 0 )) || return 1
     local existing
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == pinned-profile-loaded-inactive ]] || return 1
     existing=$(ip -4 route show exact "$UBS24GD4_ENDPOINT_IP/32" table main) || return 1
     [[ -z $existing ]] || return 1
-    ubs24b_route_add_argv "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_GATEWAY" "$UBS24GD4_UNDERLAY_SOURCE" || return 1
-    ubs24gd4_write_marker route-add-attempt || return 1
+    mvc24b_route_add_argv "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_GATEWAY" "$UBS24GD4_UNDERLAY_SOURCE" || return 1
+    mvc24gd4_write_marker route-add-attempt || return 1
     UBS24GD4_STAGE=endpoint-route-add-outcome-uncertain
     ip "${UBS24B_ROUTE_ARGV[@]}" || return 1
-    ubs24gd4_endpoint_route_observed || return 1
+    mvc24gd4_endpoint_route_observed || return 1
     UBS24GD4_STAGE=owned-endpoint-route-observed
 }
 
-ubs24gd4_extend_guard() {
+mvc24gd4_extend_guard() {
     (( $# == 0 )) || return 1
     local scratch batch before1 before2 after1 after2
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == owned-endpoint-route-observed ]] || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-guard.XXXXXXXX) || return 1
     batch=$scratch/parallel.nft before1=$scratch/before1.json before2=$scratch/before2.json after1=$scratch/after1.json after2=$scratch/after2.json
     (umask 077; : > "$batch") || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
-    if ! ubs24gb1_capture_nft "$before1" || ! ubs24gb1_capture_nft "$before2" || ! cmp -s -- "$before1" "$before2" ||
-       ! ubs24gc11_postshape_observation "$before1" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
-       ! ubs24gd4_foreign_policy_unchanged "$before1" ||
-       ! ubs24gd4_write_parallel_guard_candidate "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" \
+    if ! mvc24gb1_capture_nft "$before1" || ! mvc24gb1_capture_nft "$before2" || ! cmp -s -- "$before1" "$before2" ||
+       ! mvc24gc11_postshape_observation "$before1" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
+       ! mvc24gd4_foreign_policy_unchanged "$before1" ||
+       ! mvc24gd4_write_parallel_guard_candidate "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" \
           "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" \
           "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" "$batch" "${UBS24GD4_ALLOWED_IPS[@]}" ||
        ! nft --check --file "$batch" >/dev/null 2>&1; then
         rm -rf -- "$scratch"; return 1
     fi
-    ubs24gd4_write_marker guard-extend-attempt || { rm -rf -- "$scratch"; return 1; }
+    mvc24gd4_write_marker guard-extend-attempt || { rm -rf -- "$scratch"; return 1; }
     UBS24GD4_STAGE=parallel-guard-commit-outcome-uncertain
     if ! nft --file "$batch" >/dev/null 2>&1; then rm -rf -- "$scratch"; return 1; fi
-    if ! ubs24gb1_capture_nft "$after1" || ! ubs24gb1_capture_nft "$after2" || ! cmp -s -- "$after1" "$after2" ||
-       ! ubs24gd4_parallel_guard_observation "$after1" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
+    if ! mvc24gb1_capture_nft "$after1" || ! mvc24gb1_capture_nft "$after2" || ! cmp -s -- "$after1" "$after2" ||
+       ! mvc24gd4_parallel_guard_observation "$after1" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
           "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" \
           "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" \
-          "${UBS24GD4_ALLOWED_IPS[@]}" || ! ubs24gd4_foreign_policy_unchanged "$after1"; then
+          "${UBS24GD4_ALLOWED_IPS[@]}" || ! mvc24gd4_foreign_policy_unchanged "$after1"; then
         rm -rf -- "$scratch"; return 1
     fi
     rm -rf -- "$scratch"
     UBS24GD4_STAGE=parallel-guard-observed-wg-inactive
 }
 
-ubs24gd4_activate_wg() {
+mvc24gd4_activate_wg() {
     (( $# == 0 )) || return 1
     local rc=0
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == parallel-guard-observed-wg-inactive ]] || return 1
-    ubs24gd4_write_marker activation-attempt || return 1
+    mvc24gd4_write_marker activation-attempt || return 1
     UBS24GD4_STAGE=wireguard-activation-outcome-uncertain
     set +e
     nmcli --wait 60 connection up uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1
@@ -513,31 +513,31 @@ ubs24gd4_activate_wg() {
     UBS24GD4_NM_UP_EXIT_STATUS=$rc
     # A nonzero nmcli result is ambiguous. Do not retry it. Only an exact
     # authoritative active-state observation can turn the attempt into success.
-    if ubs24gd4_dual_active_observed; then
+    if mvc24gd4_dual_active_observed; then
         UBS24GD4_STAGE=parallel-wireguard-openvpn-protected-running
         return 0
     fi
     return 1
 }
 
-ubs24gd4_start_once() {
+mvc24gd4_start_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GD4_ATTEMPTED:-no} == no ]] || return 1
     UBS24GD4_ATTEMPTED=yes
     UBS24GD4_STAGE=starting-wireguard-stage
-    ubs24gd4_resolve_protected_endpoint || return 1
-    ubs24gd4_publish_profile || return 1
-    ubs24gd4_add_endpoint_route || return 1
-    ubs24gd4_extend_guard || return 1
-    ubs24gd4_activate_wg
+    mvc24gd4_resolve_protected_endpoint || return 1
+    mvc24gd4_publish_profile || return 1
+    mvc24gd4_add_endpoint_route || return 1
+    mvc24gd4_extend_guard || return 1
+    mvc24gd4_activate_wg
 }
 
 
-ubs24gd4_private_hold_line_matches() {
+mvc24gd4_private_hold_line_matches() {
     (( $# == 2 )) || return 1
     local prefix=$1 output=$2 token i found_proto='' found_metric=''
     local -a parts=()
-    ubs24gd3_private_ipv4_prefix "$prefix" || return 1
+    mvc24gd3_private_ipv4_prefix "$prefix" || return 1
     [[ -n $output && $output != *$'\n'* && $output != *$'\r'* ]] || return 1
     read -r -a parts <<< "$output"
     [[ ${parts[0]:-} == unreachable && ${parts[1]:-} == "$prefix" ]] || return 1
@@ -559,10 +559,10 @@ ubs24gd4_private_hold_line_matches() {
     [[ $found_proto == "${UBS24GD4_HOLD_PROTO:-187}" && $found_metric == "${UBS24GD4_HOLD_METRIC:-4241}" ]]
 }
 
-ubs24gd4_private_hold_exact_observed() {
+mvc24gd4_private_hold_exact_observed() {
     (( $# == 1 )) || return 1
     local prefix=$1 json
-    ubs24gd3_private_ipv4_prefix "$prefix" || return 1
+    mvc24gd3_private_ipv4_prefix "$prefix" || return 1
     json=$(ip -j -N -4 route show exact "$prefix" table main type unreachable) || return 1
     jq -e --arg p "$prefix" --arg proto "${UBS24GD4_HOLD_PROTO:-187}" \
       --argjson metric "${UBS24GD4_HOLD_METRIC:-4241}" '
@@ -574,13 +574,13 @@ ubs24gd4_private_hold_exact_observed() {
       ' <<< "$json" >/dev/null 2>&1
 }
 
-ubs24gd4_private_hold_routes_state() {
+mvc24gd4_private_hold_routes_state() {
     (( $# == 1 )) || return 1
     local expected=$1 json type prefix metric count=0 profile_prefix candidate
     local -A wanted=() seen=()
     [[ $expected == absent || $expected == full ]] || return 1
     for prefix in "${UBS24GD4_ALLOWED_IPS[@]}"; do
-        ubs24gd3_private_ipv4_prefix "$prefix" && [[ -z ${wanted[$prefix]:-} ]] || return 1
+        mvc24gd3_private_ipv4_prefix "$prefix" && [[ -z ${wanted[$prefix]:-} ]] || return 1
         wanted[$prefix]=1
     done
     json=$(ip -j -N -4 route show table all proto "${UBS24GD4_HOLD_PROTO:-187}") || return 1
@@ -594,7 +594,7 @@ ubs24gd4_private_hold_routes_state() {
             [[ -n ${wanted[$candidate]:-} ]] && profile_prefix=$candidate
         fi
         [[ -n ${wanted[$profile_prefix]:-} && -z ${seen[$profile_prefix]:-} ]] || return 1
-        ubs24gd4_private_hold_exact_observed "$profile_prefix" || return 1
+        mvc24gd4_private_hold_exact_observed "$profile_prefix" || return 1
         seen[$profile_prefix]=1
         ((count+=1))
     done < <(jq -r '.[] | [(.type // "unicast"), (.dst // ""), ((.metric // "")|tostring)] | @tsv' <<< "$json")
@@ -605,13 +605,13 @@ ubs24gd4_private_hold_routes_state() {
     fi
 }
 
-ubs24gd4_add_private_hold_routes() {
+mvc24gd4_add_private_hold_routes() {
     (( $# == 0 )) || return 1
     local prefix rc
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == parallel-wireguard-openvpn-protected-running ]] || return 1
-    ubs24gd4_dual_active_observed && ubs24gd4_private_hold_routes_state absent || return 1
-    ubs24gd4_write_marker private-hold-route-add-attempt || return 1
+    mvc24gd4_dual_active_observed && mvc24gd4_private_hold_routes_state absent || return 1
+    mvc24gd4_write_marker private-hold-route-add-attempt || return 1
     UBS24GD4_STAGE=private-hold-route-add-outcome-uncertain
     for prefix in "${UBS24GD4_ALLOWED_IPS[@]}"; do
         set +e
@@ -621,19 +621,19 @@ ubs24gd4_add_private_hold_routes() {
         # No mutation retry. Exact full inventory below is authoritative.
         : "$rc"
     done
-    ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
     # The live WG route must still win while both routes have the same prefix.
-    ubs24gd4_dual_active_observed || return 1
+    mvc24gd4_dual_active_observed || return 1
     UBS24GD4_STAGE=private-hold-routes-observed-wireguard-still-active
 }
 
-ubs24gd4_disconnect_wg() {
+mvc24gd4_disconnect_wg() {
     (( $# == 0 )) || return 1
     local rc
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == private-hold-routes-observed-wireguard-still-active ]] || return 1
-    ubs24gd4_private_hold_routes_state full && ubs24gd4_dual_active_observed || return 1
-    ubs24gd4_write_marker disconnect-attempt || return 1
+    mvc24gd4_private_hold_routes_state full && mvc24gd4_dual_active_observed || return 1
+    mvc24gd4_write_marker disconnect-attempt || return 1
     UBS24GD4_STAGE=wireguard-disconnect-outcome-uncertain
     set +e
     nmcli --wait 60 connection down uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1
@@ -642,14 +642,14 @@ ubs24gd4_disconnect_wg() {
     UBS24GD4_NM_DOWN_EXIT_STATUS=$rc
     # Like C19, outcome is based on bounded authoritative post-state, not the
     # client exit status alone. Never issue a second down command.
-    ubs24gd4_wg_down_observed && ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_wg_down_observed && mvc24gd4_private_hold_routes_state full || return 1
     UBS24GD4_STAGE=wireguard-down-parallel-guard-retained-private-hold
 }
 
-ubs24gd4_write_openvpn_restore_candidate() {
+mvc24gd4_write_openvpn_restore_candidate() {
     (( $# == 7 )) || return 1
     local underlay=$1 source=$2 remote=$3 port=$4 tunnel=$5 tun_source=$6 out=$7
-    ubs24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
+    mvc24gc11_parameters "$underlay" "$source" "$remote" "$port" "$tunnel" "$tun_source" || return 1
     [[ -f $out && ! -L $out && -O $out && ! -s $out &&
        $(stat -c '%a:%h' -- "$out") == '600:1' ]] || return 1
 
@@ -658,50 +658,50 @@ ubs24gd4_write_openvpn_restore_candidate() {
     # netdev underlay egress chain. Restore both owner chains atomically so no
     # stale WG physical-egress exception survives after WG is down. Reuse C1's
     # exact underlay reconstruction, then append the proven C11 tunnel rule.
-    ubs24gc1_write_batch "$underlay" "$source" "$remote" "$port" "$out" || return 1
+    mvc24gc1_write_batch "$underlay" "$source" "$remote" "$port" "$out" || return 1
     printf 'add rule inet mvc_preclone_quarantine output_deny oifname "%s" ip saddr %s accept\n' \
       "$tunnel" "$tun_source" >> "$out"
 }
 
-ubs24gd4_restore_openvpn_guard() {
+mvc24gd4_restore_openvpn_guard() {
     (( $# == 0 )) || return 1
     local scratch batch before1 before2 after1 after2
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == wireguard-down-parallel-guard-retained-private-hold ]] || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-restore.XXXXXXXX) || return 1
     batch=$scratch/ovpn.nft before1=$scratch/before1.json before2=$scratch/before2.json after1=$scratch/after1.json after2=$scratch/after2.json
     (umask 077; : > "$batch") || { rm -rf -- "$scratch"; return 1; }
     chmod 600 -- "$batch" || { rm -rf -- "$scratch"; return 1; }
-    if ! ubs24gb1_capture_nft "$before1" || ! ubs24gb1_capture_nft "$before2" || ! cmp -s -- "$before1" "$before2" ||
-       ! ubs24gd4_parallel_guard_observation "$before1" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
+    if ! mvc24gb1_capture_nft "$before1" || ! mvc24gb1_capture_nft "$before2" || ! cmp -s -- "$before1" "$before2" ||
+       ! mvc24gd4_parallel_guard_observation "$before1" "$UBS24GD4_UNDERLAY" "$UBS24GD4_UNDERLAY_SOURCE" \
           "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" \
           "$UBS24GD4_TEMP_NAME" "$UBS24GD4_WG_SOURCE" "$UBS24GD4_ENDPOINT_IP" "$UBS24GD4_ENDPOINT_PORT" \
-          "${UBS24GD4_ALLOWED_IPS[@]}" || ! ubs24gd4_foreign_policy_unchanged "$before1" ||
-       ! ubs24gd4_write_openvpn_restore_candidate "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" \
+          "${UBS24GD4_ALLOWED_IPS[@]}" || ! mvc24gd4_foreign_policy_unchanged "$before1" ||
+       ! mvc24gd4_write_openvpn_restore_candidate "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" \
           "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" "$batch" || ! nft --check --file "$batch" >/dev/null 2>&1; then
         rm -rf -- "$scratch"; return 1
     fi
-    ubs24gd4_write_marker guard-restore-attempt || { rm -rf -- "$scratch"; return 1; }
+    mvc24gd4_write_marker guard-restore-attempt || { rm -rf -- "$scratch"; return 1; }
     UBS24GD4_STAGE=openvpn-guard-restore-outcome-uncertain
     if ! nft --file "$batch" >/dev/null 2>&1; then rm -rf -- "$scratch"; return 1; fi
-    if ! ubs24gb1_capture_nft "$after1" || ! ubs24gb1_capture_nft "$after2" || ! cmp -s -- "$after1" "$after2" ||
-       ! ubs24gc11_postshape_observation "$after1" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
-       ! ubs24gd4_foreign_policy_unchanged "$after1"; then
+    if ! mvc24gb1_capture_nft "$after1" || ! mvc24gb1_capture_nft "$after2" || ! cmp -s -- "$after1" "$after2" ||
+       ! mvc24gc11_postshape_observation "$after1" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
+       ! mvc24gd4_foreign_policy_unchanged "$after1"; then
         rm -rf -- "$scratch"; return 1
     fi
     rm -rf -- "$scratch"
-    ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
     UBS24GD4_STAGE=pure-openvpn-guard-restored-route-profile-remain-private-hold
 }
 
-ubs24gd4_delete_endpoint_route() {
+mvc24gd4_delete_endpoint_route() {
     (( $# == 0 )) || return 1
     local -a argv
     local shown rc
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == pure-openvpn-guard-restored-route-profile-remain-private-hold ]] || return 1
-    ubs24gd4_endpoint_route_observed || return 1
-    ubs24gd4_write_marker route-delete-attempt || return 1
+    mvc24gd4_endpoint_route_observed || return 1
+    mvc24gd4_write_marker route-delete-attempt || return 1
     argv=(-4 route del "$UBS24GD4_ENDPOINT_IP/32")
     [[ $UBS24GD4_UNDERLAY_GATEWAY == - ]] || argv+=(via "$UBS24GD4_UNDERLAY_GATEWAY")
     argv+=(dev "$UBS24GD4_UNDERLAY" src "$UBS24GD4_UNDERLAY_SOURCE" proto 186 metric 4240)
@@ -712,17 +712,17 @@ ubs24gd4_delete_endpoint_route() {
     set -e
     shown=$(ip -4 route show exact "$UBS24GD4_ENDPOINT_IP/32" table main) || return 1
     [[ -z $shown ]] || return 1
-    ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
     UBS24GD4_STAGE=owned-endpoint-route-absent-profile-remains-private-hold
 }
 
-ubs24gd4_delete_profile() {
+mvc24gd4_delete_profile() {
     (( $# == 0 )) || return 1
     local rc found
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == owned-endpoint-route-absent-profile-remains-private-hold ]] || return 1
-    ubs24gd4_wg_down_observed || return 1
-    ubs24gd4_write_marker profile-delete-attempt || return 1
+    mvc24gd4_wg_down_observed || return 1
+    mvc24gd4_write_marker profile-delete-attempt || return 1
     UBS24GD4_STAGE=temporary-profile-delete-outcome-uncertain
     set +e
     nmcli --wait 30 connection delete uuid "$UBS24GD4_TEMP_UUID" >/dev/null 2>&1
@@ -737,47 +737,47 @@ ubs24gd4_delete_profile() {
     if [[ -e $UBS24GD4_TEMP_FILE || -L $UBS24GD4_TEMP_FILE ]]; then
         [[ -f $UBS24GD4_TEMP_FILE && ! -L $UBS24GD4_TEMP_FILE &&
            $(stat -c '%u:%a:%h' -- "$UBS24GD4_TEMP_FILE") == '0:600:1' &&
-           $(ubs24gd2_keyfile_scalar "$UBS24GD4_TEMP_FILE" connection uuid) == "$UBS24GD4_TEMP_UUID" ]] || return 1
+           $(mvc24gd2_keyfile_scalar "$UBS24GD4_TEMP_FILE" connection uuid) == "$UBS24GD4_TEMP_UUID" ]] || return 1
         rm -f -- "$UBS24GD4_TEMP_FILE" || return 1
     fi
-    ubs24gd4_temp_profile_absent || return 1
-    ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_temp_profile_absent || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
     UBS24GD4_STAGE=temporary-profile-absent-pure-openvpn-protected-private-hold
 }
 
-ubs24gd4_finish_teardown() {
+mvc24gd4_finish_teardown() {
     (( $# == 0 )) || return 1
     local route_now scratch first second
-    ubs24gd4_authority_witness || return 1
+    mvc24gd4_authority_witness || return 1
     [[ ${UBS24GD4_STAGE:-} == temporary-profile-absent-pure-openvpn-protected-private-hold ]] || return 1
-    route_now=$(ubs24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
-    [[ $route_now == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] && ubs24gd4_openvpn_default_route_observed || return 1
+    route_now=$(mvc24gc6_kernel_ipv4_snapshot "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE") || return 1
+    [[ $route_now == "${UBS24GC6_ROUTE_SNAPSHOT:-}" ]] && mvc24gd4_openvpn_default_route_observed || return 1
     scratch=$(umask 077; mktemp -d /dev/shm/ubs-v240-c23ai-final.XXXXXXXX) || return 1
     first=$scratch/first.json second=$scratch/second.json
-    if ! ubs24gb1_capture_nft "$first" || ! ubs24gb1_capture_nft "$second" || ! cmp -s -- "$first" "$second" ||
-       ! ubs24gc11_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
-       ! ubs24gd4_foreign_policy_unchanged "$first"; then
+    if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" || ! cmp -s -- "$first" "$second" ||
+       ! mvc24gc11_postshape_observation "$first" "$UBS24GC3_IFACE" "$UBS24GC3_SOURCE" "$UBS24GC3_REMOTE" "$UBS24GC3_PORT" "$UBS24GC11_TUNNEL" "$UBS24GC11_TUNNEL_SOURCE" ||
+       ! mvc24gd4_foreign_policy_unchanged "$first"; then
         rm -rf -- "$scratch"; return 1
     fi
     rm -rf -- "$scratch"
-    ubs24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
     [[ -d $UBS24GD4_RUNTIME && ! -L $UBS24GD4_RUNTIME ]] || return 1
     UBS24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold
 }
 
-ubs24gd4_stop_once() {
+mvc24gd4_stop_once() {
     (( $# == 0 )) || return 1
-    ubs24gd4_add_private_hold_routes || return 1
-    ubs24gd4_disconnect_wg || return 1
-    ubs24gd4_restore_openvpn_guard || return 1
-    ubs24gd4_delete_endpoint_route || return 1
-    ubs24gd4_delete_profile || return 1
-    ubs24gd4_finish_teardown
+    mvc24gd4_add_private_hold_routes || return 1
+    mvc24gd4_disconnect_wg || return 1
+    mvc24gd4_restore_openvpn_guard || return 1
+    mvc24gd4_delete_endpoint_route || return 1
+    mvc24gd4_delete_profile || return 1
+    mvc24gd4_finish_teardown
 }
 
 
 
-ubs24gd4_post_openvpn_cleanup_witness() {
+mvc24gd4_post_openvpn_cleanup_witness() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GCU_AUTHORITY:-none} == private-local-console &&
        ${UBS24GCU_APPROVAL:-none} == approved-process-local &&
@@ -787,19 +787,19 @@ ubs24gd4_post_openvpn_cleanup_witness() {
        ${UBS24GCO_STAGE:-} == protected-stopped-c1-held-finalize-pending &&
        ${UBS24GCU_STAGE:-} == stopped-c1-held &&
        ${UBS24GC19_STAGE:-} == openvpn-stopped-c1-guard-retained-no-release-authority ]] || return 1
-    ubs24gb2_root_scope && ubs24gb2_lock_valid && ubs24gb4_no_active_vpn || return 1
+    mvc24gb2_root_scope && mvc24gb2_lock_valid && mvc24gb4_no_active_vpn || return 1
 }
 
-ubs24gd4_release_private_hold_after_openvpn_stop() {
+mvc24gd4_release_private_hold_after_openvpn_stop() {
     (( $# == 0 )) || return 1
     local prefix rc output
-    ubs24gd4_post_openvpn_cleanup_witness || return 1
+    mvc24gd4_post_openvpn_cleanup_witness || return 1
     case ${UBS24GD4_STAGE:-} in
       wireguard-residue-removed-openvpn-protected-private-hold|wireguard-residue-removed-openvpn-absent-c11-private-hold) ;;
       *) return 1 ;;
     esac
-    ubs24gd4_private_hold_routes_state full || return 1
-    ubs24gd4_write_marker private-hold-route-delete-attempt || return 1
+    mvc24gd4_private_hold_routes_state full || return 1
+    mvc24gd4_write_marker private-hold-route-delete-attempt || return 1
     UBS24GD4_STAGE=private-hold-route-delete-outcome-uncertain-openvpn-down
     for prefix in "${UBS24GD4_ALLOWED_IPS[@]}"; do
         set +e
@@ -808,13 +808,13 @@ ubs24gd4_release_private_hold_after_openvpn_stop() {
         set -e
         : "$rc"
     done
-    ubs24gd4_private_hold_routes_state absent || return 1
+    mvc24gd4_private_hold_routes_state absent || return 1
     [[ -d $UBS24GD4_RUNTIME && ! -L $UBS24GD4_RUNTIME ]] || return 1
     rm -rf -- "$UBS24GD4_RUNTIME" || return 1
     UBS24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold
 }
 
-ubs24gd4_authorize_public_activation() { return 1; }
-ubs24gd4_authorize_public_cleanup() { return 1; }
-ubs24gd4_authorize_automatic_retry() { return 1; }
-ubs24gd4_authorize_automatic_disarm() { return 1; }
+mvc24gd4_authorize_public_activation() { return 1; }
+mvc24gd4_authorize_public_cleanup() { return 1; }
+mvc24gd4_authorize_automatic_retry() { return 1; }
+mvc24gd4_authorize_automatic_disarm() { return 1; }

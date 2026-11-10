@@ -9,4 +9,4 @@ UBS24E_CODE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P) || ex
 readonly UBS24E_CODE_ROOT
 # shellcheck source=../lib/combined-controller-wiring.sh
 source "$UBS24E_CODE_ROOT/lib/combined-controller-wiring.sh" || exit 1
-ubs24e_dispatch "$@"
+mvc24e_dispatch "$@"

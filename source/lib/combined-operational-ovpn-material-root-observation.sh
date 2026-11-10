@@ -2,18 +2,18 @@
 # F10: privilege-scoped observation only. This is not a NetworkManager service
 # or OpenVPN plugin process/namespace/sandbox impersonation. No TLS data opened.
 
-ubs24op_root_material_reset() {
+mvc24op_root_material_reset() {
     UBS24OP_ROOT_CA=unassessed
     UBS24OP_ROOT_TLS_CRYPT=unassessed
     UBS24OP_ROOT_STATE=unverified
 }
 
-ubs24op_root_material_observe() {
-    ubs24op_root_material_reset
+mvc24op_root_material_observe() {
+    mvc24op_root_material_reset
     (( $# == 1 && EUID == 0 )) || return 1
     # Reuse the F9 conservative pathname traversal (symlinks, component
     # spelling, missing and nonregular leafs). It already rejects secrets.
-    ubs24op_path_triage "$1" || return 1
+    mvc24op_path_triage "$1" || return 1
     case $UBS24OP_TRIAGE_CA in
         regular-readable-by-caller) UBS24OP_ROOT_CA=regular-readable-by-root ;;
         regular-not-readable-by-caller) UBS24OP_ROOT_CA=regular-not-readable-by-root ;;
@@ -37,6 +37,6 @@ ubs24op_root_material_observe() {
     UBS24OP_ROOT_STATE=root-caller-metadata-only-not-admitting
 }
 
-ubs24op_root_material_authorize_nm_write() { return 1; }
-ubs24op_root_material_authorize_activation() { return 1; }
-ubs24op_root_material_authorize_nft() { return 1; }
+mvc24op_root_material_authorize_nm_write() { return 1; }
+mvc24op_root_material_authorize_activation() { return 1; }
+mvc24op_root_material_authorize_nft() { return 1; }

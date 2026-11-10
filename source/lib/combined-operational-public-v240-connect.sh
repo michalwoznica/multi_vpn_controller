@@ -9,7 +9,7 @@
 # authority mode by overriding the final composition admission selector and D4
 # authority witness *after* the physically proven definitions are loaded.
 
-ubs24pubc_reset() {
+mvc24pubc_reset() {
     UBS24PUBC_ATTEMPTED=no
     UBS24PUBC_STAGE=idle
     UBS24PUBC_OPERATION=none
@@ -31,14 +31,14 @@ ubs24pubc_reset() {
     UBS24PUBC_PRECLONE_NAME=
 }
 
-ubs24pubc_runtime_absent() {
+mvc24pubc_runtime_absent() {
     (( $# == 0 )) || return 1
     local runtime
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     [[ $runtime == /* && ! -e $runtime && ! -L $runtime ]]
 }
 
-ubs24pubc_fixed_live_roots_absent() {
+mvc24pubc_fixed_live_roots_absent() {
     (( $# == 0 )) || return 1
     local p
     for p in /run/mvc-controller /run/mvc-activation \
@@ -46,10 +46,10 @@ ubs24pubc_fixed_live_roots_absent() {
              /run/mvc-completion /run/mvc-wireguard; do
         [[ ! -e $p && ! -L $p ]] || return 1
     done
-    ubs24pubc_runtime_absent
+    mvc24pubc_runtime_absent
 }
 
-ubs24pubc_hash_file() {
+mvc24pubc_hash_file() {
     (( $# == 1 )) || return 1
     local file=$1 hash tail
     [[ -f $file && ! -L $file ]] || return 1
@@ -58,36 +58,36 @@ ubs24pubc_hash_file() {
     printf '%s\n' "$hash"
 }
 
-ubs24pubc_preflight_readonly() {
+mvc24pubc_preflight_readonly() {
     (( $# == 2 )) || return 1
     local wg_name=$1 ovpn_name=$2 prefix source_sha temp_uuid
     UBS24PUBC_MODE=combined
     [[ ${UBS24PUBC_ATTEMPTED:-no} == no ]] || return 1
     UBS24PUBC_STAGE=preflight-fixed-live-roots
-    ubs24pubc_fixed_live_roots_absent || return 1
+    mvc24pubc_fixed_live_roots_absent || return 1
 
     UBS24PUBC_STAGE=preflight-profile-identities
-    ubs24pub_bind_combined_names "$wg_name" "$ovpn_name" || return 1
+    mvc24pub_bind_combined_names "$wg_name" "$ovpn_name" || return 1
 
     UBS24PUBC_STAGE=preflight-openvpn
-    ubs24gc4_preflight "$UBS24PUB_OVPN_UUID" || return 1
+    mvc24gc4_preflight "$UBS24PUB_OVPN_UUID" || return 1
     [[ ${UBS24GC4_PREFLIGHT_STAGE:-} == ready && -n ${UBS24GC4_IFACE:-} && -n ${UBS24GC4_NM_OWNER:-} ]] || return 1
 
     UBS24PUBC_STAGE=preflight-wireguard
-    ubs24gd2_assess_saved_profile "$UBS24PUB_WG_UUID" "$UBS24GC4_IFACE" || return 1
+    mvc24gd2_assess_saved_profile "$UBS24PUB_WG_UUID" "$UBS24GC4_IFACE" || return 1
     (( ${UBS24GD2_PEER_COUNT:-0} == 1 && ${#UBS24GD2_ENDPOINT_PORTS[@]} == 1 )) || return 1
-    ubs24gd3_keyfile_ipv4_source "$UBS24GD2_KEYFILE" || return 1
+    mvc24gd3_keyfile_ipv4_source "$UBS24GD2_KEYFILE" || return 1
     for prefix in "${UBS24GD2_ALLOWED_IPS[@]}"; do
-        ubs24gd3_private_ipv4_prefix "$prefix" || return 1
+        mvc24gd3_private_ipv4_prefix "$prefix" || return 1
     done
 
     UBS24PUBC_STAGE=preflight-controller-route-owners
     [[ -z $(ip -4 route show table all proto 186) &&
        -z $(ip -4 route show table all proto 187) ]] || return 1
 
-    source_sha=$(ubs24gd4_hash_file "$UBS24GD2_KEYFILE") || return 1
+    source_sha=$(mvc24gd4_hash_file "$UBS24GD2_KEYFILE") || return 1
     temp_uuid=$(cat /proc/sys/kernel/random/uuid) || return 1
-    ubs24_valid_uuid "$temp_uuid" || return 1
+    mvc24_valid_uuid "$temp_uuid" || return 1
 
     UBS24PUBC_WG_NAME=$wg_name
     UBS24PUBC_OVPN_NAME=$ovpn_name
@@ -100,29 +100,29 @@ ubs24pubc_preflight_readonly() {
     UBS24PUBC_WG_SOURCE=$UBS24GD3_WG_SOURCE_IP
     UBS24PUBC_TEMP_UUID=$temp_uuid
 
-    ubs24gd4_prepare_from_preflight \
+    mvc24gd4_prepare_from_preflight \
       "$UBS24PUBC_WG_UUID" "$UBS24PUBC_SOURCE_FILE" "$UBS24PUBC_SOURCE_SHA" \
       "$UBS24PUBC_WG_SOURCE" "$UBS24PUBC_UNDERLAY" "$UBS24GD2_UNDERLAY_SOURCE" \
       "$UBS24GD2_UNDERLAY_GATEWAY" "$UBS24PUBC_TEMP_UUID" || return 1
 
     # Recheck that no live root appeared during the read-only preflight.
-    ubs24pubc_fixed_live_roots_absent || return 1
+    mvc24pubc_fixed_live_roots_absent || return 1
     UBS24PUBC_STAGE=fresh-public-dual-connect-readonly-eligible
 }
 
-ubs24pubc_preflight_openvpn_readonly() {
+mvc24pubc_preflight_openvpn_readonly() {
     (( $# == 1 )) || return 1
     local ovpn_name=$1
     [[ ${UBS24PUBC_ATTEMPTED:-no} == no ]] || return 1
     UBS24PUBC_MODE=openvpn-only
     UBS24PUBC_STAGE=preflight-fixed-live-roots
-    ubs24pubc_fixed_live_roots_absent || return 1
+    mvc24pubc_fixed_live_roots_absent || return 1
 
     UBS24PUBC_STAGE=preflight-openvpn-profile-identity
-    ubs24pub_bind_openvpn_name "$ovpn_name" || return 1
+    mvc24pub_bind_openvpn_name "$ovpn_name" || return 1
 
     UBS24PUBC_STAGE=preflight-openvpn
-    ubs24gc4_preflight "$UBS24PUB_OVPN_UUID" || return 1
+    mvc24gc4_preflight "$UBS24PUB_OVPN_UUID" || return 1
     [[ ${UBS24GC4_PREFLIGHT_STAGE:-} == ready && -n ${UBS24GC4_IFACE:-} && -n ${UBS24GC4_NM_OWNER:-} ]] || return 1
 
     UBS24PUBC_STAGE=preflight-controller-route-owners
@@ -140,14 +140,14 @@ ubs24pubc_preflight_openvpn_readonly() {
     UBS24PUBC_WG_SOURCE=
     UBS24PUBC_TEMP_UUID=-
 
-    ubs24pubc_fixed_live_roots_absent || return 1
+    mvc24pubc_fixed_live_roots_absent || return 1
     UBS24PUBC_STAGE=fresh-public-openvpn-connect-readonly-eligible
 }
 
 # Explicit-command process-local admission. This is not user input by itself:
-# only ubs24pubc_connect_once sets these values, after the exact read-only
+# only mvc24pubc_connect_once sets these values, after the exact read-only
 # preflight. The public dispatcher is still disabled in C23AU.
-ubs24pub_connect_admission_witness() {
+mvc24pub_connect_admission_witness() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBC_OPERATION:-none} == connect &&
        ${UBS24PUBC_APPROVAL:-none} == approved-process-local &&
@@ -155,8 +155,8 @@ ubs24pub_connect_admission_witness() {
        -n ${UBS24PUBC_UNDERLAY:-} ]] || return 1
     case ${UBS24PUBC_MODE:-none} in
         combined)
-            ubs24_valid_uuid "${UBS24PUBC_OVPN_UUID:-}" && ubs24_valid_uuid "${UBS24PUBC_WG_UUID:-}" &&
-              ubs24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" && [[ -n ${UBS24PUBC_NM_OWNER:-} ]] || return 1
+            mvc24_valid_uuid "${UBS24PUBC_OVPN_UUID:-}" && mvc24_valid_uuid "${UBS24PUBC_WG_UUID:-}" &&
+              mvc24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" && [[ -n ${UBS24PUBC_NM_OWNER:-} ]] || return 1
             case ${UBS24PUBC_STAGE:-idle} in
                 authorizing-public-connect|starting-openvpn|starting-wireguard|publishing-active-session|cleanup-stopping-openvpn|cleanup-completing-openvpn|cleanup-stopping-wireguard|cleanup-reconciling-partial-wireguard|cleanup-reobserving-openvpn|cleanup-releasing-private-holds) ;;
                 *) return 1 ;;
@@ -166,7 +166,7 @@ ubs24pub_connect_admission_witness() {
                ${UBS24GC4_NM_OWNER:-} == "$UBS24PUBC_NM_OWNER" ]] || return 1
             ;;
         openvpn-only)
-            ubs24_valid_uuid "${UBS24PUBC_OVPN_UUID:-}" && [[ -n ${UBS24PUBC_NM_OWNER:-} &&
+            mvc24_valid_uuid "${UBS24PUBC_OVPN_UUID:-}" && [[ -n ${UBS24PUBC_NM_OWNER:-} &&
               ${UBS24PUBC_WG_UUID:-} == - && ${UBS24PUBC_TEMP_UUID:-} == - ]] || return 1
             case ${UBS24PUBC_STAGE:-idle} in
                 authorizing-public-connect|starting-openvpn|cleanup-stopping-openvpn|cleanup-completing-openvpn) ;;
@@ -178,7 +178,7 @@ ubs24pub_connect_admission_witness() {
             ;;
         wireguard-protected)
             [[ ${UBS24PUBC_OVPN_UUID:-} == - && ${UBS24PUBC_NM_OWNER:-} == - ]] || return 1
-            ubs24_valid_uuid "${UBS24PUBC_WG_UUID:-}" && ubs24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" || return 1
+            mvc24_valid_uuid "${UBS24PUBC_WG_UUID:-}" && mvc24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" || return 1
             case ${UBS24PUBC_STAGE:-idle} in
                 authorizing-public-connect|starting-wireguard|cleanup-stopping-wireguard|cleanup-releasing-guard) ;;
                 *) return 1 ;;
@@ -186,7 +186,7 @@ ubs24pub_connect_admission_witness() {
             ;;
         wireguard-split)
             [[ ${UBS24PUBC_OVPN_UUID:-} == - && ${UBS24PUBC_NM_OWNER:-} == - ]] || return 1
-            ubs24_valid_uuid "${UBS24PUBC_WG_UUID:-}" && ubs24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" || return 1
+            mvc24_valid_uuid "${UBS24PUBC_WG_UUID:-}" && mvc24_valid_uuid "${UBS24PUBC_TEMP_UUID:-}" || return 1
             case ${UBS24PUBC_STAGE:-idle} in
                 authorizing-public-connect|starting-wireguard-split|cleanup-stopping-wireguard-split) ;;
                 *) return 1 ;;
@@ -194,36 +194,36 @@ ubs24pub_connect_admission_witness() {
             ;;
         *) return 1 ;;
     esac
-    ubs24gb4_scope
+    mvc24gb4_scope
 }
 
-ubs24gco_enable_public_live() {
+mvc24gco_enable_public_live() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GCO_ATTEMPTED:-no} == no &&
        ${UBS24GCO_STAGE:-idle} == idle &&
        ${UBS24GCO_AUTHORITY:-none} == none ]] || return 1
-    ubs24pub_connect_admission_witness || return 1
+    mvc24pub_connect_admission_witness || return 1
     UBS24GCO_MODE=public-live-explicit-command
     UBS24GCO_AUTHORITY=public-explicit-connect
 }
 
-ubs24gco_public_live_enabled() {
+mvc24gco_public_live_enabled() {
     (( $# == 0 )) || return 1
     [[ ${UBS24GCO_MODE:-disabled} == public-live-explicit-command &&
        ${UBS24GCO_AUTHORITY:-none} == public-explicit-connect ]] || return 1
-    ubs24pub_connect_admission_witness
+    mvc24pub_connect_admission_witness
 }
 
 # Final public-process binding. The private C23AR wrapper never sources this
 # module, so its exact physically proven binding remains untouched.
-ubs24gco_enabled() {
+mvc24gco_enabled() {
     (( $# == 0 )) || return 1
-    ubs24gco_offline_enabled || ubs24gco_private_live_enabled || ubs24gco_public_live_enabled
+    mvc24gco_offline_enabled || mvc24gco_private_live_enabled || mvc24gco_public_live_enabled
 }
 
 # Preserve the private D4 authority branch exactly, and add only the public
 # explicit-connect branch for the public candidate composition.
-ubs24gd4_authority_witness() {
+mvc24gd4_authority_witness() {
     (( $# == 0 )) || return 1
     local admitted=no
     if [[ ${UBS24GCU_AUTHORITY:-none} == private-local-console &&
@@ -233,50 +233,50 @@ ubs24gd4_authority_witness() {
           ${UBS24GCO_AUTHORITY:-none} == private-local-console &&
           ${UBS24GCO_STAGE:-} == protected-openvpn-observed &&
           ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]]; then
-        ubs24gcu_live_admission_witness || return 1
+        mvc24gcu_live_admission_witness || return 1
         admitted=yes
     elif [[ ${UBS24PUBC_MODE:-none} == combined &&
             ${UBS24GCO_MODE:-disabled} == public-live-explicit-command &&
             ${UBS24GCO_AUTHORITY:-none} == public-explicit-connect &&
             ${UBS24GCO_STAGE:-} == protected-openvpn-observed &&
             ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]]; then
-        ubs24pub_connect_admission_witness || return 1
+        mvc24pub_connect_admission_witness || return 1
         admitted=yes
     elif [[ ${UBS24PUBC_MODE:-none} == wireguard-protected &&
             ${UBS24PUBC_STAGE:-} == starting-wireguard ]]; then
-        ubs24pub_connect_admission_witness || return 1
+        mvc24pub_connect_admission_witness || return 1
         admitted=yes
     elif [[ ${UBS24PUBC_MODE:-none} == wireguard-split &&
             ${UBS24PUBC_STAGE:-} == starting-wireguard-split ]]; then
-        ubs24pub_connect_admission_witness && ubs24gws_lock_valid || return 1
+        mvc24pub_connect_admission_witness && mvc24gws_lock_valid || return 1
         admitted=split
     fi
     [[ $admitted == yes || $admitted == split ]] || return 1
     if [[ $admitted == split ]]; then
-        ubs24gb2_root_scope && ubs24gws_lock_valid
+        mvc24gb2_root_scope && mvc24gws_lock_valid
     else
-        ubs24gb2_root_scope && ubs24gb2_lock_valid
+        mvc24gb2_root_scope && mvc24gb2_lock_valid
     fi
 }
 
 
-ubs24pubc_preclone_intent_path() {
+mvc24pubc_preclone_intent_path() {
     local runtime
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     printf '%s\n' "$runtime/preclone-intent"
 }
 
-ubs24pubc_preclone_binding_path() {
+mvc24pubc_preclone_binding_path() {
     local runtime
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     printf '%s\n' "$runtime/preclone-binding"
 }
 
-ubs24pubc_publish_preclone_intent() {
+mvc24pubc_publish_preclone_intent() {
     (( $# == 2 )) || return 1
     local source_uuid=$1 clone_name=$2 runtime path tmp boot userns netns mntns tx prepare commit source_sha
-    runtime=$(ubs24pub_session_runtime_root) || return 1
-    path=$(ubs24pubc_preclone_intent_path) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
+    path=$(mvc24pubc_preclone_intent_path) || return 1
     [[ ${UBS24PUBC_AUTHORITY:-none} == public-explicit-connect &&
        ${UBS24PUBC_APPROVAL:-none} == approved-process-local &&
        ${UBS24PUBC_OPERATION:-none} == connect &&
@@ -285,14 +285,14 @@ ubs24pubc_publish_preclone_intent() {
        $source_uuid == "${UBS24PUBC_OVPN_UUID:-}" &&
        $clone_name =~ ^mvc-prepared-([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$ ]] || return 1
     [[ -d $runtime && ! -L $runtime && ! -e $path && ! -L $path ]] || return 1
-    ubs24gb2_lock_valid && ubs24gc2_guard_witness || return 1
-    ubs24ga3_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBC_NM_OWNER" ]] || return 1
+    mvc24gb2_lock_valid && mvc24gc2_guard_witness || return 1
+    mvc24ga3_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBC_NM_OWNER" ]] || return 1
     [[ -n ${UBS24GA3_SOURCE_FILE:-} && -f $UBS24GA3_SOURCE_FILE && ! -L $UBS24GA3_SOURCE_FILE ]] || return 1
-    source_sha=$(ubs24op_settings_fingerprint "$UBS24GA3_SOURCE_FILE") || return 1
+    source_sha=$(mvc24op_settings_fingerprint "$UBS24GA3_SOURCE_FILE") || return 1
     [[ $source_sha =~ ^[0-9a-f]{64}$ ]] || return 1
-    tx=$(ubs24pubc_hash_file "$runtime/transaction") || return 1
-    prepare=$(ubs24pubc_hash_file /run/mvc-controller/prepare-intent) || return 1
-    commit=$(ubs24pubc_hash_file /run/mvc-controller/commit-attempt) || return 1
+    tx=$(mvc24pubc_hash_file "$runtime/transaction") || return 1
+    prepare=$(mvc24pubc_hash_file /run/mvc-controller/prepare-intent) || return 1
+    commit=$(mvc24pubc_hash_file /run/mvc-controller/commit-attempt) || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
@@ -315,19 +315,19 @@ ubs24pubc_publish_preclone_intent() {
     UBS24PUBC_PRECLONE_NAME=$clone_name
 }
 
-ubs24pubc_publish_preclone_binding() {
+mvc24pubc_publish_preclone_binding() {
     (( $# == 3 )) || return 1
     local source_uuid=$1 clone_name=$2 clone_uuid=$3 runtime intent path tmp boot pre
-    runtime=$(ubs24pub_session_runtime_root) || return 1
-    intent=$(ubs24pubc_preclone_intent_path) || return 1
-    path=$(ubs24pubc_preclone_binding_path) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
+    intent=$(mvc24pubc_preclone_intent_path) || return 1
+    path=$(mvc24pubc_preclone_binding_path) || return 1
     [[ $source_uuid == "${UBS24PUBC_OVPN_UUID:-}" && $clone_name == "${UBS24PUBC_PRECLONE_NAME:-}" &&
-       $clone_uuid != "$source_uuid" ]] && ubs24ga_uuid_valid "$clone_uuid" || return 1
+       $clone_uuid != "$source_uuid" ]] && mvc24ga_uuid_valid "$clone_uuid" || return 1
     [[ -f $intent && ! -L $intent && ! -e $path && ! -L $path ]] || return 1
-    ubs24gb2_lock_valid && ubs24gc2_guard_witness || return 1
-    ubs24ga3_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBC_NM_OWNER" ]] || return 1
+    mvc24gb2_lock_valid && mvc24gc2_guard_witness || return 1
+    mvc24ga3_nm_identity && [[ $UBS24OP_SESSION_NM_IDENTITY == "$UBS24PUBC_NM_OWNER" ]] || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
-    pre=$(ubs24pubc_hash_file "$intent") || return 1
+    pre=$(mvc24pubc_hash_file "$intent") || return 1
     tmp=$runtime/.preclone-binding.tmp
     : > "$tmp" || return 1; chmod 400 -- "$tmp" || return 1
     printf '%s\n' ubs-v240-public-preclone-binding-v1 state=raw-clone-uuid-observed-before-hardening \
@@ -339,18 +339,18 @@ ubs24pubc_publish_preclone_binding() {
 
 # Public-only implementation of A1's optional pre-mutation hook. Private C23AR
 # never sources this module and therefore retains the adapter's no-op hook.
-ubs24ga_preclone_intent_hook() { ubs24pubc_publish_preclone_intent "$@"; }
-ubs24ga_postclone_identity_hook() { ubs24pubc_publish_preclone_binding "$@"; }
+mvc24ga_preclone_intent_hook() { mvc24pubc_publish_preclone_intent "$@"; }
+mvc24ga_postclone_identity_hook() { mvc24pubc_publish_preclone_binding "$@"; }
 
-ubs24pubc_retire_preclone_intent_after_c7() {
+mvc24pubc_retire_preclone_intent_after_c7() {
     (( $# == 0 )) || return 1
     local path
-    path=$(ubs24pubc_preclone_intent_path) || return 1
+    path=$(mvc24pubc_preclone_intent_path) || return 1
     [[ -f $path && ! -L $path && ${UBS24PUBC_TRANSACTION_STATE:-none} == prepared-before-mutation ]] || return 1
-    ubs24gb2_lock_valid && ubs24gc3_transition_records_valid && ubs24gc7_read_intent || return 1
-    [[ $UBS24GC7_SOURCE_UUID == "$UBS24PUBC_OVPN_UUID" ]] && ubs24ga_uuid_valid "$UBS24GC7_CLONE_UUID" || return 1
+    mvc24gb2_lock_valid && mvc24gc3_transition_records_valid && mvc24gc7_read_intent || return 1
+    [[ $UBS24GC7_SOURCE_UUID == "$UBS24PUBC_OVPN_UUID" ]] && mvc24ga_uuid_valid "$UBS24GC7_CLONE_UUID" || return 1
     local binding
-    binding=$(ubs24pubc_preclone_binding_path) || return 1
+    binding=$(mvc24pubc_preclone_binding_path) || return 1
     if [[ -e $binding || -L $binding ]]; then
         [[ -f $binding && ! -L $binding ]] || return 1
         rm -f -- "$binding" || return 1
@@ -359,16 +359,16 @@ ubs24pubc_retire_preclone_intent_after_c7() {
     [[ ! -e $path && ! -L $path && ! -e $binding && ! -L $binding ]]
 }
 
-ubs24pubc_transaction_path() {
+mvc24pubc_transaction_path() {
     local runtime
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     printf '%s\n' "$runtime/transaction"
 }
 
-ubs24pubc_transaction_write() {
+mvc24pubc_transaction_write() {
     (( $# == 1 )) || return 1
     local state=$1 runtime file tmp boot userns netns mntns clone='-' prepare_sha='-' transition_sha='-' activation_sha='-' output_sha='-' d4_sha='-'
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     file=$runtime/transaction
     case $state in
       prepared-before-mutation|wireguard-split-prepared)
@@ -380,28 +380,28 @@ ubs24pubc_transaction_write() {
         [[ -d $runtime && ! -L $runtime && $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' &&
            -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file" 2>/dev/null) == '0:400:1' ]] || return 1
         clone=${UBS24GC7_CLONE_UUID:-}
-        ubs24_valid_uuid "$clone" || return 1
-        prepare_sha=$(ubs24pubc_hash_file "$(ubs24pubc_controller_prepare_path)") || return 1
-        transition_sha=$(ubs24pubc_hash_file "$(ubs24pubc_controller_transition_path)") || return 1
-        activation_sha=$(ubs24pubc_hash_file "$(ubs24pubc_activation_path)") || return 1
-        output_sha=$(ubs24pubc_hash_file "$(ubs24pubc_output_path)") || return 1
+        mvc24_valid_uuid "$clone" || return 1
+        prepare_sha=$(mvc24pubc_hash_file "$(mvc24pubc_controller_prepare_path)") || return 1
+        transition_sha=$(mvc24pubc_hash_file "$(mvc24pubc_controller_transition_path)") || return 1
+        activation_sha=$(mvc24pubc_hash_file "$(mvc24pubc_activation_path)") || return 1
+        output_sha=$(mvc24pubc_hash_file "$(mvc24pubc_output_path)") || return 1
         if [[ $state == dual-active-observed ]]; then
-            d4_sha=$(ubs24pubc_hash_file "$(ubs24pubc_d4_intent_path)") || return 1
+            d4_sha=$(mvc24pubc_hash_file "$(mvc24pubc_d4_intent_path)") || return 1
         fi
         ;;
       wireguard-protected)
         [[ ${UBS24PUBC_MODE:-none} == wireguard-protected &&
            -d $runtime && ! -L $runtime && $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' &&
            -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file" 2>/dev/null) == '0:400:1' ]] || return 1
-        prepare_sha=$(ubs24pubc_hash_file "$(ubs24pubc_controller_prepare_path)") || return 1
-        d4_sha=$(ubs24pubc_hash_file "$(ubs24pubc_d4_intent_path)") || return 1
+        prepare_sha=$(mvc24pubc_hash_file "$(mvc24pubc_controller_prepare_path)") || return 1
+        d4_sha=$(mvc24pubc_hash_file "$(mvc24pubc_d4_intent_path)") || return 1
         ;;
       wireguard-split)
         [[ ${UBS24PUBC_MODE:-none} == wireguard-split &&
            -d $runtime && ! -L $runtime && $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' &&
            -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file" 2>/dev/null) == '0:400:1' ]] || return 1
-        ubs24gws_lock_valid || return 1
-        d4_sha=$(ubs24pubc_hash_file "$(ubs24pubc_d4_intent_path)") || return 1
+        mvc24gws_lock_valid || return 1
+        d4_sha=$(mvc24pubc_hash_file "$(mvc24pubc_d4_intent_path)") || return 1
         ;;
       *) return 1 ;;
     esac
@@ -409,15 +409,15 @@ ubs24pubc_transaction_write() {
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    ubs24gb1_valid_ifname "$UBS24PUBC_UNDERLAY" || return 1
+    mvc24gb1_valid_ifname "$UBS24PUBC_UNDERLAY" || return 1
     case ${UBS24PUBC_MODE:-none} in
       combined)
-        ubs24_valid_uuid "$UBS24PUBC_OVPN_UUID" && ubs24_valid_uuid "$UBS24PUBC_WG_UUID" &&
-          ubs24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
+        mvc24_valid_uuid "$UBS24PUBC_OVPN_UUID" && mvc24_valid_uuid "$UBS24PUBC_WG_UUID" &&
+          mvc24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
         [[ $state != wireguard-protected ]] || return 1
         ;;
       openvpn-only)
-        ubs24_valid_uuid "$UBS24PUBC_OVPN_UUID" || return 1
+        mvc24_valid_uuid "$UBS24PUBC_OVPN_UUID" || return 1
         [[ $state != dual-active-observed && $state != wireguard-protected &&
            $UBS24PUBC_WG_UUID == - && $UBS24PUBC_TEMP_UUID == - ]] || return 1
         ;;
@@ -425,12 +425,12 @@ ubs24pubc_transaction_write() {
         [[ $UBS24PUBC_OVPN_UUID == - && $UBS24PUBC_NM_OWNER == - &&
            $state != openvpn-protected && $state != dual-active-observed &&
            $state != wireguard-split-prepared && $state != wireguard-split ]] || return 1
-        ubs24_valid_uuid "$UBS24PUBC_WG_UUID" && ubs24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
+        mvc24_valid_uuid "$UBS24PUBC_WG_UUID" && mvc24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
         ;;
       wireguard-split)
         [[ $UBS24PUBC_OVPN_UUID == - && $UBS24PUBC_NM_OWNER == - &&
            ( $state == wireguard-split-prepared || $state == wireguard-split ) ]] || return 1
-        ubs24_valid_uuid "$UBS24PUBC_WG_UUID" && ubs24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
+        mvc24_valid_uuid "$UBS24PUBC_WG_UUID" && mvc24_valid_uuid "$UBS24PUBC_TEMP_UUID" || return 1
         ;;
       *) return 1 ;;
     esac
@@ -456,10 +456,10 @@ ubs24pubc_transaction_write() {
     UBS24PUBC_TRANSACTION_STATE=$state
 }
 
-ubs24pubc_transaction_remove_if_unmutated() {
+mvc24pubc_transaction_remove_if_unmutated() {
     (( $# == 0 )) || return 1
     local runtime file
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     file=$runtime/transaction
     [[ ${UBS24PUBC_TRANSACTION_STATE:-none} == prepared-before-mutation &&
        -d $runtime && ! -L $runtime && -f $file && ! -L $file ]] || return 1
@@ -468,11 +468,11 @@ ubs24pubc_transaction_remove_if_unmutated() {
     UBS24PUBC_TRANSACTION_STATE=none
 }
 
-ubs24pubc_transaction_finalize_after_completion() {
+mvc24pubc_transaction_finalize_after_completion() {
     (( $# == 0 )) || return 1
     local runtime file active entry base
     local -a entries=()
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     file=$runtime/transaction
     active=$runtime/active
     [[ -d $runtime && ! -L $runtime && -f $file && ! -L $file &&
@@ -505,16 +505,16 @@ ubs24pubc_transaction_finalize_after_completion() {
     UBS24PUBC_TRANSACTION_STATE=none
 }
 
-ubs24pubc_controller_prepare_path() { printf '%s\n' /run/mvc-controller/prepare-intent; }
-ubs24pubc_controller_transition_path() { printf '%s\n' /run/mvc-controller/transition-attempt; }
-ubs24pubc_activation_path() { printf '%s\n' /run/mvc-activation/attempt; }
-ubs24pubc_output_path() { printf '%s\n' /run/mvc-output-transition/attempt; }
-ubs24pubc_d4_intent_path() { printf '%s\n' /run/mvc-wireguard/intent; }
+mvc24pubc_controller_prepare_path() { printf '%s\n' /run/mvc-controller/prepare-intent; }
+mvc24pubc_controller_transition_path() { printf '%s\n' /run/mvc-controller/transition-attempt; }
+mvc24pubc_activation_path() { printf '%s\n' /run/mvc-activation/attempt; }
+mvc24pubc_output_path() { printf '%s\n' /run/mvc-output-transition/attempt; }
+mvc24pubc_d4_intent_path() { printf '%s\n' /run/mvc-wireguard/intent; }
 
-ubs24pubc_publish_active_session() {
+mvc24pubc_publish_active_session() {
     (( $# == 0 )) || return 1
     local runtime
-    runtime=$(ubs24pub_session_runtime_root) || return 1
+    runtime=$(mvc24pub_session_runtime_root) || return 1
     local boot userns netns mntns tmp prepare_sha transition_sha activation_sha output_sha d4_sha
     [[ $runtime == /* && -d $runtime && ! -L $runtime &&
        $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' &&
@@ -523,21 +523,21 @@ ubs24pubc_publish_active_session() {
        ${UBS24GCO_STAGE:-} == protected-openvpn-observed &&
        ${UBS24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority &&
        ${UBS24GD4_STAGE:-} == parallel-wireguard-openvpn-protected-running ]] || return 1
-    ubs24pub_connect_admission_witness || return 1
-    ubs24gd4_dual_active_observed || return 1
-    ubs24_valid_uuid "${UBS24GC7_CLONE_UUID:-}" &&
-      ubs24_valid_uuid "$UBS24PUBC_OVPN_UUID" && ubs24_valid_uuid "$UBS24PUBC_WG_UUID" &&
-      ubs24_valid_uuid "${UBS24GD4_TEMP_UUID:-}" || return 1
+    mvc24pub_connect_admission_witness || return 1
+    mvc24gd4_dual_active_observed || return 1
+    mvc24_valid_uuid "${UBS24GC7_CLONE_UUID:-}" &&
+      mvc24_valid_uuid "$UBS24PUBC_OVPN_UUID" && mvc24_valid_uuid "$UBS24PUBC_WG_UUID" &&
+      mvc24_valid_uuid "${UBS24GD4_TEMP_UUID:-}" || return 1
 
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
     mntns=$(readlink /proc/self/ns/mnt) || return 1
-    prepare_sha=$(ubs24pubc_hash_file "$(ubs24pubc_controller_prepare_path)") || return 1
-    transition_sha=$(ubs24pubc_hash_file "$(ubs24pubc_controller_transition_path)") || return 1
-    activation_sha=$(ubs24pubc_hash_file "$(ubs24pubc_activation_path)") || return 1
-    output_sha=$(ubs24pubc_hash_file "$(ubs24pubc_output_path)") || return 1
-    d4_sha=$(ubs24pubc_hash_file "$(ubs24pubc_d4_intent_path)") || return 1
+    prepare_sha=$(mvc24pubc_hash_file "$(mvc24pubc_controller_prepare_path)") || return 1
+    transition_sha=$(mvc24pubc_hash_file "$(mvc24pubc_controller_transition_path)") || return 1
+    activation_sha=$(mvc24pubc_hash_file "$(mvc24pubc_activation_path)") || return 1
+    output_sha=$(mvc24pubc_hash_file "$(mvc24pubc_output_path)") || return 1
+    d4_sha=$(mvc24pubc_hash_file "$(mvc24pubc_d4_intent_path)") || return 1
 
     umask 077
     tmp=$runtime/.active.tmp
@@ -575,7 +575,7 @@ ubs24pubc_publish_active_session() {
     UBS24PUBC_STAGE=dual-active-session-published
 }
 
-ubs24pubc_consume_authority() {
+mvc24pubc_consume_authority() {
     UBS24PUBC_APPROVAL=consumed
     UBS24PUBC_AUTHORITY=none
     # This process has no further mutation work. Clearing the public GCO token
@@ -585,71 +585,71 @@ ubs24pubc_consume_authority() {
     fi
 }
 
-ubs24pubc_cleanup_openvpn_only_once() {
+mvc24pubc_cleanup_openvpn_only_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBC_TRANSACTION_STATE:-none} == openvpn-protected &&
        ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard &&
        ${UBS24GCO_STAGE:-} == protected-openvpn-observed ]] || return 1
     UBS24PUBC_STAGE=cleanup-stopping-openvpn
-    ubs24gco_stop_once || return 1
+    mvc24gco_stop_once || return 1
     UBS24PUBC_STAGE=cleanup-completing-openvpn
-    ubs24gco_complete_once || return 1
-    ubs24pubc_transaction_finalize_after_completion || return 1
+    mvc24gco_complete_once || return 1
+    mvc24pubc_transaction_finalize_after_completion || return 1
     UBS24PUBC_STAGE=connect-failed-clean-baseline-restored
 }
 
-ubs24pubc_cleanup_dual_once() {
+mvc24pubc_cleanup_dual_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBC_TRANSACTION_STATE:-none} == dual-active-observed &&
        ${UBS24GD4_STAGE:-} == parallel-wireguard-openvpn-protected-running &&
        ${UBS24GCO_STAGE:-} == protected-openvpn-observed ]] || return 1
     UBS24PUBC_STAGE=cleanup-stopping-wireguard
-    ubs24gd4_stop_once || return 1
+    mvc24gd4_stop_once || return 1
     [[ ${UBS24GD4_STAGE:-} == wireguard-residue-removed-openvpn-protected-private-hold ]] || return 1
     UBS24PUBC_STAGE=cleanup-reobserving-openvpn
-    ubs24pubd_reobserve_openvpn_after_wg || return 1
+    mvc24pubd_reobserve_openvpn_after_wg || return 1
     UBS24PUBC_STAGE=cleanup-stopping-openvpn
-    ubs24gco_stop_once || return 1
+    mvc24gco_stop_once || return 1
     UBS24PUBC_STAGE=cleanup-releasing-private-holds
-    ubs24gd4_release_private_hold_after_openvpn_stop || return 1
+    mvc24gd4_release_private_hold_after_openvpn_stop || return 1
     UBS24PUBC_STAGE=cleanup-completing-openvpn
-    ubs24gco_complete_once || return 1
-    ubs24pubc_transaction_finalize_after_completion || return 1
+    mvc24gco_complete_once || return 1
+    mvc24pubc_transaction_finalize_after_completion || return 1
     UBS24PUBC_STAGE=connect-failed-clean-baseline-restored
 }
 
-ubs24pubc_cleanup_partial_d4_once() {
+mvc24pubc_cleanup_partial_d4_once() {
     (( $# == 0 )) || return 1
     [[ ${UBS24PUBC_TRANSACTION_STATE:-none} == openvpn-protected &&
-       -e $(ubs24pub_wireguard_runtime_root) && ! -L $(ubs24pub_wireguard_runtime_root) ]] || return 1
+       -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
     UBS24PUBC_STAGE=cleanup-reconciling-partial-wireguard
     # Reuse the fresh-process parser to reconstruct and cross-check the exact
     # immutable D4 intent against the identities already selected by CONNECT.
     UBS24PUBD_WG_SOURCE_UUID=$UBS24PUBC_WG_UUID
     UBS24PUBD_WG_TEMP_UUID=$UBS24PUBC_TEMP_UUID
     UBS24PUBD_UNDERLAY=$UBS24PUBC_UNDERLAY
-    ubs24pubd_load_d4_intent || return 1
-    ubs24pubr_reconcile_partial_d4_to_openvpn_hold || return 1
+    mvc24pubd_load_d4_intent || return 1
+    mvc24pubr_reconcile_partial_d4_to_openvpn_hold || return 1
     UBS24PUBC_STAGE=cleanup-reobserving-openvpn
-    ubs24pubd_reobserve_openvpn_after_wg || return 1
+    mvc24pubd_reobserve_openvpn_after_wg || return 1
     UBS24PUBC_STAGE=cleanup-stopping-openvpn
-    ubs24gco_stop_once || return 1
+    mvc24gco_stop_once || return 1
     UBS24PUBC_STAGE=cleanup-releasing-private-holds
-    ubs24gd4_release_private_hold_after_openvpn_stop || return 1
+    mvc24gd4_release_private_hold_after_openvpn_stop || return 1
     UBS24PUBC_STAGE=cleanup-completing-openvpn
-    ubs24gco_complete_once || return 1
-    ubs24pubc_transaction_finalize_after_completion || return 1
+    mvc24gco_complete_once || return 1
+    mvc24pubc_transaction_finalize_after_completion || return 1
     UBS24PUBC_STAGE=connect-failed-clean-baseline-restored
 }
 
 
 
 
-ubs24pubc_connect_openvpn_once() {
+mvc24pubc_connect_openvpn_once() {
     (( $# == 1 )) || return 1
     local ovpn_name=$1 original_failure
     [[ ${UBS24PUBC_ATTEMPTED:-no} == no ]] || return 1
-    if ! ubs24pubc_preflight_openvpn_readonly "$ovpn_name"; then
+    if ! mvc24pubc_preflight_openvpn_readonly "$ovpn_name"; then
         UBS24PUBC_ATTEMPTED=yes
         return 1
     fi
@@ -659,68 +659,68 @@ ubs24pubc_connect_openvpn_once() {
     UBS24PUBC_AUTHORITY=public-explicit-connect
 
     UBS24PUBC_STAGE=publishing-pre-mutation-transaction
-    if ! ubs24pubc_transaction_write prepared-before-mutation; then
+    if ! mvc24pubc_transaction_write prepared-before-mutation; then
         UBS24PUBC_STAGE=pre-mutation-transaction-publication-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=authorizing-public-connect
-    if ! ubs24gco_enable_public_live; then
+    if ! mvc24gco_enable_public_live; then
         UBS24PUBC_STAGE=public-openvpn-authority-refused
-        ubs24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=starting-openvpn
-    if ! ubs24gco_start_once "$UBS24PUBC_OVPN_UUID" "$UBS24PUBC_UNDERLAY"; then
+    if ! mvc24gco_start_once "$UBS24PUBC_OVPN_UUID" "$UBS24PUBC_UNDERLAY"; then
         original_failure="openvpn-start-failed-${UBS24GC17_STAGE:-unknown}"
-        if ubs24pube_c7_intent_present && ubs24pube_reconcile_incomplete_start_locked; then
+        if mvc24pube_c7_intent_present && mvc24pube_reconcile_incomplete_start_locked; then
             UBS24PUBC_STAGE="${original_failure}-auto-cleaned-baseline"
-            ubs24pubc_consume_authority
+            mvc24pubc_consume_authority
             return 1
         fi
-        if ubs24pube_preclone_intent_present && ubs24pube_reconcile_pre_c7_locked; then
+        if mvc24pube_preclone_intent_present && mvc24pube_reconcile_pre_c7_locked; then
             UBS24PUBC_STAGE="${original_failure}-pre-c7-auto-cleaned-baseline"
-            ubs24pubc_consume_authority
+            mvc24pubc_consume_authority
             return 1
         fi
         UBS24PUBC_STAGE="${original_failure}-cleanup-refused-use-disconnect-or-recovery"
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
-    if ! ubs24pubc_retire_preclone_intent_after_c7; then
+    if ! mvc24pubc_retire_preclone_intent_after_c7; then
         UBS24PUBC_STAGE=openvpn-preclone-intent-retirement-failed
-        if declare -F ubs24pube_reconcile_incomplete_start_locked >/dev/null && ubs24pube_reconcile_incomplete_start_locked; then
+        if declare -F mvc24pube_reconcile_incomplete_start_locked >/dev/null && mvc24pube_reconcile_incomplete_start_locked; then
             UBS24PUBC_STAGE=openvpn-preclone-intent-retirement-failed-auto-cleaned-baseline
         fi
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
-    if ! ubs24pubc_transaction_write openvpn-protected; then
+    if ! mvc24pubc_transaction_write openvpn-protected; then
         UBS24PUBC_STAGE=openvpn-protected-transaction-update-failed
         UBS24PUBC_TRANSACTION_STATE=openvpn-protected
-        if ubs24pubc_cleanup_openvpn_only_once; then
-            ubs24pubc_consume_authority
+        if mvc24pubc_cleanup_openvpn_only_once; then
+            mvc24pubc_consume_authority
             return 1
         fi
         UBS24PUBC_STAGE=openvpn-protected-transaction-update-failed-cleanup-refused
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=openvpn-only-session-published-connect-complete
-    ubs24pubc_consume_authority
+    mvc24pubc_consume_authority
     return 0
 }
 
-ubs24pubc_connect_wireguard_protected_once() {
+mvc24pubc_connect_wireguard_protected_once() {
     (( $# == 1 )) || return 1
     local wg_name=$1 original_failure
     [[ ${UBS24PUBC_ATTEMPTED:-no} == no ]] || return 1
-    if ! ubs24gwg_preflight_readonly "$wg_name"; then
+    if ! mvc24gwg_preflight_readonly "$wg_name"; then
         UBS24PUBC_ATTEMPTED=yes
         return 1
     fi
@@ -730,53 +730,53 @@ ubs24pubc_connect_wireguard_protected_once() {
     UBS24PUBC_AUTHORITY=public-explicit-connect
 
     UBS24PUBC_STAGE=publishing-pre-mutation-transaction
-    if ! ubs24pubc_transaction_write prepared-before-mutation; then
+    if ! mvc24pubc_transaction_write prepared-before-mutation; then
         UBS24PUBC_STAGE=pre-mutation-transaction-publication-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=authorizing-public-connect
     UBS24GWG_STAGE=authorizing-public-connect
-    if ! ubs24pub_connect_admission_witness; then
+    if ! mvc24pub_connect_admission_witness; then
         UBS24PUBC_STAGE=public-wireguard-protected-authority-refused
-        ubs24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=starting-wireguard
-    if ! ubs24gwg_start_once; then
+    if ! mvc24gwg_start_once; then
         original_failure="wireguard-protected-start-failed-${UBS24GWG_STAGE:-unknown}"
         UBS24PUBC_STAGE="${original_failure}-guard-may-remain-use-recovery"
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
-    if ! ubs24pubc_transaction_write wireguard-protected; then
+    if ! mvc24pubc_transaction_write wireguard-protected; then
         UBS24PUBC_STAGE=wireguard-protected-transaction-update-failed
         # The active state is exact and same-process authenticated. Tear it
         # down rather than strand a protected session behind the older marker.
         UBS24PUBC_STAGE=cleanup-stopping-wireguard
-        if ubs24gwg_stop_once; then
+        if mvc24gwg_stop_once; then
             UBS24PUBC_STAGE=wireguard-protected-transaction-update-failed-auto-cleaned-baseline
         else
             UBS24PUBC_STAGE="wireguard-protected-transaction-update-failed-cleanup-refused-${UBS24GWG_STAGE:-unknown}"
         fi
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=wireguard-only-protected-session-published-connect-complete
-    ubs24pubc_consume_authority
+    mvc24pubc_consume_authority
     return 0
 }
 
-ubs24pubc_connect_once() {
+mvc24pubc_connect_once() {
     (( $# == 2 )) || return 1
     local wg_name=$1 ovpn_name=$2 original_failure
     [[ ${UBS24PUBC_ATTEMPTED:-no} == no ]] || return 1
-    if ! ubs24pubc_preflight_readonly "$wg_name" "$ovpn_name"; then
+    if ! mvc24pubc_preflight_readonly "$wg_name" "$ovpn_name"; then
         UBS24PUBC_ATTEMPTED=yes
         return 1
     fi
@@ -788,121 +788,121 @@ ubs24pubc_connect_once() {
     # Publish same-boot ownership before the first host mutation. At this state
     # all mutation-derived hashes are deliberately '-'.
     UBS24PUBC_STAGE=publishing-pre-mutation-transaction
-    if ! ubs24pubc_transaction_write prepared-before-mutation; then
+    if ! mvc24pubc_transaction_write prepared-before-mutation; then
         UBS24PUBC_STAGE=pre-mutation-transaction-publication-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=authorizing-public-connect
-    if ! ubs24gco_enable_public_live; then
+    if ! mvc24gco_enable_public_live; then
         UBS24PUBC_STAGE=public-openvpn-authority-refused
-        ubs24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_transaction_remove_if_unmutated || UBS24PUBC_STAGE=authority-refused-transaction-cleanup-failed
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=starting-openvpn
-    if ! ubs24gco_start_once "$UBS24PUBC_OVPN_UUID" "$UBS24PUBC_UNDERLAY"; then
+    if ! mvc24gco_start_once "$UBS24PUBC_OVPN_UUID" "$UBS24PUBC_UNDERLAY"; then
         original_failure="openvpn-start-failed-${UBS24GC17_STAGE:-unknown}"
         # Once C7 exists, the exact temporary clone and C1/C13 ownership are
         # durably bound. Reconcile that authenticated partial start now.
-        if ubs24pube_c7_intent_present && ubs24pube_reconcile_incomplete_start_locked; then
+        if mvc24pube_c7_intent_present && mvc24pube_reconcile_incomplete_start_locked; then
             UBS24PUBC_STAGE="${original_failure}-auto-cleaned-baseline"
-            ubs24pubc_consume_authority
+            mvc24pubc_consume_authority
             return 1
         fi
         # Stage 7: A1 now publishes an unguessable clone-name intent before the
         # first NM clone write. If C7 does not exist but that intent does, the
         # pre-C7 reconciler can authenticate an inactive temporary clone (or its
         # absence), remove only that owned clone, release B2/C1 and retire state.
-        if ubs24pube_preclone_intent_present && ubs24pube_reconcile_pre_c7_locked; then
+        if mvc24pube_preclone_intent_present && mvc24pube_reconcile_pre_c7_locked; then
             UBS24PUBC_STAGE="${original_failure}-pre-c7-auto-cleaned-baseline"
-            ubs24pubc_consume_authority
+            mvc24pubc_consume_authority
             return 1
         fi
         UBS24PUBC_STAGE="${original_failure}-cleanup-refused-use-disconnect-or-recovery"
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
     # C7 now durably owns the exact clone UUID. Retire the earlier name-only
     # intent before upgrading the public transaction; a crash after this point
     # is handled by the existing C23BE prepared+C7 reconciliation path.
-    if ! ubs24pubc_retire_preclone_intent_after_c7; then
+    if ! mvc24pubc_retire_preclone_intent_after_c7; then
         UBS24PUBC_STAGE=openvpn-preclone-intent-retirement-failed
-        if declare -F ubs24pube_reconcile_incomplete_start_locked >/dev/null && ubs24pube_reconcile_incomplete_start_locked; then
+        if declare -F mvc24pube_reconcile_incomplete_start_locked >/dev/null && mvc24pube_reconcile_incomplete_start_locked; then
             UBS24PUBC_STAGE=openvpn-preclone-intent-retirement-failed-auto-cleaned-baseline
         fi
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
-    if ! ubs24pubc_transaction_write openvpn-protected; then
+    if ! mvc24pubc_transaction_write openvpn-protected; then
         UBS24PUBC_STAGE=openvpn-protected-transaction-update-failed
         # The protected OpenVPN state is authenticated in this process. Clean it
         # before returning rather than stranding the caller behind C11.
         UBS24PUBC_TRANSACTION_STATE=openvpn-protected
-        if ubs24pubc_cleanup_openvpn_only_once; then
-            ubs24pubc_consume_authority
+        if mvc24pubc_cleanup_openvpn_only_once; then
+            mvc24pubc_consume_authority
             return 1
         fi
         UBS24PUBC_STAGE=openvpn-protected-transaction-update-failed-cleanup-refused
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=starting-wireguard
-    if ! ubs24gd4_start_once; then
+    if ! mvc24gd4_start_once; then
         original_failure="wireguard-start-failed-${UBS24GD4_STAGE:-unknown}"
         # If D4 failed before publishing its immutable intent, it made no
         # authenticated WG mutation. This is exactly the C23AY failure class.
-        if [[ ! -e $(ubs24pub_wireguard_runtime_root) && ! -L $(ubs24pub_wireguard_runtime_root) ]]; then
-            if ubs24pubc_cleanup_openvpn_only_once; then
+        if [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]]; then
+            if mvc24pubc_cleanup_openvpn_only_once; then
                 UBS24PUBC_STAGE="${original_failure}-auto-cleaned-baseline"
-                ubs24pubc_consume_authority
+                mvc24pubc_consume_authority
                 return 1
             fi
             UBS24PUBC_STAGE="${original_failure}-openvpn-cleanup-refused"
         else
-            if ubs24pubc_cleanup_partial_d4_once; then
+            if mvc24pubc_cleanup_partial_d4_once; then
                 UBS24PUBC_STAGE="${original_failure}-auto-cleaned-partial-d4-baseline"
-                ubs24pubc_consume_authority
+                mvc24pubc_consume_authority
                 return 1
             fi
             UBS24PUBC_STAGE="${original_failure}-partial-d4-cleanup-refused-use-disconnect"
         fi
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
     [[ ${UBS24GD4_STAGE:-} == parallel-wireguard-openvpn-protected-running ]] || {
         UBS24PUBC_STAGE=wireguard-active-contract-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     }
-    if ! ubs24pubc_transaction_write dual-active-observed; then
+    if ! mvc24pubc_transaction_write dual-active-observed; then
         UBS24PUBC_STAGE=dual-active-transaction-update-failed
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
 
     UBS24PUBC_STAGE=publishing-active-session
-    if ! ubs24pubc_publish_active_session; then
+    if ! mvc24pubc_publish_active_session; then
         original_failure=active-session-publication-failed
-        if ubs24pubc_cleanup_dual_once; then
+        if mvc24pubc_cleanup_dual_once; then
             UBS24PUBC_STAGE="${original_failure}-auto-cleaned-baseline"
-            ubs24pubc_consume_authority
+            mvc24pubc_consume_authority
             return 1
         fi
         UBS24PUBC_STAGE="${original_failure}-dual-session-retained-for-disconnect"
-        ubs24pubc_consume_authority
+        mvc24pubc_consume_authority
         return 1
     fi
     UBS24PUBC_STAGE=dual-active-session-published-connect-complete
-    ubs24pubc_consume_authority
+    mvc24pubc_consume_authority
     return 0
 }
 
-ubs24pubc_authorize_dispatch_live() { return 1; }
-ubs24pubc_authorize_disconnect() { return 1; }
-ubs24pubc_authorize_automatic_retry() { return 1; }
+mvc24pubc_authorize_dispatch_live() { return 1; }
+mvc24pubc_authorize_disconnect() { return 1; }
+mvc24pubc_authorize_automatic_retry() { return 1; }
 
-ubs24pubc_reset
+mvc24pubc_reset

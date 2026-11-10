@@ -5,7 +5,7 @@
 # Input snapshots are supplied by a TEST. They are not authenticated kernel
 # witnesses, and neither a PASS nor the export grants operational authority.
 
-ubs24op_qg_reset() {
+mvc24op_qg_reset() {
     UBS24OP_QG_FINDING=unverified
     UBS24OP_QG_AUTHORITY=none
     UBS24OP_QG_COVERAGE=host-ip-output-forward-and-linux-bridge-forward-only
@@ -15,8 +15,8 @@ ubs24op_qg_reset() {
 # Snapshot is a private nft -j -n -s list ruleset FILE, not a shell string.
 # An eventual privileged caller must bind snapshots to fixed-root lock and
 # authenticate the actual netns/ruleset; F14 explicitly does neither.
-ubs24op_qg_preflight_snapshot() {
-    ubs24op_qg_reset
+mvc24op_qg_preflight_snapshot() {
+    mvc24op_qg_reset
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
     jq -e '
         def owned($v):
@@ -39,8 +39,8 @@ ubs24op_qg_preflight_snapshot() {
 # A precise, conservative witness: exactly two owned tables and three empty
 # policy-DROP base chains, no owned rules, sets, maps, flowtables or extras.
 # No assertion about packets that bypass these netfilter hooks.
-ubs24op_qg_postshape_snapshot() {
-    ubs24op_qg_reset
+mvc24op_qg_postshape_snapshot() {
+    mvc24op_qg_reset
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
     jq -e '
         def owned($v):
@@ -77,7 +77,7 @@ ubs24op_qg_postshape_snapshot() {
 }
 
 # Pure export of a reviewable reference file. Never executes it.
-ubs24op_qg_export_reference() {
+mvc24op_qg_export_reference() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
     [[ -n ${UBS24OP_QG_REFERENCE:-} && -f $UBS24OP_QG_REFERENCE &&
        ! -L $UBS24OP_QG_REFERENCE ]] || return 1
@@ -88,8 +88,8 @@ ubs24op_qg_export_reference() {
 # No model outcome may be used to create a clone, modify nft, modify NM, or
 # authorise recovery/disarm. The missing scope/identity/routing witnesses are
 # real production blockers, not optional hardening.
-ubs24op_qg_authorize_install() { return 1; }
-ubs24op_qg_authorize_clone() { return 1; }
-ubs24op_qg_authorize_activation() { return 1; }
-ubs24op_qg_authorize_disarm() { return 1; }
-ubs24op_qg_authorize_recovery() { return 1; }
+mvc24op_qg_authorize_install() { return 1; }
+mvc24op_qg_authorize_clone() { return 1; }
+mvc24op_qg_authorize_activation() { return 1; }
+mvc24op_qg_authorize_disarm() { return 1; }
+mvc24op_qg_authorize_recovery() { return 1; }

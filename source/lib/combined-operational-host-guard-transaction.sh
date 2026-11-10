@@ -8,16 +8,16 @@
 # combined-operational-host-guard-plan.sh
 # This module has no environmental authority switches or alternate runtime path.
 
-ubs24gb2_reset() {
+mvc24gb2_reset() {
     UBS24GB2_STAGE=unverified
     UBS24GB2_AUTHORITY=none
     UBS24GB2_FD=''
     UBS24GB2_ATTEMPTED=no
 }
 
-ubs24gb2_runtime() { printf '%s\n' /run/mvc-controller; }
+mvc24gb2_runtime() { printf '%s\n' /run/mvc-controller; }
 
-ubs24gb2_root_scope() {
+mvc24gb2_root_scope() {
     (( $# == 0 )) && [[ $EUID == 0 ]] || return 1
     [[ $(stat -f -c '%T' /run) == tmpfs &&
        $(readlink /proc/self/ns/net) == "$(readlink /proc/1/ns/net)" &&
@@ -25,10 +25,10 @@ ubs24gb2_root_scope() {
        $(awk '{print $1 ":" $2 ":" $3}' /proc/self/uid_map) == '0:0:4294967295' ]]
 }
 
-ubs24gb2_runtime_shape() {
+mvc24gb2_runtime_shape() {
     (( $# == 0 )) || return 1
     local dir file mode
-    dir=$(ubs24gb2_runtime) || return 1
+    dir=$(mvc24gb2_runtime) || return 1
     [[ -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir") == '0:700:2' ]] || return 1
     local -a entries=()
     mapfile -d '' -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 -print0) || return 1
@@ -50,10 +50,10 @@ ubs24gb2_runtime_shape() {
     done
 }
 
-ubs24gb2_lock_valid() {
+mvc24gb2_lock_valid() {
     (( $# == 0 )) && [[ ${UBS24GB2_FD:-} =~ ^[0-9]+$ ]] || return 1
     local dir
-    dir=$(ubs24gb2_runtime) || return 1
+    dir=$(mvc24gb2_runtime) || return 1
     [[ $(stat -Lc '%d:%i' -- "/proc/self/fd/$UBS24GB2_FD") == \
        "$(stat -c '%d:%i' -- "$dir/controller.lock")" ]]
 }
@@ -61,17 +61,17 @@ ubs24gb2_lock_valid() {
 # The intent authenticates original host scope, policy, lowerdev and prestate.
 # Only root-held locking + direct kernel observations may later justify a
 # surviving-guard finding; a copied record never grants permission on its own.
-ubs24gb2_records_valid() {
+mvc24gb2_records_valid() {
     (( $# == 0 )) || return 1
     local dir iface='' boot userns netns mntns
     local -a prepared=() committed=()
-    dir=$(ubs24gb2_runtime) || return 1
-    ubs24gb2_root_scope && ubs24gb2_runtime_shape && ubs24gb2_lock_valid || return 1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gb2_root_scope && mvc24gb2_runtime_shape && mvc24gb2_lock_valid || return 1
     mapfile -t prepared < "$dir/prepare-intent" || return 1
     mapfile -t committed < "$dir/commit-attempt" || return 1
     (( ${#prepared[@]} == 12 && ${#committed[@]} == 4 )) || return 1
     iface=${prepared[6]#underlay=}
-    ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_valid_ifname "$iface" || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
     netns=$(readlink /proc/self/ns/net) || return 1
@@ -92,14 +92,14 @@ ubs24gb2_records_valid() {
        ${committed[1]} == state=attempted-exactly-once &&
        ${committed[2]} == "boot=$boot" &&
        ${committed[3]} == "prepare=$(sha256sum "$dir/prepare-intent" | cut -d' ' -f1)" ]] || return 1
-    ubs24gb2_batch_valid "$iface" "$dir/batch.nft" || return 1
-    ubs24op_qg_preflight_snapshot "$dir/prestate.json" &&
-        ubs24gb2_prestate_netdev_absent "$dir/prestate.json" &&
-        ubs24gb1_links_valid "$iface" "$dir/links.json" &&
-        ubs24gb1_routes_valid "$iface" "$dir/routes4.json" "$dir/routes6.json"
+    mvc24gb2_batch_valid "$iface" "$dir/batch.nft" || return 1
+    mvc24op_qg_preflight_snapshot "$dir/prestate.json" &&
+        mvc24gb2_prestate_netdev_absent "$dir/prestate.json" &&
+        mvc24gb1_links_valid "$iface" "$dir/links.json" &&
+        mvc24gb1_routes_valid "$iface" "$dir/routes4.json" "$dir/routes6.json"
 }
 
-ubs24gb2_batch_valid() {
+mvc24gb2_batch_valid() {
     (( $# == 2 )) || return 1
     local iface=$1 batch=$2 base line expected
     base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/vpn-v240-preclone-quarantine-offline.nft || return 1
@@ -118,7 +118,7 @@ ubs24gb2_batch_valid() {
        ${actual[8]} == 'add rule netdev mvc_preclone_underlay lowerdev_deny ether type ip ip protocol udp udp sport 68 udp dport 67 accept' ]]
 }
 
-ubs24gb2_prestate_netdev_absent() {
+mvc24gb2_prestate_netdev_absent() {
     (( $# == 1 )) && jq -e '
        [ .nftables[] | to_entries[] | select(.key != "metainfo") | .value |
           select(type=="object" and .family=="netdev" and
@@ -126,10 +126,10 @@ ubs24gb2_prestate_netdev_absent() {
     ' -- "$1" >/dev/null 2>&1
 }
 
-ubs24gb2_poststate_valid() {
+mvc24gb2_poststate_valid() {
     (( $# == 2 )) || return 1
     local file=$1 iface=$2
-    [[ -f $file && ! -L $file ]] && ubs24gb1_valid_ifname "$iface" || return 1
+    [[ -f $file && ! -L $file ]] && mvc24gb1_valid_ifname "$iface" || return 1
     jq -e --arg iface "$iface" '
       def m($l;$r): {match:{op:"==",left:$l,right:$r}};
       def meta($k): {meta:{key:$k}};
@@ -173,7 +173,7 @@ ubs24gb2_poststate_valid() {
     ' -- "$file" >/dev/null 2>&1
 }
 
-ubs24gb2_foreign_projection() {
+mvc24gb2_foreign_projection() {
     (( $# == 1 )) && [[ -f $1 && ! -L $1 ]] || return 1
     jq -ecS '
       def ours($v):
@@ -189,49 +189,49 @@ ubs24gb2_foreign_projection() {
     ' -- "$1" 2>/dev/null
 }
 
-ubs24gb2_derive_iface() {
+mvc24gb2_derive_iface() {
     (( $# == 0 )) || return 1
     local dir
-    dir=$(ubs24gb2_runtime) || return 1
+    dir=$(mvc24gb2_runtime) || return 1
     [[ -f $dir/prepare-intent ]] || return 1
     local line
     line=$(sed -n '7p' "$dir/prepare-intent") || return 1
     [[ $line == underlay=* ]] || return 1
     local iface=${line#underlay=}
-    ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_valid_ifname "$iface" || return 1
     printf '%s\n' "$iface"
 }
 
 # This function observes the real kernel directly twice. Its status is only
 # attested deny-all protection: NOT an activation-ready VPN firewall policy.
-ubs24gb2_attest() {
+mvc24gb2_attest() {
     (( $# == 0 )) || return 1
     UBS24GB2_STAGE=blocked-unverified
     UBS24GB2_AUTHORITY=none
     local dir scratch first second links r4 r6 iface foreign_before foreign_after
-    dir=$(ubs24gb2_runtime) || return 1
-    ubs24gb2_records_valid || return 1
-    iface=$(ubs24gb2_derive_iface) || return 1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gb2_records_valid || return 1
+    iface=$(mvc24gb2_derive_iface) || return 1
     scratch=$(mktemp -d /run/mvc-b2-observe.XXXXXXXX) || return 1
     chmod 700 "$scratch" || return 1
     first=$scratch/nft1; second=$scratch/nft2
     links=$scratch/links; r4=$scratch/route4; r6=$scratch/route6
-    if ! ubs24gb1_capture_nft "$first" || ! ubs24gb1_capture_nft "$second" ||
+    if ! mvc24gb1_capture_nft "$first" || ! mvc24gb1_capture_nft "$second" ||
        ! cmp -s "$first" "$second" ||
-       ! ubs24gb2_poststate_valid "$first" "$iface" ||
-       ! ubs24gb2_poststate_valid "$second" "$iface" ||
-       ! ubs24gb1_capture_links "$links" ||
-       ! ubs24gb1_capture_routes4 "$r4" ||
-       ! ubs24gb1_capture_routes6 "$r6" ||
+       ! mvc24gb2_poststate_valid "$first" "$iface" ||
+       ! mvc24gb2_poststate_valid "$second" "$iface" ||
+       ! mvc24gb1_capture_links "$links" ||
+       ! mvc24gb1_capture_routes4 "$r4" ||
+       ! mvc24gb1_capture_routes6 "$r6" ||
        ! cmp -s "$links" "$dir/links.json" ||
        ! cmp -s "$r4" "$dir/routes4.json" ||
        ! cmp -s "$r6" "$dir/routes6.json"; then
         rm -f -- "$first" "$second" "$links" "$r4" "$r6"; rmdir "$scratch"
         return 1
     fi
-    foreign_before=$(ubs24gb2_foreign_projection "$dir/prestate.json") || return 1
-    foreign_after=$(ubs24gb2_foreign_projection "$first") || return 1
-    if [[ $foreign_before != "$foreign_after" ]] || ! ubs24gb2_records_valid; then
+    foreign_before=$(mvc24gb2_foreign_projection "$dir/prestate.json") || return 1
+    foreign_after=$(mvc24gb2_foreign_projection "$first") || return 1
+    if [[ $foreign_before != "$foreign_after" ]] || ! mvc24gb2_records_valid; then
         rm -f -- "$first" "$second" "$links" "$r4" "$r6"; rmdir "$scratch"
         return 1
     fi
@@ -240,22 +240,22 @@ ubs24gb2_attest() {
     UBS24GB2_STAGE=host-deny-all-attested-observation-only
 }
 
-ubs24gb2_reopen() {
+mvc24gb2_reopen() {
     (( $# == 0 )) || return 1
     [[ -z ${UBS24GB2_FD:-} ]] || return 1
     local dir fd
-    dir=$(ubs24gb2_runtime) || return 1
-    ubs24gb2_root_scope && ubs24gb2_runtime_shape || return 1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gb2_root_scope && mvc24gb2_runtime_shape || return 1
     exec {fd}< "$dir/controller.lock" || return 1
     if ! flock -n "$fd"; then exec {fd}>&-; return 1; fi
     UBS24GB2_FD=$fd
-    if ! ubs24gb2_attest; then
-        ubs24gb2_close
+    if ! mvc24gb2_attest; then
+        mvc24gb2_close
         return 1
     fi
 }
 
-ubs24gb2_close() {
+mvc24gb2_close() {
     if [[ ${UBS24GB2_FD:-} =~ ^[0-9]+$ ]]; then
         exec {UBS24GB2_FD}>&- || :
     fi
@@ -264,20 +264,20 @@ ubs24gb2_close() {
     UBS24GB2_AUTHORITY=none
 }
 
-ubs24gb2_install_once() {
+mvc24gb2_install_once() {
     (( $# == 2 )) || return 1
     local iface=$1 base=$2 dir scratch file fd stamp first second
     [[ ${UBS24GB2_ATTEMPTED:-no} == no ]] || return 1
     UBS24GB2_ATTEMPTED=yes
     UBS24GB2_STAGE=blocked-unverified
     UBS24GB2_AUTHORITY=none
-    ubs24gb2_root_scope && ubs24gb1_valid_ifname "$iface" || return 1
-    dir=$(ubs24gb2_runtime) || return 1
+    mvc24gb2_root_scope && mvc24gb1_valid_ifname "$iface" || return 1
+    dir=$(mvc24gb2_runtime) || return 1
     [[ ! -e $dir && ! -L $dir ]] || return 1
     scratch=$(mktemp -d /run/mvc-b2-plan.XXXXXXXX) || return 1
     chmod 700 -- "$scratch" || return 1
     # B1 includes two direct kernel + route/link captures and nft --check.
-    ubs24gb1_plan_once "$iface" "$base" "$scratch" || return 1
+    mvc24gb1_plan_once "$iface" "$base" "$scratch" || return 1
     mkdir -m 700 -- "$dir" || return 1
     for file in prestate.json batch.nft links.json routes4.json routes6.json; do
         case $file in
@@ -295,10 +295,10 @@ ubs24gb2_install_once() {
     UBS24GB2_FD=$fd
     [[ $(stat -c '%u:%a:%h' -- "$dir/controller.lock") == '0:600:1' ]] || return 1
     # Revalidate kernel and routing while holding the exclusive lock.
-    ubs24gb1_capture_nft "$scratch/locked-nft" || return 1
-    ubs24gb1_capture_links "$scratch/locked-links" || return 1
-    ubs24gb1_capture_routes4 "$scratch/locked-route4" || return 1
-    ubs24gb1_capture_routes6 "$scratch/locked-route6" || return 1
+    mvc24gb1_capture_nft "$scratch/locked-nft" || return 1
+    mvc24gb1_capture_links "$scratch/locked-links" || return 1
+    mvc24gb1_capture_routes4 "$scratch/locked-route4" || return 1
+    mvc24gb1_capture_routes6 "$scratch/locked-route6" || return 1
     cmp -s "$scratch/locked-nft" "$dir/prestate.json" &&
       cmp -s "$scratch/locked-links" "$dir/links.json" &&
       cmp -s "$scratch/locked-route4" "$dir/routes4.json" &&
@@ -325,11 +325,11 @@ ubs24gb2_install_once() {
     chmod 400 "$stamp" || return 1
     ln -- "$stamp" "$dir/commit-attempt" || return 1
     rm -f -- "$stamp" || return 1
-    ubs24gb2_records_valid || return 1
+    mvc24gb2_records_valid || return 1
     # From here ANY error is ambiguous; NEVER retry or automatically delete.
     UBS24GB2_STAGE=commit-attempted-uncertain
     nft --file "$dir/batch.nft" >/dev/null 2>&1 || return 1
-    ubs24gb2_attest || return 1
+    mvc24gb2_attest || return 1
     UBS24GB2_STAGE=host-deny-all-attested-observation-only
     # Scratch contains only read-only observations. No guard/journal deletion.
     for file in nft1 nft2 links1 links2 route4a route4b route6a route6b batch locked-nft locked-links locked-route4 locked-route6; do
@@ -338,8 +338,8 @@ ubs24gb2_install_once() {
     rmdir -- "$scratch" || return 1
 }
 
-ubs24gb2_authorize_activation() { return 1; }
-ubs24gb2_authorize_clone() { return 1; }
-ubs24gb2_authorize_cleanup() { return 1; }
-ubs24gb2_authorize_recovery() { return 1; }
-ubs24gb2_authorize_disarm() { return 1; }
+mvc24gb2_authorize_activation() { return 1; }
+mvc24gb2_authorize_clone() { return 1; }
+mvc24gb2_authorize_cleanup() { return 1; }
+mvc24gb2_authorize_recovery() { return 1; }
+mvc24gb2_authorize_disarm() { return 1; }

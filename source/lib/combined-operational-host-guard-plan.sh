@@ -4,17 +4,17 @@
 # F14 source policy + exactly one operator-designated route-referenced lowerdev.
 # The result is an untrusted plan, NOT proof of complete namespace/physical coverage.
 
-ubs24gb1_reset() {
+mvc24gb1_reset() {
     UBS24GB1_STAGE=blocked
     UBS24GB1_AUTHORITY=none
 }
 
-ubs24gb1_valid_ifname() {
+mvc24gb1_valid_ifname() {
     (( $# == 1 )) && [[ $1 =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,14}$ &&
         $1 != lo && $1 != tun* && $1 != wg* ]]
 }
 
-ubs24gb1_scope() {
+mvc24gb1_scope() {
     (( $# == 0 )) || return 1
     [[ $EUID == 0 && $(stat -f -c %T /run) == tmpfs &&
        ! -e /run/mvc-controller && ! -L /run/mvc-controller ]] || return 1
@@ -25,10 +25,10 @@ ubs24gb1_scope() {
     [[ $(awk '{print $1 ":" $2 ":" $3}' /proc/self/uid_map) == '0:0:4294967295' ]]
 }
 
-ubs24gb1_routes_valid() {
+mvc24gb1_routes_valid() {
     (( $# == 3 )) || return 1
     local iface=$1 routes4=$2 routes6=$3
-    ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_valid_ifname "$iface" || return 1
     [[ -f $routes4 && ! -L $routes4 && -f $routes6 && ! -L $routes6 ]] || return 1
     # All routing tables, rather than only `main`. Narrow supported topology:
     # exactly one IPv4 default and no IPv6 default at preparation time.
@@ -43,10 +43,10 @@ ubs24gb1_routes_valid() {
         "$routes6" >/dev/null 2>&1
 }
 
-ubs24gb1_links_valid() {
+mvc24gb1_links_valid() {
     (( $# == 2 )) || return 1
     local iface=$1 links=$2
-    [[ -f $links && ! -L $links ]] && ubs24gb1_valid_ifname "$iface" || return 1
+    [[ -f $links && ! -L $links ]] && mvc24gb1_valid_ifname "$iface" || return 1
     jq -e --arg i "$iface" '
         type == "array" and
         ([.[] | select(.ifname == $i)] | length) == 1 and
@@ -56,10 +56,10 @@ ubs24gb1_links_valid() {
     ' "$links" >/dev/null 2>&1
 }
 
-ubs24gb1_render() {
+mvc24gb1_render() {
     (( $# == 3 )) || return 1
     local iface=$1 reference=$2 dest=$3
-    ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_valid_ifname "$iface" || return 1
     [[ -f $reference && ! -L $reference && -f $dest && ! -L $dest &&
        ! -s $dest && -O $dest && $(stat -c '%a:%h' -- "$dest") == 600:1 ]] || return 1
     # Pin known F14 semantics. A modified reference must be explicitly reviewed.
@@ -81,18 +81,18 @@ ubs24gb1_render() {
     [[ $(grep -c '^add ' "$dest") == 9 ]]
 }
 
-ubs24gb1_capture_nft() { (( $# == 1 )) && nft -j -n -s list ruleset > "$1"; }
-ubs24gb1_capture_links() { (( $# == 1 )) && ip -j -d link show > "$1"; }
-ubs24gb1_capture_routes4() { (( $# == 1 )) && ip -j -4 route show table all > "$1"; }
-ubs24gb1_capture_routes6() { (( $# == 1 )) && ip -j -6 route show table all > "$1"; }
+mvc24gb1_capture_nft() { (( $# == 1 )) && nft -j -n -s list ruleset > "$1"; }
+mvc24gb1_capture_links() { (( $# == 1 )) && ip -j -d link show > "$1"; }
+mvc24gb1_capture_routes4() { (( $# == 1 )) && ip -j -4 route show table all > "$1"; }
+mvc24gb1_capture_routes6() { (( $# == 1 )) && ip -j -6 route show table all > "$1"; }
 
-ubs24gb1_plan_once() {
+mvc24gb1_plan_once() {
     (( $# == 3 )) || return 1
-    ubs24gb1_reset
+    mvc24gb1_reset
     local iface=$1 reference=$2 scratch=$3 file
     [[ ${UBS24GB1_ATTEMPTED:-no} == no ]] || return 1
     UBS24GB1_ATTEMPTED=yes
-    ubs24gb1_scope && ubs24gb1_valid_ifname "$iface" || return 1
+    mvc24gb1_scope && mvc24gb1_valid_ifname "$iface" || return 1
     [[ -d $scratch && ! -L $scratch && -O $scratch &&
        $(stat -c '%a:%h' "$scratch") == 700:2 ]] || return 1
     for file in nft1 nft2 links1 links2 route4a route4b route6a route6b batch; do
@@ -100,38 +100,38 @@ ubs24gb1_plan_once() {
         [[ $(stat -c '%a:%h' "$scratch/$file") == 600:1 ]] || return 1
     done
     # Capture before the check, and independently capture again after it.
-    ubs24gb1_capture_nft "$scratch/nft1" &&
-      ubs24gb1_capture_links "$scratch/links1" &&
-      ubs24gb1_capture_routes4 "$scratch/route4a" &&
-      ubs24gb1_capture_routes6 "$scratch/route6a" || return 1
-    declare -F ubs24op_qg_preflight_snapshot >/dev/null || return 1
-    ubs24op_qg_preflight_snapshot "$scratch/nft1" || return 1
+    mvc24gb1_capture_nft "$scratch/nft1" &&
+      mvc24gb1_capture_links "$scratch/links1" &&
+      mvc24gb1_capture_routes4 "$scratch/route4a" &&
+      mvc24gb1_capture_routes6 "$scratch/route6a" || return 1
+    declare -F mvc24op_qg_preflight_snapshot >/dev/null || return 1
+    mvc24op_qg_preflight_snapshot "$scratch/nft1" || return 1
     jq -e '[(.nftables[] | .table? | select(.family=="netdev" and .name=="mvc_preclone_underlay"))] | length==0' \
       "$scratch/nft1" >/dev/null 2>&1 || return 1
-    ubs24gb1_links_valid "$iface" "$scratch/links1" &&
-      ubs24gb1_routes_valid "$iface" "$scratch/route4a" "$scratch/route6a" || return 1
-    ubs24gb1_render "$iface" "$reference" "$scratch/batch" || return 1
+    mvc24gb1_links_valid "$iface" "$scratch/links1" &&
+      mvc24gb1_routes_valid "$iface" "$scratch/route4a" "$scratch/route6a" || return 1
+    mvc24gb1_render "$iface" "$reference" "$scratch/batch" || return 1
     # Read-only syntax/kernel acceptability check; NOT an nft commit.
     nft --check --file "$scratch/batch" >/dev/null 2>&1 || return 1
-    ubs24gb1_capture_nft "$scratch/nft2" &&
-      ubs24gb1_capture_links "$scratch/links2" &&
-      ubs24gb1_capture_routes4 "$scratch/route4b" &&
-      ubs24gb1_capture_routes6 "$scratch/route6b" || return 1
+    mvc24gb1_capture_nft "$scratch/nft2" &&
+      mvc24gb1_capture_links "$scratch/links2" &&
+      mvc24gb1_capture_routes4 "$scratch/route4b" &&
+      mvc24gb1_capture_routes6 "$scratch/route6b" || return 1
     for file in 'nft1 nft2' 'links1 links2' 'route4a route4b' 'route6a route6b'; do
         local a b
         read -r a b <<< "$file"
         cmp -s "$scratch/$a" "$scratch/$b" || return 1
     done
-    ubs24op_qg_preflight_snapshot "$scratch/nft2" &&
-      ubs24gb1_links_valid "$iface" "$scratch/links2" &&
-      ubs24gb1_routes_valid "$iface" "$scratch/route4b" "$scratch/route6b" || return 1
+    mvc24op_qg_preflight_snapshot "$scratch/nft2" &&
+      mvc24gb1_links_valid "$iface" "$scratch/links2" &&
+      mvc24gb1_routes_valid "$iface" "$scratch/route4b" "$scratch/route6b" || return 1
     UBS24GB1_STAGE=production-batch-prechecked-readonly-no-authority
     UBS24GB1_AUTHORITY=none
 }
 
-ubs24gb1_authorize_install() { return 1; }
-ubs24gb1_authorize_clone() { return 1; }
-ubs24gb1_authorize_activation() { return 1; }
-ubs24gb1_authorize_cleanup() { return 1; }
-ubs24gb1_authorize_recovery() { return 1; }
-ubs24gb1_authorize_disarm() { return 1; }
+mvc24gb1_authorize_install() { return 1; }
+mvc24gb1_authorize_clone() { return 1; }
+mvc24gb1_authorize_activation() { return 1; }
+mvc24gb1_authorize_cleanup() { return 1; }
+mvc24gb1_authorize_recovery() { return 1; }
+mvc24gb1_authorize_disarm() { return 1; }

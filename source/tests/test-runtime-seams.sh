@@ -25,7 +25,7 @@ cmp -s -- "$A" "$B" && ok 'Stage-3A independent builds are byte-identical' || ba
 [[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
 $A --help | grep -Fq 'public identity release candidate' && ok 'current help identifies v2.4.1 candidate' || bad 'current help identifies v2.4.1 candidate'
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
-   grep -Fq 'ubs24e_dispatch "$@"' "$A"; then
+   grep -Fq 'mvc24e_dispatch "$@"' "$A"; then
     ok 'v2.4.1 wrapper delegates lifecycle verbs to audited dispatcher'
 else
     bad 'v2.4.1 wrapper delegates lifecycle verbs to audited dispatcher'
@@ -38,15 +38,15 @@ set -- --help
 source "$A" >/dev/null
 
 # Four path-dependent modular call sites must resolve through embedded assets.
-declare -f ubs24gs_capture_settings | grep -Fq 'ubs24mon_runtime_asset_path gvariant-awk' && ok 'GetSettings decoder uses embedded AWK asset' || bad 'GetSettings decoder uses embedded AWK asset'
-declare -f ubs24gb2_batch_valid | grep -Fq 'ubs24mon_runtime_asset_path b4-bootstrap-nft' && ok 'B2 batch validation uses embedded nft asset' || bad 'B2 batch validation uses embedded nft asset'
-declare -f ubs24gc3_execute_once | grep -Fq 'ubs24mon_runtime_asset_path b4-bootstrap-nft' && ok 'C3 guard install uses embedded nft asset' || bad 'C3 guard install uses embedded nft asset'
-declare -f ubs24gwg_policy_file | grep -Fq 'ubs24mon_runtime_asset_dir' && ok 'protected-WG policy path uses embedded nft asset' || bad 'protected-WG policy path uses embedded nft asset'
+declare -f mvc24gs_capture_settings | grep -Fq 'mvc24mon_runtime_asset_path gvariant-awk' && ok 'GetSettings decoder uses embedded AWK asset' || bad 'GetSettings decoder uses embedded AWK asset'
+declare -f mvc24gb2_batch_valid | grep -Fq 'mvc24mon_runtime_asset_path b4-bootstrap-nft' && ok 'B2 batch validation uses embedded nft asset' || bad 'B2 batch validation uses embedded nft asset'
+declare -f mvc24gc3_execute_once | grep -Fq 'mvc24mon_runtime_asset_path b4-bootstrap-nft' && ok 'C3 guard install uses embedded nft asset' || bad 'C3 guard install uses embedded nft asset'
+declare -f mvc24gwg_policy_file | grep -Fq 'mvc24mon_runtime_asset_dir' && ok 'protected-WG policy path uses embedded nft asset' || bad 'protected-WG policy path uses embedded nft asset'
 
 # Runtime asset materialization is exact and private.
-ubs24mon_runtime_assets_prepare
-awk_asset=$(ubs24mon_runtime_asset_path gvariant-awk)
-nft_asset=$(ubs24mon_runtime_asset_path b4-bootstrap-nft)
+mvc24mon_runtime_assets_prepare
+awk_asset=$(mvc24mon_runtime_asset_path gvariant-awk)
+nft_asset=$(mvc24mon_runtime_asset_path b4-bootstrap-nft)
 if cmp -s -- "$awk_asset" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&
    cmp -s -- "$nft_asset" "$ROOT/source/nftables/vpn-v240-preclone-quarantine-offline.nft"; then
     ok 'runtime embedded assets are byte-identical to audited sources'
@@ -59,19 +59,19 @@ else
     bad 'runtime embedded assets are private single-link files'
 fi
 asset_dir=$UBS24_MONOLITH_ASSET_DIR
-ubs24mon_runtime_assets_cleanup
+mvc24mon_runtime_assets_cleanup
 [[ ! -e $asset_dir && ! -L $asset_dir ]] && ok 'runtime embedded assets clean up without residue' || bad 'runtime embedded assets clean up without residue'
 
 # Recovery identity is now source-tree independent: strict metadata + embedded SHA.
 recovery=$TMP/emergency-recovery
 cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 700 -- "$recovery"
-ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256" && ok 'embedded emergency recovery SHA authenticates exact file' || bad 'embedded emergency recovery SHA authenticates exact file'
+mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256" && ok 'embedded emergency recovery SHA authenticates exact file' || bad 'embedded emergency recovery SHA authenticates exact file'
 printf '\n# drift\n' >> "$recovery"
-if ! ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects content drift'; else bad 'recovery identity rejects content drift'; fi
+if ! mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects content drift'; else bad 'recovery identity rejects content drift'; fi
 cp -- "$ROOT/source/tools/recover-mvc-host-guard-local.sh" "$recovery"
 chmod 755 -- "$recovery"
-if ! ubs24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects wrong mode'; else bad 'recovery identity rejects wrong mode'; fi
+if ! mvc24mon_recovery_file_identity "$recovery" "$UBS24_MONOLITH_EMERGENCY_RECOVERY_SHA256"; then ok 'recovery identity rejects wrong mode'; else bad 'recovery identity rejects wrong mode'; fi
 
 # Preview-shape contract must exactly match the old external --preview-derivative
 # structural validator. Source the old probe for its pure validator only.
@@ -83,7 +83,7 @@ cat > "$fixture" <<JSON
 {"type":"a{sa{sv}}","data":[{"connection":{"id":{"type":"s","data":"source"},"uuid":{"type":"s","data":"$uuid"},"type":{"type":"s","data":"vpn"},"autoconnect":{"type":"b","data":false},"timestamp":{"type":"t","data":0}},"vpn":{"service-type":{"type":"s","data":"org.freedesktop.NetworkManager.openvpn"},"data":{"type":"a{ss}","data":{"remote":"203.0.113.11:443","proto-tcp":"yes","remote-random":"no","connection-type":"password","password-flags":"1","ca":"/etc/ssl/test-ca.pem","tls-crypt":"/etc/ssl/test-tls-crypt.key"}}},"ipv4":{"dns-priority":{"type":"i","data":100}},"ipv6":{"dns-priority":{"type":"i","data":100}}}]}
 JSON
 chmod 600 "$fixture"
-if ubs24spf_validate "$fixture" "$uuid" --preview-derivative && ubs24mon_openvpn_source_shape_valid "$fixture" "$uuid"; then
+if mvc24spf_validate "$fixture" "$uuid" --preview-derivative && mvc24mon_openvpn_source_shape_valid "$fixture" "$uuid"; then
     ok 'internal preview structural admission matches external probe on accepted shape'
 else
     bad 'internal preview structural admission matches external probe on accepted shape'
@@ -91,13 +91,13 @@ fi
 badshape=$TMP/bad.json
 jq '.data[0].vpn["service-type"].data="org.example.not-openvpn"' "$fixture" > "$badshape"; chmod 600 "$badshape"
 old=0; new=0
-ubs24spf_validate "$badshape" "$uuid" --preview-derivative >/dev/null 2>&1 || old=$?
-ubs24mon_openvpn_source_shape_valid "$badshape" "$uuid" >/dev/null 2>&1 || new=$?
+mvc24spf_validate "$badshape" "$uuid" --preview-derivative >/dev/null 2>&1 || old=$?
+mvc24mon_openvpn_source_shape_valid "$badshape" "$uuid" >/dev/null 2>&1 || new=$?
 (( old != 0 && new != 0 )) && ok 'internal preview rejects same wrong-service shape as external probe' || bad 'internal preview rejects same wrong-service shape as external probe'
 old=0; new=0
 wrong_uuid=11111111-1111-4111-8111-111111111111
-ubs24spf_validate "$fixture" "$wrong_uuid" --preview-derivative >/dev/null 2>&1 || old=$?
-ubs24mon_openvpn_source_shape_valid "$fixture" "$wrong_uuid" >/dev/null 2>&1 || new=$?
+mvc24spf_validate "$fixture" "$wrong_uuid" --preview-derivative >/dev/null 2>&1 || old=$?
+mvc24mon_openvpn_source_shape_valid "$fixture" "$wrong_uuid" >/dev/null 2>&1 || new=$?
 (( old != 0 && new != 0 )) && ok 'internal preview rejects same UUID mismatch as external probe' || bad 'internal preview rejects same UUID mismatch as external probe'
 
 # Mock only D-Bus transport/capture; keep the real candidate planner and preview
@@ -107,7 +107,7 @@ preview_case() (
     local mode=$1 owner_call=0 counter=$TMP/preview-object-counter
     printf '0\n' > "$counter"
     gdbus() { return 0; }
-    ubs24g_call_readonly() {
+    mvc24g_call_readonly() {
         local n
         n=$(<"$counter")
         n=$((n+1))
@@ -118,10 +118,10 @@ preview_case() (
             printf 'o "/org/freedesktop/NetworkManager/Settings/42"\n'
         fi
     }
-    ubs24g_get_property() {
+    mvc24g_get_property() {
         if [[ $mode == unsaved ]]; then printf 'b true\n'; else printf 'b false\n'; fi
     }
-    ubs24gs_capture_settings() {
+    mvc24gs_capture_settings() {
         local out=$2
         cp -- "$fixture" "$out"
         if [[ $mode == snapshot-drift && ${out##*/} == second.json ]]; then
@@ -130,7 +130,7 @@ preview_case() (
             chmod 600 "$out"
         fi
     }
-    ubs24op_session_nm_identity() {
+    mvc24op_session_nm_identity() {
         owner_call=$((owner_call+1))
         if [[ $mode == owner-drift && $owner_call -ge 3 ]]; then
             UBS24OP_SESSION_NM_IDENTITY=':1.99|999|0'
@@ -139,9 +139,9 @@ preview_case() (
         fi
     }
     if [[ $mode == preview-reject ]]; then
-        ubs24op_preview_build() { return 1; }
+        mvc24op_preview_build() { return 1; }
     fi
-    ubs24mon_openvpn_source_preview "$uuid"
+    mvc24mon_openvpn_source_preview "$uuid"
 )
 preview_case happy && ok 'internal preview accepts stable saved OpenVPN source and real derivative projection' || bad 'internal preview accepts stable saved OpenVPN source and real derivative projection'
 if ! preview_case unsaved; then ok 'internal preview rejects Unsaved=true'; else bad 'internal preview rejects Unsaved=true'; fi
@@ -151,19 +151,19 @@ if ! preview_case owner-drift; then ok 'internal preview rejects NetworkManager 
 if ! preview_case preview-reject; then ok 'internal preview rejects unsupported derivative projection'; else bad 'internal preview rejects unsupported derivative projection'; fi
 
 # C4 final definitions must be monolith-native and independent of source-root.
-if ! declare -f ubs24gc4_recovery_installed | grep -Eq 'UBS24GC4_SOURCE_ROOT|cmp -s'; then ok 'C4 recovery identity has no sibling source dependency'; else bad 'C4 recovery identity has no sibling source dependency'; fi
-if ! declare -f ubs24gc4_source_preview | grep -Eq 'check-v240-live-saved-ovpn-readonly|UBS24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
+if ! declare -f mvc24gc4_recovery_installed | grep -Eq 'UBS24GC4_SOURCE_ROOT|cmp -s'; then ok 'C4 recovery identity has no sibling source dependency'; else bad 'C4 recovery identity has no sibling source dependency'; fi
+if ! declare -f mvc24gc4_source_preview | grep -Eq 'check-v240-live-saved-ovpn-readonly|UBS24GC4_SOURCE_ROOT'; then ok 'C4 source preview has no external probe dependency'; else bad 'C4 source preview has no external probe dependency'; fi
 
 # Fresh-process initialization should prepare only embedded runtime assets and
 # leave the obsolete modular source-root binding empty.
-ubs24pub_process_initialize
+mvc24pub_process_initialize
 if [[ -z ${UBS24GC4_SOURCE_ROOT:-} && -n ${UBS24_MONOLITH_ASSET_DIR:-} && -d $UBS24_MONOLITH_ASSET_DIR ]]; then
     ok 'monolith process initialization uses embedded assets with no C4 source root'
 else
     bad 'monolith process initialization uses embedded assets with no C4 source root'
 fi
 asset_dir=$UBS24_MONOLITH_ASSET_DIR
-ubs24mon_runtime_assets_cleanup
+mvc24mon_runtime_assets_cleanup
 [[ ! -e $asset_dir ]] && ok 'process-initialization asset directory is cleanly removable' || bad 'process-initialization asset directory is cleanly removable'
 
 printf 'RESULT: C23BN Stage-3A monolith runtime seams %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"

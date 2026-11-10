@@ -4,7 +4,7 @@
 # NO mutation, network/DNS calls, exported activation authority or profile clone.
 # Requires dual-session.sh / combined-routing-guard.sh for strict endpoints.
 
-ubs24op_candidate_reset() {
+mvc24op_candidate_reset() {
     UBS24OP_CANDIDATE_ENDPOINT=''
     UBS24OP_CANDIDATE_PROTO=''
     UBS24OP_CANDIDATE_COUNT=0
@@ -16,14 +16,14 @@ ubs24op_candidate_reset() {
 # remote must never be silently discarded to construct a misleading plan.
 # The strict v2.4 witness MUST still independently validate a separate
 # controller-owned single-remote saved profile and its effective socket.
-ubs24op_candidate_plan() {
-    ubs24op_candidate_reset
+mvc24op_candidate_plan() {
+    mvc24op_candidate_reset
     (( $# == 2 )) || return 1
     local file=$1 index=$2 remote entry
     local -a entries=()
     [[ -f $file && ! -L $file && $index =~ ^[1-9][0-9]{0,2}$ ]] || return 1
     (( 10#$index <= 128 )) || return 1
-    declare -F ubs24b_canonical_endpoint >/dev/null || return 1
+    declare -F mvc24b_canonical_endpoint >/dev/null || return 1
     command -v jq >/dev/null 2>&1 || return 1
     # Conservative version-specific subset only. Per-entry protocol, separate
     # port and remote-random-hostname are out of scope; tcp is mandatory here.
@@ -58,7 +58,7 @@ ubs24op_candidate_plan() {
         # shared canonical parser rejects noncanonical IPv4, zero/leading-zero
         # ports, out-of-range ports, invalid octets and non-IPv4 transport.
         [[ $entry =~ ^([0-9.]+):([1-9][0-9]{0,4})$ ]] &&
-            ubs24b_canonical_endpoint "$entry" || return 1
+            mvc24b_canonical_endpoint "$entry" || return 1
     done
     UBS24OP_CANDIDATE_ENDPOINT=${entries[index-1]}
     UBS24OP_CANDIDATE_PROTO=tcp

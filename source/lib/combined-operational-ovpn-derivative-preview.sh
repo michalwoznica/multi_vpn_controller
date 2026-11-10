@@ -3,7 +3,7 @@
 # Bash/jq only; no GetSecrets, NM write, profile import, nft or network action.
 # This is NOT a NetworkManager loadable keyfile or proof of credential parity.
 
-ubs24op_preview_reset() {
+mvc24op_preview_reset() {
     UBS24OP_PREVIEW_AUTH=unassessed
     UBS24OP_PREVIEW_FLAGS=unassessed
     UBS24OP_PREVIEW_TLS=unassessed
@@ -12,18 +12,18 @@ ubs24op_preview_reset() {
 
 # Inputs: authenticated, stable typed GetSettings JSON, reserved NEW UUID,
 # precreated private 0600 scratch JSON. No source UUID or endpoints printed.
-ubs24op_preview_build() {
-    ubs24op_preview_reset
+mvc24op_preview_build() {
+    mvc24op_preview_reset
     (( $# == 3 )) || return 1
     local source_file=$1 new_uuid=$2 preview_file=$3 endpoint='' mode flags tls
     [[ -f $source_file && ! -L $source_file && -f $preview_file && ! -L $preview_file &&
        $source_file != "$preview_file" && -O $source_file && -O $preview_file &&
        $(stat -c %a:%h -- "$source_file") == 600:1 &&
        $(stat -c %a:%h -- "$preview_file") == 600:1 ]] || return 1
-    declare -F ubs24op_candidate_plan >/dev/null &&
-        declare -F ubs24_valid_uuid >/dev/null &&
-        ubs24_valid_uuid "$new_uuid" || return 1
-    ubs24op_candidate_plan "$source_file" 1 || return 1
+    declare -F mvc24op_candidate_plan >/dev/null &&
+        declare -F mvc24_valid_uuid >/dev/null &&
+        mvc24_valid_uuid "$new_uuid" || return 1
+    mvc24op_candidate_plan "$source_file" 1 || return 1
     endpoint=$UBS24OP_CANDIDATE_ENDPOINT
     # A projection cannot carry secrets. It preserves non-secret options
     # exactly, except a narrow set of controller-owned identity/transport/DNS
@@ -53,7 +53,7 @@ ubs24op_preview_build() {
     fi
     # Independent structural check: all original settings survive the exact
     # allowlisted changes, including original authentication/TLS options.
-    if ! ubs24op_preview_verify "$source_file" "$preview_file" "$new_uuid" "$endpoint"; then
+    if ! mvc24op_preview_verify "$source_file" "$preview_file" "$new_uuid" "$endpoint"; then
         : > "$preview_file"
         return 1
     fi
@@ -85,7 +85,7 @@ ubs24op_preview_build() {
 # It is not an authoritative profile-setting witness: NetworkManager may reset,
 # omit or update it independently of the mutable profile settings we protect.
 # Only a correctly typed uint64-shaped value may be ignored.
-ubs24op_runtime_timestamp_valid() {
+mvc24op_runtime_timestamp_valid() {
     (( $# == 1 )) || return 1
     local file=$1
     [[ -f $file && ! -L $file ]] || return 1
@@ -104,11 +104,11 @@ ubs24op_runtime_timestamp_valid() {
 
 # Semantic settings equality with exactly one exception: valid
 # connection.timestamp runtime metadata. All other keys/types/values remain exact.
-ubs24op_settings_equal_except_runtime_timestamp() {
+mvc24op_settings_equal_except_runtime_timestamp() {
     (( $# == 2 )) || return 1
     local first=$1 second=$2
-    ubs24op_runtime_timestamp_valid "$first" &&
-        ubs24op_runtime_timestamp_valid "$second" || return 1
+    mvc24op_runtime_timestamp_valid "$first" &&
+        mvc24op_runtime_timestamp_valid "$second" || return 1
     jq -e --slurpfile other "$second" '
       ($other|length == 1) and
       ((. | del(.data[0].connection.timestamp)) ==
@@ -120,10 +120,10 @@ ubs24op_settings_equal_except_runtime_timestamp() {
 # excluded field is validated connection.timestamp runtime metadata. Canonical
 # key ordering prevents harmless JSON object-order changes from changing the
 # fingerprint; typed setting values remain part of the digest.
-ubs24op_settings_fingerprint() {
+mvc24op_settings_fingerprint() {
     (( $# == 1 )) || return 1
     local file=$1 digest
-    ubs24op_runtime_timestamp_valid "$file" || return 1
+    mvc24op_runtime_timestamp_valid "$file" || return 1
     digest=$(jq -cS 'del(.data[0].connection.timestamp)' -- "$file" | sha256sum) || return 1
     digest=${digest%% *}
     [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
@@ -132,14 +132,14 @@ ubs24op_settings_fingerprint() {
 
 # Verify a supplied preview *without trusting the builder*. This compares
 # all other settings for value equality and rejects extra changed/removed keys.
-ubs24op_preview_verify() {
+mvc24op_preview_verify() {
     (( $# == 4 )) || return 1
     local source_file=$1 preview_file=$2 uuid=$3 endpoint=$4
     [[ -f $source_file && -f $preview_file && ! -L $source_file && ! -L $preview_file ]] || return 1
     # Reject malformed runtime metadata rather than blindly deleting it. Once
     # validated, connection.timestamp alone is excluded from profile parity.
-    ubs24op_runtime_timestamp_valid "$source_file" &&
-        ubs24op_runtime_timestamp_valid "$preview_file" || return 1
+    mvc24op_runtime_timestamp_valid "$source_file" &&
+        mvc24op_runtime_timestamp_valid "$preview_file" || return 1
     jq -e --slurpfile original "$source_file" --arg uuid "$uuid" --arg remote "$endpoint" '
         ($original | length == 1) and
         (.type == "a{sa{sv}}") and (.data|type == "array" and length == 1) and
@@ -166,6 +166,6 @@ ubs24op_preview_verify() {
     ' -- "$preview_file" >/dev/null 2>&1
 }
 # Explicit permanent denials: even a perfect preview is no admission witness.
-ubs24op_preview_authorize_nm_write() { return 1; }
-ubs24op_preview_authorize_activation() { return 1; }
-ubs24op_preview_authorize_nft() { return 1; }
+mvc24op_preview_authorize_nm_write() { return 1; }
+mvc24op_preview_authorize_activation() { return 1; }
+mvc24op_preview_authorize_nft() { return 1; }

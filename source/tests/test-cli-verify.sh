@@ -29,7 +29,7 @@ verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_R2_RUNTIME_IDENTITY' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_R3A_LOWERCASE_NAMESPACE' <<<"$verbose" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
@@ -66,8 +66,8 @@ else
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
-   grep -Fq 'ubs24e_dispatch "$@"' "$A" &&
-   ! grep -Fq 'ubs24mon_stage3b_refuse_lifecycle' "$A"; then
+   grep -Fq 'mvc24e_dispatch "$@"' "$A" &&
+   ! grep -Fq 'mvc24mon_stage3b_refuse_lifecycle' "$A"; then
     ok 'lifecycle production verbs are promoted only through audited dispatcher'
 else
     bad 'lifecycle production verbs are promoted only through audited dispatcher'
@@ -101,8 +101,8 @@ else
     bad 'embedded verifier function block is byte-identical to audited source block'
 fi
 
-final_callback=$(set -- --help; source "$A" >/dev/null; declare -f ubs24v_controller_status)
-if grep -Fq 'ubs24pub_status_readonly' <<<"$final_callback" && ! grep -Fq '"$1" status' <<<"$final_callback"; then
+final_callback=$(set -- --help; source "$A" >/dev/null; declare -f mvc24v_controller_status)
+if grep -Fq 'mvc24pub_status_readonly' <<<"$final_callback" && ! grep -Fq '"$1" status' <<<"$final_callback"; then
     ok 'final verifier controller-status callback is monolith-internal'
 else
     bad 'final verifier controller-status callback is monolith-internal'

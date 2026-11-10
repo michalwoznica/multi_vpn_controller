@@ -34,8 +34,12 @@ rg -q '/run/ubs-v240-controller' "$ROOT/source/tools/install-mvc.sh" &&
   rg -q '/run/mvc-controller' "$ROOT/source/tools/install-mvc.sh" &&
   pass 'installer refuses both legacy and MVC runtime roots during migration' || fail 'installer refuses both legacy and MVC runtime roots during migration'
 
-rg -q 'ubs24pub' "$ROOT/source/lib/combined-operational-public-v240-connect.sh" &&
-  pass 'internal ubs24 function namespace intentionally retained' || fail 'internal ubs24 function namespace intentionally retained'
+if rg -q 'mvc24pub' "$ROOT/source/lib/combined-operational-public-v240-connect.sh" &&
+   ! rg -n --glob '*.sh' '^(function[[:space:]]+)?ubs24[A-Za-z0-9_]+[[:space:]]*\(\)' "$ROOT/source/lib" "$ROOT/source/tools" "$ROOT/source/build" >/dev/null; then
+  pass 'lowercase internal function namespace migrated to mvc24'
+else
+  fail 'lowercase internal function namespace migrated to mvc24'
+fi
 
 if ! grep -q 'UBS ROUTE PROTOCOLS\|UBS NFT TABLES' "$ROOT/source/tools/verify-mvc-state-readonly.sh"; then
   pass 'verifier headings are MVC-native'
@@ -43,5 +47,5 @@ else
   fail 'verifier headings are MVC-native'
 fi
 
-printf 'RESULT: MVC-R2 runtime identity %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC-R3A lowercase namespace %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

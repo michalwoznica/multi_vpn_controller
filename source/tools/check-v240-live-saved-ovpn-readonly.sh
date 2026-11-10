@@ -7,11 +7,11 @@ umask 077
 export LC_ALL=C
 export UBS24_DBUS_BACKEND=gdbus
 
-ubs24spf_fail() { printf 'UNVERIFIED: %s\n' "$1" >&2; return 1; }
-ubs24spf_pass() { printf 'PASS: %s\n' "$1"; }
+mvc24spf_fail() { printf 'UNVERIFIED: %s\n' "$1" >&2; return 1; }
+mvc24spf_pass() { printf 'PASS: %s\n' "$1"; }
 
 # Only metadata flags. Keep remote, credentials, profile ID and UUID private.
-ubs24spf_validate() {
+mvc24spf_validate() {
     (( $# == 3 )) || return 1
     local file=$1 expected_uuid=$2 action=$3 remote proto random
     [[ $action == --run || $action == --assess-source || $action == --diagnose-source || $action == --inventory-remotes || $action == --plan-first-remote || $action == --preview-derivative || $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]] || return 1
@@ -38,24 +38,24 @@ ubs24spf_validate() {
         no) : ;;
         yes)
             if [[ $action == --run ]]; then
-                ubs24spf_fail 'saved profile has remote-random=yes; strict v2.4 bootstrap requires remote-random=no'
+                mvc24spf_fail 'saved profile has remote-random=yes; strict v2.4 bootstrap requires remote-random=no'
                 return 1
             fi ;;
         *)
-            ubs24spf_fail 'saved profile remote-random value is unsupported by the strict v2.4 bootstrap'
+            mvc24spf_fail 'saved profile remote-random value is unsupported by the strict v2.4 bootstrap'
             return 1 ;;
     esac
     # A second port field can change effective endpoint semantics and is not
     # supported by the prepared-session exact-source witness at this stage.
     if jq -e '.data[0].vpn.data.data | has("port")' "$file" >/dev/null 2>&1; then
-        ubs24spf_fail 'separate OpenVPN port field requires explicit source reconciliation'
+        mvc24spf_fail 'separate OpenVPN port field requires explicit source reconciliation'
         return 1
     fi
     [[ $proto == yes || $proto == no ]] || {
-        ubs24spf_fail 'saved OpenVPN proto-tcp is missing or not an explicit yes/no'; return 1;
+        mvc24spf_fail 'saved OpenVPN proto-tcp is missing or not an explicit yes/no'; return 1;
     }
-    if ! ubs24b_canonical_endpoint "$remote"; then
-        ubs24spf_fail 'saved OpenVPN remote is not a single canonical numeric IPv4:port'; return 1
+    if ! mvc24b_canonical_endpoint "$remote"; then
+        mvc24spf_fail 'saved OpenVPN remote is not a single canonical numeric IPv4:port'; return 1
     fi
     UBS24SPF_PROTO=$proto
     UBS24SPF_RANDOM=$random
@@ -64,7 +64,7 @@ ubs24spf_validate() {
 # All classifications are static labels. NO profile fields, endpoint bytes,
 # credentials or identifiers may appear in the resulting stdout/stderr.
 # Labels describe *syntax*, NOT NetworkManager's effective connection choice.
-ubs24spf_diagnose() {
+mvc24spf_diagnose() {
     (( $# == 1 )) || return 1
     local file=$1 remote port proto random random_hostname
     local remote_type remote_shape port_shape proto_shape random_shape hostname_shape
@@ -79,7 +79,7 @@ ubs24spf_diagnose() {
             remote_shape=empty
         elif [[ $remote == *[[:space:],]* || $remote == *';'* ]]; then
             remote_shape=delimited-or-multiple
-        elif ubs24b_canonical_endpoint "$remote"; then
+        elif mvc24b_canonical_endpoint "$remote"; then
             remote_shape=single-ipv4-with-port
         elif [[ $remote == \[* ]]; then
             remote_shape=bracketed-ipv6-or-unsupported
@@ -145,7 +145,7 @@ ubs24spf_diagnose() {
 # validated/effective remotes. In particular this never resolves hostnames,
 # selects a candidate, generates a profile, or authorises network mutation.
 # No raw remote values, exact numeric ports or UUIDs are emitted.
-ubs24spf_inventory() {
+mvc24spf_inventory() {
     (( $# == 1 )) || return 1
     local file=$1 remote entry host port proto
     local -a entries=()
@@ -208,7 +208,7 @@ ubs24spf_inventory() {
 
         if [[ $host == *[!0-9.]* ]]; then
             ((dns_hosts+=1))
-        elif ubs24b_canonical_endpoint "$host:1194"; then
+        elif mvc24b_canonical_endpoint "$host:1194"; then
             ((numeric_hosts+=1))
         else
             ((invalid+=1))
@@ -277,31 +277,31 @@ ubs24spf_inventory() {
 }
 
 _UBS24SPF_PRIVATE=''
-ubs24spf_cleanup() {
+mvc24spf_cleanup() {
     if [[ -n ${_UBS24SPF_PRIVATE:-} ]]; then
         rm -f -- "$_UBS24SPF_PRIVATE/first.json" "$_UBS24SPF_PRIVATE/second.json" "$_UBS24SPF_PRIVATE/preview.json" 2>/dev/null || :
         rmdir -- "$_UBS24SPF_PRIVATE" 2>/dev/null || :
     fi
 }
 
-ubs24spf_main() {
-    (( $# == 1 || $# == 2 )) || ubs24spf_fail 'usage: --preflight, --run PROFILE_UUID, --assess-source PROFILE_UUID or --diagnose-source PROFILE_UUID or --inventory-remotes PROFILE_UUID or --plan-first-remote PROFILE_UUID or --preview-derivative PROFILE_UUID or --audit-auth-custody PROFILE_UUID or --audit-extra-flag-names PROFILE_UUID or --audit-challenge-flags PROFILE_UUID or --audit-material-readonly PROFILE_UUID or --triage-material-readonly PROFILE_UUID or --triage-root-material-readonly PROFILE_UUID'
+mvc24spf_main() {
+    (( $# == 1 || $# == 2 )) || mvc24spf_fail 'usage: --preflight, --run PROFILE_UUID, --assess-source PROFILE_UUID or --diagnose-source PROFILE_UUID or --inventory-remotes PROFILE_UUID or --plan-first-remote PROFILE_UUID or --preview-derivative PROFILE_UUID or --audit-auth-custody PROFILE_UUID or --audit-extra-flag-names PROFILE_UUID or --audit-challenge-flags PROFILE_UUID or --audit-material-readonly PROFILE_UUID or --triage-material-readonly PROFILE_UUID or --triage-root-material-readonly PROFILE_UUID'
     local action=$1 uuid=${2:-} root initial_owner final_owner
     local object first_obj second_obj side reply unsaved_before unsaved_after
     local path first_json='' identity='' re='^o "(/org/freedesktop/NetworkManager/Settings/[0-9]+)"$'
-    [[ $action == --preflight || $action == --run || $action == --assess-source || $action == --diagnose-source || $action == --inventory-remotes || $action == --plan-first-remote || $action == --preview-derivative || $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]] || ubs24spf_fail 'unsupported action'
+    [[ $action == --preflight || $action == --run || $action == --assess-source || $action == --diagnose-source || $action == --inventory-remotes || $action == --plan-first-remote || $action == --preview-derivative || $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]] || mvc24spf_fail 'unsupported action'
     if [[ $action == --preflight ]]; then
-        (( $# == 1 )) || ubs24spf_fail 'preflight takes no profile UUID'
+        (( $# == 1 )) || mvc24spf_fail 'preflight takes no profile UUID'
     else
-        (( $# == 2 )) || ubs24spf_fail 'supply exactly one saved-profile UUID'
+        (( $# == 2 )) || mvc24spf_fail 'supply exactly one saved-profile UUID'
     fi
     # A root-scope check is opt-in, never an implicit sudo escalation. Refuse
     # before any D-Bus interaction when invoked under ordinary privileges.
     if [[ $action == --triage-root-material-readonly && $EUID -ne 0 ]]; then
-        ubs24spf_fail 'root-scope observation requires explicit root invocation; no escalation attempted'
+        mvc24spf_fail 'root-scope observation requires explicit root invocation; no escalation attempted'
     fi
     for bin in gdbus awk jq mktemp cmp stat sha256sum; do
-        command -v "$bin" >/dev/null 2>&1 || ubs24spf_fail "missing prerequisite: $bin"
+        command -v "$bin" >/dev/null 2>&1 || mvc24spf_fail "missing prerequisite: $bin"
     done
     root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P) || return 1
     source "$root/lib/dual-session.sh"
@@ -315,104 +315,104 @@ ubs24spf_main() {
     source "$root/lib/combined-operational-ovpn-material-preflight.sh"
     source "$root/lib/combined-operational-ovpn-material-path-triage.sh"
     source "$root/lib/combined-operational-ovpn-material-root-observation.sh"
-    ubs24op_session_nm_identity || ubs24spf_fail 'NetworkManager owner/PID/UID not authenticated'
+    mvc24op_session_nm_identity || mvc24spf_fail 'NetworkManager owner/PID/UID not authenticated'
     initial_owner=$UBS24OP_SESSION_NM_IDENTITY
-    ubs24spf_pass 'real NetworkManager owner/PID/UID available'
+    mvc24spf_pass 'real NetworkManager owner/PID/UID available'
     if [[ $action == --preflight ]]; then
         printf 'RESULT: PASS — saved-profile probe prerequisites; no profile inspected\n'
         return 0
     fi
-    ubs24_valid_uuid "$uuid" || ubs24spf_fail 'invalid profile UUID format'
+    mvc24_valid_uuid "$uuid" || mvc24spf_fail 'invalid profile UUID format'
     [[ -d /dev/shm && $(stat -f -c %T /dev/shm) == tmpfs ]] ||
-        ubs24spf_fail 'private tmpfs /dev/shm required'
+        mvc24spf_fail 'private tmpfs /dev/shm required'
     _UBS24SPF_PRIVATE=$(mktemp -d /dev/shm/ubs24-saved-host.XXXXXXXX) ||
-        ubs24spf_fail 'cannot create private scratch'
-    trap 'ubs24spf_cleanup' EXIT
+        mvc24spf_fail 'cannot create private scratch'
+    trap 'mvc24spf_cleanup' EXIT
     [[ -d $_UBS24SPF_PRIVATE && ! -L $_UBS24SPF_PRIVATE && -O $_UBS24SPF_PRIVATE &&
        $(stat -c %a -- "$_UBS24SPF_PRIVATE") == 700 ]] ||
-        ubs24spf_fail 'insecure scratch directory'
+        mvc24spf_fail 'insecure scratch directory'
     first_json=$_UBS24SPF_PRIVATE/first.json
     # The settings adapter requires this read-only compatibility flag; it does
     # NOT attest lock ownership. No admission or mutation functions are called.
     UBS24S_LOCK_HELD=1
     for side in first second; do
         path=$_UBS24SPF_PRIVATE/$side.json
-        (umask 077; set -C; : > "$path") || ubs24spf_fail 'scratch creation failed'
+        (umask 077; set -C; : > "$path") || mvc24spf_fail 'scratch creation failed'
         [[ -f $path && ! -L $path && $(stat -c %a:%h -- "$path") == 600:1 ]] ||
-            ubs24spf_fail 'scratch file not private'
-        reply=$(ubs24g_call_readonly org.freedesktop.NetworkManager \
+            mvc24spf_fail 'scratch file not private'
+        reply=$(mvc24g_call_readonly org.freedesktop.NetworkManager \
             /org/freedesktop/NetworkManager/Settings \
             org.freedesktop.NetworkManager.Settings GetConnectionByUuid s "$uuid" o) ||
-            ubs24spf_fail 'saved profile not found by exact UUID'
-        [[ $reply =~ $re ]] || ubs24spf_fail 'unexpected Settings object-path response'
+            mvc24spf_fail 'saved profile not found by exact UUID'
+        [[ $reply =~ $re ]] || mvc24spf_fail 'unexpected Settings object-path response'
         object=${BASH_REMATCH[1]}
         if [[ $side == first ]]; then first_obj=$object; else second_obj=$object; fi
-        unsaved_before=$(ubs24g_get_property org.freedesktop.NetworkManager "$object" \
+        unsaved_before=$(mvc24g_get_property org.freedesktop.NetworkManager "$object" \
             org.freedesktop.NetworkManager.Settings.Connection Unsaved b) ||
-            ubs24spf_fail 'unable to read saved-profile Unsaved property'
-        [[ $unsaved_before == 'b false' ]] || ubs24spf_fail 'profile has unsaved changes'
-        ubs24gs_capture_settings "$object" "$path" ||
-            ubs24spf_fail 'actual OpenVPN GetSettings could not be decoded'
-        ubs24spf_validate "$path" "$uuid" "$action" || return 1
-        unsaved_after=$(ubs24g_get_property org.freedesktop.NetworkManager "$object" \
+            mvc24spf_fail 'unable to read saved-profile Unsaved property'
+        [[ $unsaved_before == 'b false' ]] || mvc24spf_fail 'profile has unsaved changes'
+        mvc24gs_capture_settings "$object" "$path" ||
+            mvc24spf_fail 'actual OpenVPN GetSettings could not be decoded'
+        mvc24spf_validate "$path" "$uuid" "$action" || return 1
+        unsaved_after=$(mvc24g_get_property org.freedesktop.NetworkManager "$object" \
             org.freedesktop.NetworkManager.Settings.Connection Unsaved b) ||
-            ubs24spf_fail 'repeat Unsaved property unavailable'
-        [[ $unsaved_after == 'b false' ]] || ubs24spf_fail 'profile changed during inspection'
-        ubs24op_session_nm_identity || ubs24spf_fail 'NetworkManager identity changed during inspection'
+            mvc24spf_fail 'repeat Unsaved property unavailable'
+        [[ $unsaved_after == 'b false' ]] || mvc24spf_fail 'profile changed during inspection'
+        mvc24op_session_nm_identity || mvc24spf_fail 'NetworkManager identity changed during inspection'
         [[ $initial_owner == "$UBS24OP_SESSION_NM_IDENTITY" ]] ||
-            ubs24spf_fail 'NetworkManager identity drift'
+            mvc24spf_fail 'NetworkManager identity drift'
     done
-    [[ $first_obj == "$second_obj" ]] || ubs24spf_fail 'profile object identity changed'
+    [[ $first_obj == "$second_obj" ]] || mvc24spf_fail 'profile object identity changed'
     cmp -s -- "$first_json" "$_UBS24SPF_PRIVATE/second.json" ||
-        ubs24spf_fail 'saved GetSettings snapshots changed'
-    ubs24op_session_nm_identity || ubs24spf_fail 'final NetworkManager identity unavailable'
+        mvc24spf_fail 'saved GetSettings snapshots changed'
+    mvc24op_session_nm_identity || mvc24spf_fail 'final NetworkManager identity unavailable'
     [[ $initial_owner == "$UBS24OP_SESSION_NM_IDENTITY" ]] ||
-        ubs24spf_fail 'final NetworkManager identity drift'
+        mvc24spf_fail 'final NetworkManager identity drift'
     if [[ $action == --diagnose-source ]]; then
-        ubs24spf_diagnose "$first_json" || ubs24spf_fail 'unable to classify saved profile safely'
+        mvc24spf_diagnose "$first_json" || mvc24spf_fail 'unable to classify saved profile safely'
     elif [[ $action == --inventory-remotes ]]; then
-        ubs24spf_inventory "$first_json" || ubs24spf_fail 'unable to inventory saved profile safely'
+        mvc24spf_inventory "$first_json" || mvc24spf_fail 'unable to inventory saved profile safely'
     elif [[ $action == --preview-derivative || $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]]; then
         local preview_json=$_UBS24SPF_PRIVATE/preview.json preview_uuid
-        (umask 077; set -C; : > "$preview_json") || ubs24spf_fail 'private preview scratch creation failed'
+        (umask 077; set -C; : > "$preview_json") || mvc24spf_fail 'private preview scratch creation failed'
         [[ -f $preview_json && ! -L $preview_json && $(stat -c %a:%h -- "$preview_json") == 600:1 ]] ||
-            ubs24spf_fail 'private preview scratch unsafe'
-        preview_uuid=$(cat /proc/sys/kernel/random/uuid) || ubs24spf_fail 'cannot obtain temporary preview identity'
-        ubs24op_preview_build "$first_json" "$preview_uuid" "$preview_json" ||
-            ubs24spf_fail 'source unsupported for strict read-only derivative projection'
+            mvc24spf_fail 'private preview scratch unsafe'
+        preview_uuid=$(cat /proc/sys/kernel/random/uuid) || mvc24spf_fail 'cannot obtain temporary preview identity'
+        mvc24op_preview_build "$first_json" "$preview_uuid" "$preview_json" ||
+            mvc24spf_fail 'source unsupported for strict read-only derivative projection'
         if [[ $action == --audit-auth-custody || $action == --audit-extra-flag-names || $action == --audit-challenge-flags || $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]]; then
-            ubs24op_auth_audit "$first_json" ||
-                ubs24spf_fail 'read-only credential/TLS metadata is unsupported'
+            mvc24op_auth_audit "$first_json" ||
+                mvc24spf_fail 'read-only credential/TLS metadata is unsupported'
         fi
         if [[ $action == --audit-material-readonly || $action == --triage-material-readonly || $action == --triage-root-material-readonly ]]; then
-            ubs24op_material_preflight "$first_json" ||
-                ubs24spf_fail 'read-only TLS/option metadata inspection unavailable'
+            mvc24op_material_preflight "$first_json" ||
+                mvc24spf_fail 'read-only TLS/option metadata inspection unavailable'
         fi
         if [[ $action == --triage-material-readonly ]]; then
-            ubs24op_path_triage "$first_json" ||
-                ubs24spf_fail 'caller-only TLS path triage unavailable'
+            mvc24op_path_triage "$first_json" ||
+                mvc24spf_fail 'caller-only TLS path triage unavailable'
         elif [[ $action == --triage-root-material-readonly ]]; then
-            ubs24op_root_material_observe "$first_json" ||
-                ubs24spf_fail 'root-scope TLS metadata observation unavailable'
+            mvc24op_root_material_observe "$first_json" ||
+                mvc24spf_fail 'root-scope TLS metadata observation unavailable'
         fi
     elif [[ $action == --plan-first-remote ]]; then
-        ubs24op_candidate_plan "$first_json" 1 ||
-            ubs24spf_fail 'profile remote list is outside the strict candidate-planning subset'
+        mvc24op_candidate_plan "$first_json" 1 ||
+            mvc24spf_fail 'profile remote list is outside the strict candidate-planning subset'
     fi
     if [[ $action == --audit-challenge-flags ]]; then
-        ubs24op_auth_challenge_flag_class "$first_json" ||
-            ubs24spf_fail 'cannot safely classify OpenVPN challenge-response flags'
+        mvc24op_auth_challenge_flag_class "$first_json" ||
+            mvc24spf_fail 'cannot safely classify OpenVPN challenge-response flags'
     fi
     if [[ $action == --audit-extra-flag-names ]]; then
-        ubs24op_auth_extra_flag_names "$first_json" ||
-            ubs24spf_fail 'cannot safely classify additional credential flag names'
+        mvc24op_auth_extra_flag_names "$first_json" ||
+            mvc24spf_fail 'cannot safely classify additional credential flag names'
     fi
     # No success is reported while raw profile data remains in scratch.
     rm -f -- "$_UBS24SPF_PRIVATE/first.json" "$_UBS24SPF_PRIVATE/second.json" "$_UBS24SPF_PRIVATE/preview.json" ||
-        ubs24spf_fail 'private capture cleanup failed'
-    rmdir -- "$_UBS24SPF_PRIVATE" || ubs24spf_fail 'private scratch cleanup failed'
+        mvc24spf_fail 'private capture cleanup failed'
+    rmdir -- "$_UBS24SPF_PRIVATE" || mvc24spf_fail 'private scratch cleanup failed'
     _UBS24SPF_PRIVATE=''
-    ubs24spf_pass 'saved OpenVPN UUID and typed GetSettings snapshots consistent'
+    mvc24spf_pass 'saved OpenVPN UUID and typed GetSettings snapshots consistent'
     if [[ $action == --diagnose-source ]]; then
         printf 'SOURCE-SHAPE: remote=%s; port=%s; proto-tcp=%s; remote-random=%s; remote-random-hostname=%s\n' \
             "$UBS24SPF_DIAG_REMOTE" "$UBS24SPF_DIAG_PORT" "$UBS24SPF_DIAG_PROTO" \
@@ -465,7 +465,7 @@ ubs24spf_main() {
         printf 'CANDIDATE-PLAN: source-order=first; endpoints=all-canonical-ipv4-with-explicit-ports; transport=tcp-only; source-profile=unchanged\n'
         printf 'RESULT: READ-ONLY SINGLE-CANDIDATE PROPOSAL — NOT saved derivative, TLS/secret parity, firewall, socket or activation authority\n'
     elif [[ $action == --assess-source ]]; then
-        ubs24spf_pass 'source has one canonical numeric IPv4:port and explicit UDP/TCP transport'
+        mvc24spf_pass 'source has one canonical numeric IPv4:port and explicit UDP/TCP transport'
         if [[ $UBS24SPF_RANDOM == yes ]]; then
             printf 'ASSESSMENT: source shape could support a controller-owned single-endpoint derivative; remote-random=yes source remains REJECTED by strict bootstrap\n'
         else
@@ -473,10 +473,10 @@ ubs24spf_main() {
         fi
         printf 'RESULT: READ-ONLY SOURCE ASSESSMENT ONLY — NOT credential/option-parity proof, rendered profile, firewall or activation authority\n'
     else
-        ubs24spf_pass 'saved profile representation supports current strict IPv4:port and proto-tcp witness'
+        mvc24spf_pass 'saved profile representation supports current strict IPv4:port and proto-tcp witness'
         printf 'RESULT: PASS — real saved OpenVPN profile shape compatible; NOT prepared-session authority or activation\n'
     fi
 }
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
-    ubs24spf_main "$@"
+    mvc24spf_main "$@"
 fi

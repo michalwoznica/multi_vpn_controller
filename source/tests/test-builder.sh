@@ -36,7 +36,7 @@ if $A --help | grep -Fq 'public identity release candidate'; then ok 'current ge
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=MVC_R2_RUNTIME_IDENTITY" <<< "$info" &&
+if grep -Fxq "checkpoint=MVC_R3A_LOWERCASE_NAMESPACE" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'
@@ -45,8 +45,8 @@ else
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
-   grep -Fq 'ubs24e_dispatch "$@"' "$A" &&
-   ! grep -Fq 'ubs24mon_stage3b_refuse_lifecycle' "$A"; then
+   grep -Fq 'mvc24e_dispatch "$@"' "$A" &&
+   ! grep -Fq 'mvc24mon_stage3b_refuse_lifecycle' "$A"; then
     ok 'v2.4.1 wrapper promotes lifecycle only through audited dispatcher'
 else
     bad 'v2.4.1 wrapper promotes lifecycle only through audited dispatcher'
@@ -73,13 +73,13 @@ fi
 module_starts=$(grep -c '^# >>> BEGIN MODULE [0-9][0-9][0-9]:' "$A")
 if [[ $module_starts == 49 ]]; then ok 'generated artifact contains exactly 49 ordered module sections'; else bad 'generated artifact contains exactly 49 ordered module sections'; fi
 if grep -Fq '# >>> BEGIN MONOLITH COMPOSITION GLUE' "$A" &&
-   grep -Fq 'ubs24pub_process_initialize()' "$A" &&
-   grep -Fq 'ubs24pub_session_runtime_root()' "$A"; then
+   grep -Fq 'mvc24pub_process_initialize()' "$A" &&
+   grep -Fq 'mvc24pub_session_runtime_root()' "$A"; then
     ok 'runtime-only composition glue is present'
 else
     bad 'runtime-only composition glue is present'
 fi
-if ! grep -Fq 'ubs24pub_source_module()' "$A" && ! grep -Fq 'ubs24pub_openvpn_manifest_before_final()' "$A"; then
+if ! grep -Fq 'mvc24pub_source_module()' "$A" && ! grep -Fq 'mvc24pub_openvpn_manifest_before_final()' "$A"; then
     ok 'loader-only dynamic source-loop functions are absent'
 else
     bad 'loader-only dynamic source-loop functions are absent'
