@@ -67,3 +67,9 @@ The suite is hermetic and does not require live VPN activation.
 ## Internal compatibility names
 
 The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership uses `/run/mvc-*` and `mvc_preclone_*`. Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated record signatures are MVC-native and runtime module filenames are version-neutral. The public project contains no predecessor-specific migration compatibility; any private development-host migration is handled outside the Git-facing tree.
+
+## License
+
+Copyright (C) 2026 [michalwoznica](https://github.com/michalwoznica).
+
+Multi VPN Controller is free software licensed under the **GNU General Public License version 3 or any later version** (`GPL-3.0-or-later`). See [LICENSE](LICENSE) for the full licence text.
