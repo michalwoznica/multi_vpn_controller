@@ -27,7 +27,7 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R7_STANDALONE_PUBLIC_IDENTITY' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR' <<<"$info" &&
    grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$info"; then
     ok 'v2.4.1 provenance records candidate with physical proof pending'
 else
@@ -192,5 +192,5 @@ else
     bad 'installer contains no VPN/network mutation command surface'
 fi
 
-printf 'RESULT: MVC-R7 standalone install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
+printf 'RESULT: MVC-R8 standalone install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
 (( FAIL == 0 ))

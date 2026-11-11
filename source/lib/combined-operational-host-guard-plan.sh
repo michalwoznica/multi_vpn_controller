@@ -64,7 +64,7 @@ mvc24gb1_render() {
        ! -s $dest && -O $dest && $(stat -c '%a:%h' -- "$dest") == 600:1 ]] || return 1
     # Pin known F14 semantics. A modified reference must be explicitly reviewed.
     [[ $(sha256sum "$reference" | cut -d' ' -f1) == \
-       b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03 ]] || return 1
+       15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23 ]] || return 1
     local -a lines=()
     mapfile -t lines < <(grep '^add ' "$reference") || return 1
     (( ${#lines[@]} == 5 )) || return 1

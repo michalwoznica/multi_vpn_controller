@@ -50,7 +50,7 @@ else
   fail 'public installer has no predecessor migration contract'
 fi
 
-if rg -Fq 'checkpoint=MVC_R7_STANDALONE_PUBLIC_IDENTITY' < <("$ROOT/dist/mvc" --monolith-build-info); then
+if rg -Fq 'checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR' < <("$ROOT/dist/mvc" --monolith-build-info); then
   pass 'generated artifact carries standalone-public checkpoint identity'
 else
   fail 'generated artifact carries standalone-public checkpoint identity'
@@ -68,5 +68,5 @@ else
   fail 'private handoff and generated dist remain outside the public Git surface'
 fi
 
-printf 'RESULT: MVC-R7 standalone public identity audit %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC-R8 standalone public identity audit %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

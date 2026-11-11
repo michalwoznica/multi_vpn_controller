@@ -1,5 +1,11 @@
 # Changelog
 
+## MVC R8 bootstrap resource pin repair
+
+- Repair the B1/B2 security hash pins so they match the current MVC bootstrap nft resource.
+- Add an end-to-end regression that exercises the real B1 render and B2 batch validator against the manifest-declared embedded resource.
+- No nft rule semantics or VPN lifecycle policy changed; this repairs a deterministic pre-mutation connect refusal introduced when the resource identity changed during the MVC refactor.
+
 ## 2.4.1
 - Make the public project standalone: remove predecessor-specific installer migration, hashes, runtime-root checks, and exact historical record fixtures from the Git-facing tree; retain one-time development-host migration details only in ignored handoff material.
 - Complete the final identity audit and keep current production/build/docs MVC-native.

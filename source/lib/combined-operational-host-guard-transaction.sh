@@ -105,7 +105,7 @@ mvc24gb2_batch_valid() {
     base=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../nftables" && pwd)/mvc-preclone-quarantine-offline.nft || return 1
     [[ -n $base && -f $base && ! -L $base && -f $batch && ! -L $batch ]] || return 1
     [[ $(sha256sum "$base" | cut -d' ' -f1) == \
-       b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03 ]] || return 1
+       15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23 ]] || return 1
     local -a original=() actual=()
     mapfile -t original < <(grep '^add ' -- "$base") || return 1
     mapfile -t actual < "$batch" || return 1

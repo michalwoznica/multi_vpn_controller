@@ -13,8 +13,8 @@ MODULE|008|39920b7c9cc269f4458f980faabb35be28c716a1ce4342d19796294872897fa4|sour
 MODULE|009|47300fd27ca301d66948a152ee7784aa639dd350af4b30bb7c028ee91f671ca4|source/lib/combined-operational-ovpn-remote-candidate-plan.sh|ordered-runtime-module
 MODULE|010|a16f1db36789a3c0b1bb7f54aebda1b9c59a643b5cb648409c863868ef891342|source/lib/combined-operational-ovpn-derivative-preview.sh|ordered-runtime-module
 MODULE|011|db9aa3648669323941310cd22d9920be3c7b7fa43d41883c5d60ed58e250bd7e|source/lib/combined-operational-preclone-quarantine-offline.sh|ordered-runtime-module
-MODULE|012|f62352d86f668fa12bba4c06a39d8e430a7d7b0842567788522adadeaff1144c|source/lib/combined-operational-host-guard-plan.sh|ordered-runtime-module
-MODULE|013|edc84cd5877087bad43bdf7d28b0a69881a72a7483d09155ab6640fce5f7a2d7|source/lib/combined-operational-host-guard-transaction.sh|ordered-runtime-module
+MODULE|012|e5ae5b51884cb1cbe436505041a3fc22a3f46634094e14edca797b388493244d|source/lib/combined-operational-host-guard-plan.sh|ordered-runtime-module
+MODULE|013|160b6148cd2bd1c06a39321ee423805bab84f428e73496045271e6979587db8d|source/lib/combined-operational-host-guard-transaction.sh|ordered-runtime-module
 MODULE|014|96fbf5554a1bfcc6822108a68ac0bb7db5c6889888d32196e4087e99fb76b276|source/lib/combined-operational-host-guard-acceptance.sh|ordered-runtime-module
 MODULE|015|7fa9a4cbca91e18d6f66c4d09c16d227eff1af92dbcea9038b9e5a324a895ba9|source/lib/combined-operational-ovpn-native-clone-adapter.sh|ordered-runtime-module
 MODULE|016|721a3af690ae9c4c04521b930e4705ac935c8bc92c299538a06173023070c064|source/lib/combined-operational-ovpn-temporary-harden.sh|ordered-runtime-module
