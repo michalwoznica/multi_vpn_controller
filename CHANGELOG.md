@@ -1,5 +1,13 @@
 # Changelog
 
+## MVC R9 authenticated update path
+
+- Keep the physically proven R8 controller/runtime artifact unchanged.
+- Allow `install-mvc.sh update` to replace an explicitly approved prior MVC controller identity by exact SHA-256 while continuing to refuse unknown or modified controllers.
+- Keep `install` conservative: an approved prior controller is not silently replaced and must use the explicit `update` action.
+- Add deterministic regression coverage that reconstructs the exact R7 artifact, proves its known hash, proves `install` refuses it, and proves `update` atomically promotes it to R8.
+- No VPN lifecycle, nftables, routing, DNS, NetworkManager, recovery-tool, persistent-record, or generated-controller bytes changed.
+
 ## MVC R8 bootstrap resource pin repair
 
 - Repair the B1/B2 security hash pins so they match the current MVC bootstrap nft resource.

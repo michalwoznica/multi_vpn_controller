@@ -118,6 +118,60 @@ else
     bad 'update atomically replaces exact managed candidate and leaves no staging residue'
 fi
 
+# Reconstruct the exact R7 controller from the current tree using the documented
+# R8-only delta. This avoids carrying predecessor binaries in the public tree
+# while proving that the allowlisted hash is the real deterministic R7 artifact.
+R7_ROOT=$TMP/r7-rebuild
+mkdir -p "$R7_ROOT"
+cp -a "$ROOT/source" "$R7_ROOT/source"
+sed -i "s/MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'/MVC24_BUILD_CHECKPOINT='MVC_R7_STANDALONE_PUBLIC_IDENTITY'/" \
+    "$R7_ROOT/source/build/build-mvc-monolith.sh"
+sed -i 's/15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23/b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03/g' \
+    "$R7_ROOT/source/lib/combined-operational-host-guard-plan.sh" \
+    "$R7_ROOT/source/lib/combined-operational-host-guard-transaction.sh"
+r7_plan_sha=$(sha256sum "$R7_ROOT/source/lib/combined-operational-host-guard-plan.sh" | awk '{print $1}')
+r7_transaction_sha=$(sha256sum "$R7_ROOT/source/lib/combined-operational-host-guard-transaction.sh" | awk '{print $1}')
+awk -F'|' -v OFS='|' -v plan_sha="$r7_plan_sha" -v transaction_sha="$r7_transaction_sha" '
+    $4 == "source/lib/combined-operational-host-guard-plan.sh" { $3 = plan_sha }
+    $4 == "source/lib/combined-operational-host-guard-transaction.sh" { $3 = transaction_sha }
+    { print }
+' "$R7_ROOT/source/build/monolith-runtime.manifest" > "$R7_ROOT/source/build/monolith-runtime.manifest.new"
+mv -- "$R7_ROOT/source/build/monolith-runtime.manifest.new" "$R7_ROOT/source/build/monolith-runtime.manifest"
+"$R7_ROOT/source/build/build-mvc-monolith.sh" "$TMP/r7-mvc" >/dev/null
+R7_SHA=05b12e106844af20fdce1390005ef01e638970215b3dbfa1726fbd0848837f44
+if [[ $(sha256sum "$TMP/r7-mvc" | awk '{print $1}') == "$R7_SHA" ]]; then
+    ok 'test reconstructs the exact deterministic R7 predecessor identity'
+else
+    bad 'test reconstructs the exact deterministic R7 predecessor identity'
+fi
+
+# `install` remains conservative: a recognized prior MVC controller must use
+# the explicit update action rather than being silently treated as a reinstall.
+cp -- "$TMP/r7-mvc" "$C_DST"
+chmod 755 "$C_DST"
+set +e
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/prior-install.out" 2>&1
+prior_install_rc=$?
+set -e
+if (( prior_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/prior-install.out" &&
+   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R7_SHA" ]]; then
+    ok 'install refuses an approved prior controller and requires explicit update'
+else
+    bad 'install refuses an approved prior controller and requires explicit update'
+fi
+
+# `update` accepts the exact allowlisted R7 content identity and atomically
+# promotes it to the current physically proven R8 controller.
+old_inode=$(stat -c %i -- "$C_DST")
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/prior-update.out"
+new_inode=$(stat -c %i -- "$C_DST")
+if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
+   ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
+    ok 'update accepts exact approved R7 identity and atomically promotes to R8'
+else
+    bad 'update accepts exact approved R7 identity and atomically promotes to R8'
+fi
+
 # A same-name/version impostor is not accepted: replacement is hash-bound to
 # the exact MVC package candidate.
 cp "$C_DST" "$TMP/good-controller"
@@ -137,9 +191,6 @@ else
     bad 'installer rejects same-version controller with unrecognized hash'
 fi
 cp "$TMP/good-controller" "$C_DST"; chmod 755 "$C_DST"
-
-# The public installer has no predecessor-migration surface; migration of any
-# private development predecessor is handled outside the public project.
 
 # A managed runtime root must block both update/removal and leave installed
 # identities untouched.
@@ -192,5 +243,5 @@ else
     bad 'installer contains no VPN/network mutation command surface'
 fi
 
-printf 'RESULT: MVC-R8 standalone install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
+printf 'RESULT: MVC-R9 authenticated install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
 (( FAIL == 0 ))

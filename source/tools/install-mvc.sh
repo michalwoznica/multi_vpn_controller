@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Multi VPN Controller 2.4.1 — release-candidate installer.
+# Multi VPN Controller 2.4.1 — authenticated package installer.
 # File-management only. Never mutates VPN/network state.
 # Lowercase internal functions use mvc24*; uppercase internal variables use MVC24*.
 set -euo pipefail
@@ -20,7 +20,8 @@ Without --root, manages:
   /root/mvc-emergency-rollback
   /root/mvc-dual-recovery
 
-Existing MVC files are replaced only when their identity matches this package.
+`install` only accepts an absent destination or the exact current package identity.
+`update` additionally accepts explicitly approved prior MVC controller identities.
 Unknown existing files are never overwritten or removed.
 
 --root is for isolated fake-root testing only. It prefixes all managed paths and
@@ -62,6 +63,22 @@ emergency_dst=$(mvc24i_target /root/mvc-emergency-rollback)
 dual_dst=$(mvc24i_target /root/mvc-dual-recovery)
 
 mvc24i_hash() { sha256sum -- "$1" | awk '{print $1}'; }
+
+# Exact MVC controller identities that this package is authorized to upgrade.
+# Trust is content-hash based; version/banner strings are never sufficient.
+readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
+    '05b12e106844af20fdce1390005ef01e638970215b3dbfa1726fbd0848837f44'
+)
+
+mvc24i_is_approved_update_controller_sha256() {
+    (( $# == 1 )) || return 1
+    local candidate=$1 approved
+    for approved in "${MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256[@]}"; do
+        [[ $candidate == "$approved" ]] && return 0
+    done
+    return 1
+}
+
 mvc24i_info_value() {
     (( $# == 2 )) || return 1
     local text=$1 key=$2 line count
@@ -106,12 +123,20 @@ mvc24i_assert_target_replaceable() {
 }
 
 mvc24i_assert_existing_identity() {
-    local emergency_sha dual_sha
+    local controller_sha emergency_sha dual_sha existing_controller_sha
+    controller_sha=$(mvc24i_hash "$controller_src")
     emergency_sha=$(mvc24i_hash "$emergency_src")
     dual_sha=$(mvc24i_hash "$dual_src")
     if [[ -f $controller_dst && ! -L $controller_dst ]]; then
-        [[ $(mvc24i_hash "$controller_dst") == $(mvc24i_hash "$controller_src") ]] || \
+        existing_controller_sha=$(mvc24i_hash "$controller_dst")
+        if [[ $existing_controller_sha == "$controller_sha" ]]; then
+            :
+        elif mvc24i_is_approved_update_controller_sha256 "$existing_controller_sha"; then
+            [[ $action == update ]] || \
+                mvc24i_die 'existing MVC controller is an approved prior identity; use update instead of install'
+        else
             mvc24i_die 'refusing to replace unrecognized existing MVC controller'
+        fi
     fi
     if [[ -f $emergency_dst && ! -L $emergency_dst ]]; then
         [[ $(mvc24i_hash "$emergency_dst") == "$emergency_sha" ]] || \

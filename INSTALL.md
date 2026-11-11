@@ -12,7 +12,7 @@ Install MVC:
 sudo ./source/tools/install-mvc.sh install
 ```
 
-Update an already recognized installation:
+Update an authenticated current or explicitly approved prior MVC installation:
 
 ```bash
 sudo ./source/tools/install-mvc.sh update
@@ -41,4 +41,4 @@ The installed files are:
 /root/mvc-dual-recovery
 ```
 
-The installer manages MVC installations only. Existing MVC files are replaced only when their identity matches the current package; unrecognized existing files are never overwritten.
+The installer manages MVC installations only. `install` accepts only an absent destination or the exact current package identity. `update` also accepts explicitly approved prior MVC controller identities by exact SHA-256; version/banner strings are not trusted. Unrecognized or locally modified existing files are never overwritten.
