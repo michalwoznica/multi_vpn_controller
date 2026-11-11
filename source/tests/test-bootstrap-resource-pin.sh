@@ -11,6 +11,7 @@ PLAN=$ROOT/source/lib/combined-operational-host-guard-plan.sh
 TXN=$ROOT/source/lib/combined-operational-host-guard-transaction.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
+TEST_UNDERLAY=test-wlan0
 actual=$(sha256sum -- "$RESOURCE" | awk '{print $1}')
 manifest=$(awk -F'|' '$1=="ASSET" && $2=="b4-bootstrap-nft" {print $3}' "$MANIFEST")
 
@@ -34,7 +35,7 @@ trap 'rm -rf -- "$TMP"' EXIT
 chmod 600 "$TMP/batch"
 # shellcheck disable=SC1090
 source "$PLAN"
-if mvc24gb1_render wlp195s0 "$RESOURCE" "$TMP/batch" &&
+if mvc24gb1_render "$TEST_UNDERLAY" "$RESOURCE" "$TMP/batch" &&
    [[ $(grep -c '^add ' "$TMP/batch") == 9 ]]; then
   pass 'real B1 render accepts current resource and emits nine-rule batch'
 else
@@ -43,7 +44,7 @@ fi
 
 # shellcheck disable=SC1090
 source "$TXN"
-if mvc24gb2_batch_valid wlp195s0 "$TMP/batch"; then
+if mvc24gb2_batch_valid "$TEST_UNDERLAY" "$TMP/batch"; then
   pass 'real B2 batch validator accepts B1 output against current resource'
 else
   fail 'real B2 batch validator accepts B1 output against current resource'
