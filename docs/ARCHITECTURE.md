@@ -17,4 +17,4 @@ Runtime state is ephemeral across reboot. MVC 2.4.x intentionally uses manual ac
 
 MVC-owned runtime filesystem state uses `/run/mvc-*`, and MVC-owned B4 nftables tables use the `mvc_preclone_*` namespace. These names are runtime-visible implementation identifiers and are authenticated as part of the same-boot lifecycle.
 
-Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Journal record signatures and several audited module filenames still retain legacy implementation names. They are not part of the public MVC command/API and are intentionally deferred to later no-behavior-change refactor phases.
+Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated journal record signatures are MVC-native, and the targeted runtime module filenames are version-neutral. These remain internal implementation details rather than public MVC command/API contracts.
