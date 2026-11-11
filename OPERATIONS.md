@@ -1,5 +1,9 @@
 # Operations
 
+## Boot and activation policy
+
+MVC 2.4.x uses manual activation. There is no always-on early-boot MVC guard and no persistent boot kill switch. After reboot, ordinary networking is therefore unprotected by MVC until a protected session is explicitly started. Runtime ownership records under `/run/mvc-*` are same-boot state and do not persist across reboot.
+
 ## Read-only commands
 
 ```bash

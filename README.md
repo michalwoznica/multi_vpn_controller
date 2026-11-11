@@ -20,6 +20,10 @@ The four modes are:
 
 IPv6 Internet traffic is blocked during protected sessions. MVC uses nftables and authenticated same-boot runtime state to avoid silently falling back to an unprotected path.
 
+## Boot policy
+
+MVC is manually activated and does not provide an always-on early-boot guard. After reboot, ordinary networking is not protected by MVC until the operator starts a protected session. Same-boot MVC ownership state under `/run/mvc-*` is intentionally ephemeral.
+
 ## Source and release model
 
 The maintainable implementation lives under `source/`. `dist/mvc` is generated deterministically and is intentionally ignored by Git. Build it with:

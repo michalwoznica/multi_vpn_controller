@@ -1,5 +1,19 @@
 # Installation
 
+## Host prerequisites
+
+MVC uses NetworkManager for connection lifecycle and performs a live-admission command check before protected activation. The host must provide these commands:
+
+```text
+nft jq ip nmcli gdbus flock wg pgrep sha256sum awk cmp stat sleep
+```
+
+Command names are listed rather than distribution package names because package ownership differs across Linux distributions. OpenVPN modes additionally require NetworkManager OpenVPN support and a saved NetworkManager OpenVPN profile that MVC can use non-interactively.
+
+## Boot policy
+
+MVC 2.4.x is manually activated. It does **not** install an always-on early-boot guard or persistent boot kill switch. After a reboot, ordinary networking follows the host's normal baseline and is unprotected by MVC until the operator starts a protected MVC session. MVC same-boot ownership records under `/run/mvc-*` are intentionally ephemeral across reboot.
+
 Build the controller first:
 
 ```bash
