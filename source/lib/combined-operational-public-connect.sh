@@ -65,6 +65,8 @@ mvc24pubc_preflight_readonly() {
     [[ ${MVC24PUBC_ATTEMPTED:-no} == no ]] || return 1
     MVC24PUBC_STAGE=preflight-fixed-live-roots
     mvc24pubc_fixed_live_roots_absent || return 1
+    MVC24PUBC_STAGE=preflight-wireguard-required-command-inventory
+    mvc24gd4_dependencies || return 1
 
     MVC24PUBC_STAGE=preflight-profile-identities
     mvc24pub_bind_combined_names "$wg_name" "$ovpn_name" || return 1

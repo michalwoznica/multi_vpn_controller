@@ -229,6 +229,8 @@ mvc24gwg_preflight_readonly() {
     [[ ${MVC24GWG_ATTEMPTED:-no} == no ]] || return 1
     MVC24GWG_STAGE=preflight-fixed-live-roots
     mvc24pubc_fixed_live_roots_absent || return 1
+    MVC24GWG_STAGE=preflight-required-command-inventory
+    mvc24gd4_dependencies || return 1
     MVC24GWG_STAGE=preflight-profile-identity
     mvc24pub_bind_wireguard_name "$wg_name" || return 1
     MVC24GWG_STAGE=preflight-underlay

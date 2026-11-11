@@ -1,5 +1,15 @@
 # Building Multi VPN Controller
 
+## Build prerequisites
+
+The deterministic builder checks its own prerequisites before creating the requested output directory or file. The build host must provide:
+
+```text
+awk bash cat chmod grep mkdir mktemp mv od rm rmdir sed sha256sum stat tail tr
+```
+
+These are build-time requirements. Runtime networking dependencies are checked separately by the generated controller during read-only admission; see `INSTALL.md`.
+
 ## Rebuild the current source
 
 From the repository root:

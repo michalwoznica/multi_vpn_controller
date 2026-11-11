@@ -83,6 +83,8 @@ mvc24gws_preflight_readonly() {
     [[ ${MVC24GWS_ATTEMPTED:-no} == no ]] || return 1
     MVC24GWS_STAGE=preflight-fixed-live-roots
     mvc24pubc_fixed_live_roots_absent || return 1
+    MVC24GWS_STAGE=preflight-required-command-inventory
+    mvc24gd4_dependencies || return 1
     MVC24GWS_STAGE=preflight-baseline
     mvc24pub_baseline_clean_readonly || return 1
     MVC24GWS_STAGE=preflight-profile-identity

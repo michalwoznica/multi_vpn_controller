@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# C24A Stage 3 — v2.4.1 deterministic release + fake-root install/update/remove.
+# MVC 2.4.2 release — deterministic artifact + authenticated fake-root install/update/remove.
 set -euo pipefail
 umask 077
 export LC_ALL=C
@@ -24,14 +24,14 @@ mkdir -p "$TMP/a" "$TMP/b"
 A=$TMP/a/mvc
 B=$TMP/b/mvc
 
-cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
-cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
+cmp -s -- "$A" "$B" && ok 'v2.4.2 independent builds are byte-identical' || bad 'v2.4.2 independent builds are byte-identical'
+cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.2 artifact equals fresh deterministic build' || bad 'checked-in v2.4.2 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$info" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v241-release' <<<"$info"; then
-    ok 'v2.4.1 provenance records stable release identity'
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v242-release' <<<"$info"; then
+    ok 'v2.4.2 provenance records stable release identity'
 else
-    bad 'v2.4.1 provenance records stable release identity'
+    bad 'v2.4.2 provenance records stable release identity'
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
@@ -107,7 +107,7 @@ if cmp -s -- "$C_DST" "$DIST" && cmp -s -- "$E_DST" "$EMERGENCY" && cmp -s -- "$
 else
     bad 'installed file identities exactly match release sources'
 fi
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" verify --root "$FAKE" > "$TMP/verify.out" && grep -Fq 'INSTALLED MULTI VPN CONTROLLER 2.4.1 FILE SET VERIFIED' "$TMP/verify.out" && ok 'installer verify rechecks installed identity/provenance' || bad 'installer verify rechecks installed identity/provenance'
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" verify --root "$FAKE" > "$TMP/verify.out" && grep -Fq 'INSTALLED MULTI VPN CONTROLLER 2.4.2 FILE SET VERIFIED' "$TMP/verify.out" && ok 'installer verify rechecks installed identity/provenance' || bad 'installer verify rechecks installed identity/provenance'
 
 old_inode=$(stat -c %i -- "$C_DST")
 PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/update.out"
@@ -118,110 +118,124 @@ else
     bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
-# Reconstruct the exact physically proven R8 controller by reversing only the
-# final-release provenance wrapper changes in the current builder. This avoids
-# carrying predecessor binaries in the public tree while proving that the R8
-# allowlist entry is bound to the real deterministic artifact.
-R8_ROOT=$TMP/r8-rebuild
-mkdir -p "$R8_ROOT"
-cp -a "$ROOT/source" "$R8_ROOT/source"
-R8_BUILDER=$R8_ROOT/source/build/build-mvc-monolith.sh
-sed -i \
-    -e 's/# Public v2.4.1 release\./# Public v2.4.1 release candidate./' \
-    -e 's/# Lifecycle verbs delegate to the audited dispatcher; validation evidence remains hash-specific\./# Lifecycle verbs delegate to the audited dispatcher; v2.4.1 physical proof remains pending./' \
-    -e "s/MVC24_BUILD_CHECKPOINT='MVC_V241_RELEASE'/MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'/" \
-    -e "s/mvc24_emit '# Multi VPN Controller 2.4.1 operational release\.'/mvc24_emit '# C24A Stage 3 v2.4.1 operational candidate.'/" \
-    -e 's/# Multi VPN Controller v2.4.1 release wrapper — audited dispatcher/# C24A Stage-3 v2.4.1 release wrapper — audited dispatcher, physical proof pending/' \
-    -e 's/Multi VPN Controller 2.4.1$/Multi VPN Controller 2.4.1 — public identity release candidate/' \
-    -e 's/This is the deterministic MVC v2.4.1 release artifact\. Validation evidence is/This MVC v2.4.1 candidate has completed offline identity\/build regression; physical proof/' \
-    -e 's/hash-specific; verify the exact artifact identity used for deployment\./of this exact hash remains pending controlled live-host validation./' \
-    -e 's/authority=audited-dispatch-mvc-v241-release/authority=audited-dispatch-mvc-v241-candidate-physical-pending/' \
-    -e 's/Multi VPN Controller v2.4.1 monolith is incomplete\./Multi VPN Controller v2.4.1 candidate monolith is incomplete./' \
-    "$R8_BUILDER"
-"$R8_BUILDER" "$TMP/r8-mvc" >/dev/null
-R8_SHA=594b4f747db4dd6cd7d3efe86994a3027f672c30db80749ffbca0c4113ec2edd
-if [[ $(sha256sum "$TMP/r8-mvc" | awk '{print $1}') == "$R8_SHA" ]]; then
-    ok 'test reconstructs the exact physically proven R8 predecessor identity'
+# The public v2.4.1 release remains a supported predecessor for 2.4.2.
+# Keep the authorization bound to its exact physically validated
+# content hash; no banner/version string is sufficient.
+V241_FINAL_SHA=d1b3fb664a5873458a12fbb5a278a3e686c1d2b258ef15789187910b73512208
+if grep -Fq "'$V241_FINAL_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact final v2.4.1 predecessor hash'
 else
-    bad 'test reconstructs the exact physically proven R8 predecessor identity'
+    bad 'installer allowlist contains exact final v2.4.1 predecessor hash'
 fi
 
-# `install` remains conservative: the exact R8 predecessor must use explicit
-# update rather than being silently treated as a reinstall.
-cp -- "$TMP/r8-mvc" "$C_DST"
+# Reconstruct the exact physically validated 2.4.2 R1/R2 candidate from the
+# final source by reverting only release-provenance text in a private copy of
+# the builder. This avoids bundling a predecessor binary while proving that
+# the real candidate hash is authorized for final promotion.
+R1_PROJECT=$TMP/r1-candidate-project
+cp -a -- "$ROOT" "$R1_PROJECT"
+R1_BUILDER=$R1_PROJECT/source/build/build-mvc-monolith.sh
+python - "$R1_BUILDER" <<'PY_R1'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+s=p.read_text()
+repls=[
+    ('# Public v2.4.2 release.', '# Public v2.4.2 development candidate.'),
+    ("MVC24_BUILD_CHECKPOINT='MVC_V242_RELEASE'", "MVC24_BUILD_CHECKPOINT='MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP'"),
+    ("mvc24_emit '# Multi VPN Controller 2.4.2 operational release.'", "mvc24_emit '# Multi VPN Controller 2.4.2 development candidate.'"),
+    ('# Multi VPN Controller v2.4.2 release wrapper — audited dispatcher', '# Multi VPN Controller v2.4.2 candidate wrapper — audited dispatcher'),
+    ('This is the deterministic MVC v2.4.2 release artifact. Validation evidence is\nhash-specific; verify the exact artifact identity used for deployment.', 'This is the deterministic MVC v2.4.2 development candidate. Validation evidence is\nhash-specific; controlled live-host validation is required before release promotion.'),
+    ("printf 'authority=audited-dispatch-mvc-v242-release\\n'", "printf 'authority=audited-dispatch-mvc-v242-candidate-physical-pending\\n'"),
+    ("'Multi VPN Controller v2.4.2 monolith is incomplete.'", "'Multi VPN Controller v2.4.2 candidate monolith is incomplete.'"),
+]
+for old,new in repls:
+    if s.count(old) != 1:
+        raise SystemExit(f'candidate reconstruction anchor mismatch: {old!r} count={s.count(old)}')
+    s=s.replace(old,new,1)
+p.write_text(s)
+PY_R1
+R1_MVC=$TMP/r1-candidate-mvc
+"$R1_BUILDER" "$R1_MVC" >/dev/null
+R1_SHA=a334261fd892adea75d9d0ee7680e8215666d2f379334dbe96eb69e7fdad9001
+if [[ $(sha256sum "$R1_MVC" | awk '{print $1}') == "$R1_SHA" ]] && grep -Fq "'$R1_SHA'" "$INSTALLER"; then
+    ok 'test reconstructs exact physically validated v2.4.2 candidate and installer allowlists it'
+else
+    bad 'test reconstructs exact physically validated v2.4.2 candidate and installer allowlists it'
+fi
+
+cp -- "$R1_MVC" "$C_DST"
 chmod 755 "$C_DST"
 set +e
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r8-install.out" 2>&1
-r8_install_rc=$?
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r1-install.out" 2>&1
+r1_install_rc=$?
 set -e
-if (( r8_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r8-install.out" &&
-   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R8_SHA" ]]; then
-    ok 'install refuses exact R8 predecessor and requires explicit update'
+if (( r1_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r1-install.out" &&
+   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R1_SHA" ]]; then
+    ok 'install refuses exact physically validated v2.4.2 candidate and requires update'
 else
-    bad 'install refuses exact R8 predecessor and requires explicit update'
+    bad 'install refuses exact physically validated v2.4.2 candidate and requires update'
 fi
 
 old_inode=$(stat -c %i -- "$C_DST")
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r8-update.out"
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r1-update.out"
 new_inode=$(stat -c %i -- "$C_DST")
 if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
    ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
-    ok 'update accepts exact approved R8 identity and atomically promotes to final 2.4.1'
+    ok 'update promotes exact physically validated v2.4.2 candidate to final release'
 else
-    bad 'update accepts exact approved R8 identity and atomically promotes to final 2.4.1'
+    bad 'update promotes exact physically validated v2.4.2 candidate to final release'
 fi
 
-# Reconstruct the exact R7 controller from the reconstructed R8 source using the
-# documented R8-only delta. This proves the older allowlist entry remains real.
-R7_ROOT=$TMP/r7-rebuild
-mkdir -p "$R7_ROOT"
-cp -a "$R8_ROOT/source" "$R7_ROOT/source"
-sed -i "s/MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'/MVC24_BUILD_CHECKPOINT='MVC_R7_STANDALONE_PUBLIC_IDENTITY'/" \
-    "$R7_ROOT/source/build/build-mvc-monolith.sh"
-sed -i 's/15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23/b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03/g' \
-    "$R7_ROOT/source/lib/combined-operational-host-guard-plan.sh" \
-    "$R7_ROOT/source/lib/combined-operational-host-guard-transaction.sh"
-r7_plan_sha=$(sha256sum "$R7_ROOT/source/lib/combined-operational-host-guard-plan.sh" | awk '{print $1}')
-r7_transaction_sha=$(sha256sum "$R7_ROOT/source/lib/combined-operational-host-guard-transaction.sh" | awk '{print $1}')
-awk -F'|' -v OFS='|' -v plan_sha="$r7_plan_sha" -v transaction_sha="$r7_transaction_sha" '
-    $4 == "source/lib/combined-operational-host-guard-plan.sh" { $3 = plan_sha }
-    $4 == "source/lib/combined-operational-host-guard-transaction.sh" { $3 = transaction_sha }
-    { print }
-' "$R7_ROOT/source/build/monolith-runtime.manifest" > "$R7_ROOT/source/build/monolith-runtime.manifest.new"
-mv -- "$R7_ROOT/source/build/monolith-runtime.manifest.new" "$R7_ROOT/source/build/monolith-runtime.manifest"
-"$R7_ROOT/source/build/build-mvc-monolith.sh" "$TMP/r7-mvc" >/dev/null
-R7_SHA=05b12e106844af20fdce1390005ef01e638970215b3dbfa1726fbd0848837f44
-if [[ $(sha256sum "$TMP/r7-mvc" | awk '{print $1}') == "$R7_SHA" ]]; then
-    ok 'test reconstructs the exact deterministic R7 predecessor identity'
-else
-    bad 'test reconstructs the exact deterministic R7 predecessor identity'
+# Exercise predecessor semantics hermetically with a synthetic controller whose
+# exact hash is injected only into a private copied package. This proves the
+# content-hash gate without bundling an old monolith in the public repository.
+SYNTH_PROJECT=$TMP/synthetic-project
+cp -a -- "$ROOT" "$SYNTH_PROJECT"
+SYNTH_INSTALLER=$SYNTH_PROJECT/source/tools/install-mvc.sh
+cat > "$TMP/synthetic-prior-mvc" <<'SYNTH_PRIOR'
+#!/usr/bin/env bash
+if [[ ${1:-} == version ]]; then
+    printf '%s\n' 'Multi VPN Controller synthetic predecessor'
+    exit 0
 fi
+exit 99
+SYNTH_PRIOR
+chmod 755 "$TMP/synthetic-prior-mvc"
+SYNTH_SHA=$(sha256sum "$TMP/synthetic-prior-mvc" | awk '{print $1}')
+python - "$SYNTH_INSTALLER" "$SYNTH_SHA" <<'PY_INJECT'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); sha=sys.argv[2]
+s=p.read_text()
+needle="readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(\n"
+if needle not in s:
+    raise SystemExit('allowlist marker not found')
+s=s.replace(needle, needle+f"    '{sha}'\n", 1)
+p.write_text(s)
+PY_INJECT
 
-# `install` remains conservative: a recognized prior MVC controller must use
-# the explicit update action rather than being silently treated as a reinstall.
-cp -- "$TMP/r7-mvc" "$C_DST"
+cp -- "$TMP/synthetic-prior-mvc" "$C_DST"
 chmod 755 "$C_DST"
 set +e
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/prior-install.out" 2>&1
+PATH="$TMP/stubbin:$PATH" "$SYNTH_INSTALLER" install --root "$FAKE" > "$TMP/prior-install.out" 2>&1
 prior_install_rc=$?
 set -e
 if (( prior_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/prior-install.out" &&
-   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R7_SHA" ]]; then
-    ok 'install refuses an approved prior controller and requires explicit update'
+   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$SYNTH_SHA" ]]; then
+    ok 'install refuses an approved predecessor and requires explicit update'
 else
-    bad 'install refuses an approved prior controller and requires explicit update'
+    bad 'install refuses an approved predecessor and requires explicit update'
 fi
 
-# `update` accepts the exact allowlisted R7 content identity and atomically
-# promotes it directly to the final 2.4.1 controller.
 old_inode=$(stat -c %i -- "$C_DST")
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/prior-update.out"
+PATH="$TMP/stubbin:$PATH" "$SYNTH_INSTALLER" update --root "$FAKE" > "$TMP/prior-update.out"
 new_inode=$(stat -c %i -- "$C_DST")
 if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
    ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
-    ok 'update accepts exact approved R7 identity and atomically promotes to final 2.4.1'
+    ok 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 release'
 else
-    bad 'update accepts exact approved R7 identity and atomically promotes to final 2.4.1'
+    bad 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 release'
 fi
 
 # A same-name/version impostor is not accepted: replacement is hash-bound to
@@ -229,7 +243,7 @@ fi
 cp "$C_DST" "$TMP/good-controller"
 cat > "$C_DST" <<'UNKNOWN_CONTROLLER'
 #!/usr/bin/env bash
-[[ ${1:-} == version ]] && { echo 'Multi VPN Controller 2.4.1'; exit 0; }
+[[ ${1:-} == version ]] && { echo 'Multi VPN Controller 2.4.2'; exit 0; }
 exit 99
 UNKNOWN_CONTROLLER
 chmod 755 "$C_DST"
@@ -295,5 +309,5 @@ else
     bad 'installer contains no VPN/network mutation command surface'
 fi
 
-printf 'RESULT: MVC v2.4.1 authenticated install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
+printf 'RESULT: MVC v2.4.2 authenticated install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
 (( FAIL == 0 ))

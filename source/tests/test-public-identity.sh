@@ -34,8 +34,8 @@ done
 
 [[ -x $ROOT/dist/mvc ]] && ok 'generated public artifact is dist/mvc' || bad 'generated public artifact is dist/mvc'
 
-if [[ $($ROOT/dist/mvc version) == 'Multi VPN Controller 2.4.1' ]] &&
-   $ROOT/dist/mvc --help | grep -Fq 'Multi VPN Controller 2.4.1' &&
+if [[ $($ROOT/dist/mvc version) == 'Multi VPN Controller 2.4.2' ]] &&
+   $ROOT/dist/mvc --help | grep -Fq 'Multi VPN Controller 2.4.2' &&
    $ROOT/dist/mvc --help | grep -Fq 'sudo mvc connect'; then
     ok 'generated artifact reports and documents MVC identity'
 else
@@ -43,7 +43,7 @@ else
 fi
 
 info=$($ROOT/dist/mvc --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info" &&
    grep -Fxq 'emergency_recovery=/root/mvc-emergency-rollback' <<<"$info" &&
    grep -Fxq 'dual_recovery=/root/mvc-dual-recovery' <<<"$info"; then
     ok 'generated provenance exposes standalone MVC checkpoint and recovery paths'

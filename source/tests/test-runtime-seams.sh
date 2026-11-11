@@ -22,13 +22,13 @@ A=$TMP/a/mvc
 B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3A independent builds are byte-identical' || bad 'Stage-3A independent builds are byte-identical'
-[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
-$A --help | grep -Fxq 'Multi VPN Controller 2.4.1' && ok 'current help identifies v2.4.1 release' || bad 'current help identifies v2.4.1 release'
+[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
+$A --help | grep -Fxq 'Multi VPN Controller 2.4.2' && ok 'current help identifies v2.4.2 release' || bad 'current help identifies v2.4.2 release'
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
    grep -Fq 'mvc24e_dispatch "$@"' "$A"; then
-    ok 'v2.4.1 wrapper delegates lifecycle verbs to audited dispatcher'
+    ok 'v2.4.2 wrapper delegates lifecycle verbs to audited dispatcher'
 else
-    bad 'v2.4.1 wrapper delegates lifecycle verbs to audited dispatcher'
+    bad 'v2.4.2 wrapper delegates lifecycle verbs to audited dispatcher'
 fi
 
 # Source the generated artifact only to inspect/test its definitions. Passing

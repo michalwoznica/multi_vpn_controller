@@ -23,14 +23,14 @@ A=$TMP/a/mvc
 B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3B independent builds are byte-identical' || bad 'Stage-3B independent builds are byte-identical'
-[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
+[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
 
 verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$verbose" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v241-release' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$verbose" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v242-release' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
    grep -Fxq "verify_source_sha256=$verify_sha" <<<"$verbose"; then

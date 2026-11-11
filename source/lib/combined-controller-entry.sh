@@ -42,7 +42,7 @@ mvc24e_dispatch() {
     case "$verb" in
         version|--version)
             (( $# == 1 )) || return 2
-            printf '%s\n' 'Multi VPN Controller 2.4.1'
+            printf '%s\n' 'Multi VPN Controller 2.4.2'
             ;;
         preflight)
             # Explicit read-only admission verb; v2.3.0 is not involved.

@@ -11,7 +11,7 @@ bad(){ printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
 TMP=$(mktemp -d); trap 'rm -rf -- "$TMP"' EXIT
 sed '$d' "$A" > "$TMP/body"
 
-[[ $($A version) == 'Multi VPN Controller 2.4.1' ]] && ok 'generated release reports v2.4.1' || bad 'generated release reports v2.4.1'
+[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'generated release reports v2.4.2' || bad 'generated release reports v2.4.2'
 
 BODY=$TMP/body bash -s <<'CHECK' && ok 'generated release contains both authenticated dropout reconciler families' || bad 'generated release contains both authenticated dropout reconciler families'
 set -euo pipefail

@@ -1,5 +1,23 @@
 # Changelog
 
+## MVC 2.4.2 final release promotion
+
+- Promote the generated controller to stable `MVC_V242_RELEASE` / `audited-dispatch-mvc-v242-release` provenance; physical validation remains external and hash-specific.
+- Keep the physically validated R1/R2 runtime inputs unchanged; only release provenance and installer authorization change the generated artifact identity.
+- Allow `install-mvc.sh update` to authenticate the exact physically validated 2.4.2 candidate hash `a334261fd892adea75d9d0ee7680e8215666d2f379334dbe96eb69e7fdad9001` as an approved predecessor.
+- Extend installer regression coverage to reconstruct that exact candidate from source and prove candidate -> final 2.4.2 promotion through the normal update path.
+- No routing policy, nftables rule semantics, DNS policy, persistent record schema, recovery-tool content, or VPN lifecycle implementation changed.
+
+## MVC 2.4.2 R1 dependency preflight and scratch cleanup
+
+- Add an explicit builder prerequisite inventory that reports the exact missing build tool before creating the requested output path.
+- Add a monolith bootstrap prerequisite inventory before embedded runtime resources are materialized in `/dev/shm`.
+- Install process-level EXIT cleanup for `/dev/shm/mvc-monolith-assets.*`, removing successful and failed initialization scratch state.
+- Expand OpenVPN and WireGuard read-only admission to the same complete connect-time command inventory, including previously implicit utilities such as `dig`, `mkdir`, `cp`, `cut`, `sed`, `sort`, `wc`, and `realpath`.
+- Report the exact missing runtime command and reject the connection before MVC publishes a transaction or mutates nftables, routes, NetworkManager profiles, or VPN state.
+- Add hermetic regressions for missing bootstrap tools, `jq`, `nft`, `mkdir`, and `dig`, command-inventory completeness, no network-command execution before dependency failure, and no leaked monolith asset directory.
+- Keep disconnect authentication/recovery semantics unchanged; the broad connect-time inventory is not imposed as a new prerequisite for authenticated teardown.
+
 ## MVC R14 final 2.4.1 release promotion
 
 - Promote the generated controller to stable `MVC_V241_RELEASE` / `audited-dispatch-mvc-v241-release` provenance; the executable no longer self-labels as a candidate or claims that physical validation is pending.
