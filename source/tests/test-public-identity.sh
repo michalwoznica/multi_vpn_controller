@@ -43,7 +43,7 @@ else
 fi
 
 info=$($ROOT/dist/mvc --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP' <<<"$info" &&
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info" &&
    grep -Fxq 'emergency_recovery=/root/mvc-emergency-rollback' <<<"$info" &&
    grep -Fxq 'dual_recovery=/root/mvc-dual-recovery' <<<"$info"; then
     ok 'generated provenance exposes standalone MVC checkpoint and recovery paths'

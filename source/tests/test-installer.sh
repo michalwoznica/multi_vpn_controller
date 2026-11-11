@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MVC 2.4.2 R1 — deterministic candidate + authenticated fake-root install/update/remove.
+# MVC 2.4.2 release — deterministic artifact + authenticated fake-root install/update/remove.
 set -euo pipefail
 umask 077
 export LC_ALL=C
@@ -27,11 +27,11 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.2 independent builds are byte-identical' || bad 'v2.4.2 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.2 artifact equals fresh deterministic build' || bad 'checked-in v2.4.2 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP' <<<"$info" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v242-candidate-physical-pending' <<<"$info"; then
-    ok 'v2.4.2 provenance records candidate identity'
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v242-release' <<<"$info"; then
+    ok 'v2.4.2 provenance records stable release identity'
 else
-    bad 'v2.4.2 provenance records candidate identity'
+    bad 'v2.4.2 provenance records stable release identity'
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
@@ -118,14 +118,73 @@ else
     bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
-# The public v2.4.1 release is the real supported predecessor for this 2.4.2
-# candidate. Keep the authorization bound to its exact physically validated
+# The public v2.4.1 release remains a supported predecessor for 2.4.2.
+# Keep the authorization bound to its exact physically validated
 # content hash; no banner/version string is sufficient.
 V241_FINAL_SHA=d1b3fb664a5873458a12fbb5a278a3e686c1d2b258ef15789187910b73512208
 if grep -Fq "'$V241_FINAL_SHA'" "$INSTALLER"; then
     ok 'installer allowlist contains exact final v2.4.1 predecessor hash'
 else
     bad 'installer allowlist contains exact final v2.4.1 predecessor hash'
+fi
+
+# Reconstruct the exact physically validated 2.4.2 R1/R2 candidate from the
+# final source by reverting only release-provenance text in a private copy of
+# the builder. This avoids bundling a predecessor binary while proving that
+# the real candidate hash is authorized for final promotion.
+R1_PROJECT=$TMP/r1-candidate-project
+cp -a -- "$ROOT" "$R1_PROJECT"
+R1_BUILDER=$R1_PROJECT/source/build/build-mvc-monolith.sh
+python - "$R1_BUILDER" <<'PY_R1'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+s=p.read_text()
+repls=[
+    ('# Public v2.4.2 release.', '# Public v2.4.2 development candidate.'),
+    ("MVC24_BUILD_CHECKPOINT='MVC_V242_RELEASE'", "MVC24_BUILD_CHECKPOINT='MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP'"),
+    ("mvc24_emit '# Multi VPN Controller 2.4.2 operational release.'", "mvc24_emit '# Multi VPN Controller 2.4.2 development candidate.'"),
+    ('# Multi VPN Controller v2.4.2 release wrapper — audited dispatcher', '# Multi VPN Controller v2.4.2 candidate wrapper — audited dispatcher'),
+    ('This is the deterministic MVC v2.4.2 release artifact. Validation evidence is\nhash-specific; verify the exact artifact identity used for deployment.', 'This is the deterministic MVC v2.4.2 development candidate. Validation evidence is\nhash-specific; controlled live-host validation is required before release promotion.'),
+    ("printf 'authority=audited-dispatch-mvc-v242-release\\n'", "printf 'authority=audited-dispatch-mvc-v242-candidate-physical-pending\\n'"),
+    ("'Multi VPN Controller v2.4.2 monolith is incomplete.'", "'Multi VPN Controller v2.4.2 candidate monolith is incomplete.'"),
+]
+for old,new in repls:
+    if s.count(old) != 1:
+        raise SystemExit(f'candidate reconstruction anchor mismatch: {old!r} count={s.count(old)}')
+    s=s.replace(old,new,1)
+p.write_text(s)
+PY_R1
+R1_MVC=$TMP/r1-candidate-mvc
+"$R1_BUILDER" "$R1_MVC" >/dev/null
+R1_SHA=a334261fd892adea75d9d0ee7680e8215666d2f379334dbe96eb69e7fdad9001
+if [[ $(sha256sum "$R1_MVC" | awk '{print $1}') == "$R1_SHA" ]] && grep -Fq "'$R1_SHA'" "$INSTALLER"; then
+    ok 'test reconstructs exact physically validated v2.4.2 candidate and installer allowlists it'
+else
+    bad 'test reconstructs exact physically validated v2.4.2 candidate and installer allowlists it'
+fi
+
+cp -- "$R1_MVC" "$C_DST"
+chmod 755 "$C_DST"
+set +e
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r1-install.out" 2>&1
+r1_install_rc=$?
+set -e
+if (( r1_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r1-install.out" &&
+   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R1_SHA" ]]; then
+    ok 'install refuses exact physically validated v2.4.2 candidate and requires update'
+else
+    bad 'install refuses exact physically validated v2.4.2 candidate and requires update'
+fi
+
+old_inode=$(stat -c %i -- "$C_DST")
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r1-update.out"
+new_inode=$(stat -c %i -- "$C_DST")
+if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
+   ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
+    ok 'update promotes exact physically validated v2.4.2 candidate to final release'
+else
+    bad 'update promotes exact physically validated v2.4.2 candidate to final release'
 fi
 
 # Exercise predecessor semantics hermetically with a synthetic controller whose
@@ -174,9 +233,9 @@ PATH="$TMP/stubbin:$PATH" "$SYNTH_INSTALLER" update --root "$FAKE" > "$TMP/prior
 new_inode=$(stat -c %i -- "$C_DST")
 if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
    ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
-    ok 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 candidate'
+    ok 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 release'
 else
-    bad 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 candidate'
+    bad 'update accepts an exact allowlisted predecessor and atomically promotes to v2.4.2 release'
 fi
 
 # A same-name/version impostor is not accepted: replacement is hash-bound to

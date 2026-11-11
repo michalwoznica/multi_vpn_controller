@@ -1,5 +1,13 @@
 # Changelog
 
+## MVC 2.4.2 final release promotion
+
+- Promote the generated controller to stable `MVC_V242_RELEASE` / `audited-dispatch-mvc-v242-release` provenance; physical validation remains external and hash-specific.
+- Keep the physically validated R1/R2 runtime inputs unchanged; only release provenance and installer authorization change the generated artifact identity.
+- Allow `install-mvc.sh update` to authenticate the exact physically validated 2.4.2 candidate hash `a334261fd892adea75d9d0ee7680e8215666d2f379334dbe96eb69e7fdad9001` as an approved predecessor.
+- Extend installer regression coverage to reconstruct that exact candidate from source and prove candidate -> final 2.4.2 promotion through the normal update path.
+- No routing policy, nftables rule semantics, DNS policy, persistent record schema, recovery-tool content, or VPN lifecycle implementation changed.
+
 ## MVC 2.4.2 R1 dependency preflight and scratch cleanup
 
 - Add an explicit builder prerequisite inventory that reports the exact missing build tool before creating the requested output path.

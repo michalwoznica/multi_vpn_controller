@@ -60,7 +60,7 @@ else
 fi
 
 info=$("$TMP/mvc" --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP' <<<"$info"; then
+if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info"; then
   pass 'generated release retains repaired bootstrap resource path'
 else
   fail 'generated release retains repaired bootstrap resource path'
