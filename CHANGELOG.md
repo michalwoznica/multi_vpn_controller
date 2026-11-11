@@ -1,5 +1,13 @@
 # Changelog
 
+## MVC R14 final 2.4.1 release promotion
+
+- Promote the generated controller to stable `MVC_V241_RELEASE` / `audited-dispatch-mvc-v241-release` provenance; the executable no longer self-labels as a candidate or claims that physical validation is pending.
+- Keep validation evidence explicitly hash-specific rather than embedding mutable test-status claims in the executable.
+- Allow `install-mvc.sh update` to authenticate the exact physically proven R8 controller hash as an approved predecessor, while retaining the existing exact R7 predecessor and refusing unknown or modified controllers.
+- Extend installer regression coverage to reconstruct the exact R8 artifact (`594b4f747db4dd6cd7d3efe86994a3027f672c30db80749ffbca0c4113ec2edd`) and prove R8 -> final 2.4.1 promotion through the real update path.
+- No VPN lifecycle module, nftables resource, routing/DNS policy, persistent record schema, read-only verifier, or recovery-tool content changed.
+
 ## MVC R9 authenticated update path
 
 - Keep the physically proven R8 controller/runtime artifact unchanged.

@@ -32,11 +32,11 @@ if [[ $(stat -c %a -- "$A") == 755 ]]; then ok 'generated artifact mode is 0755'
 if bash -n "$A"; then ok 'generated artifact passes bash -n'; else bad 'generated artifact passes bash -n'; fi
 
 if [[ $($A version) == 'Multi VPN Controller 2.4.1' ]]; then ok 'generated version identity is exact'; else bad 'generated version identity is exact'; fi
-if $A --help | grep -Fq 'public identity release candidate'; then ok 'current generated help identifies v2.4.1 candidate'; else bad 'current generated help identifies v2.4.1 candidate'; fi
+if $A --help | grep -Fxq 'Multi VPN Controller 2.4.1'; then ok 'current generated help identifies v2.4.1 release'; else bad 'current generated help identifies v2.4.1 release'; fi
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR" <<< "$info" &&
+if grep -Fxq "checkpoint=MVC_V241_RELEASE" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'

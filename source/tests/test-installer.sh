@@ -27,11 +27,11 @@ B=$TMP/b/mvc
 cmp -s -- "$A" "$B" && ok 'v2.4.1 independent builds are byte-identical' || bad 'v2.4.1 independent builds are byte-identical'
 cmp -s -- "$A" "$DIST" && ok 'checked-in v2.4.1 artifact equals fresh deterministic build' || bad 'checked-in v2.4.1 artifact equals fresh deterministic build'
 info=$($A --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR' <<<"$info" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$info"; then
-    ok 'v2.4.1 provenance records candidate with physical proof pending'
+if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$info" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v241-release' <<<"$info"; then
+    ok 'v2.4.1 provenance records stable release identity'
 else
-    bad 'v2.4.1 provenance records candidate with physical proof pending'
+    bad 'v2.4.1 provenance records stable release identity'
 fi
 
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
@@ -113,17 +113,69 @@ old_inode=$(stat -c %i -- "$C_DST")
 PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/update.out"
 new_inode=$(stat -c %i -- "$C_DST")
 if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" && ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
-    ok 'update atomically replaces exact managed candidate and leaves no staging residue'
+    ok 'update atomically replaces exact managed release and leaves no staging residue'
 else
-    bad 'update atomically replaces exact managed candidate and leaves no staging residue'
+    bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
-# Reconstruct the exact R7 controller from the current tree using the documented
-# R8-only delta. This avoids carrying predecessor binaries in the public tree
-# while proving that the allowlisted hash is the real deterministic R7 artifact.
+# Reconstruct the exact physically proven R8 controller by reversing only the
+# final-release provenance wrapper changes in the current builder. This avoids
+# carrying predecessor binaries in the public tree while proving that the R8
+# allowlist entry is bound to the real deterministic artifact.
+R8_ROOT=$TMP/r8-rebuild
+mkdir -p "$R8_ROOT"
+cp -a "$ROOT/source" "$R8_ROOT/source"
+R8_BUILDER=$R8_ROOT/source/build/build-mvc-monolith.sh
+sed -i \
+    -e 's/# Public v2.4.1 release\./# Public v2.4.1 release candidate./' \
+    -e 's/# Lifecycle verbs delegate to the audited dispatcher; validation evidence remains hash-specific\./# Lifecycle verbs delegate to the audited dispatcher; v2.4.1 physical proof remains pending./' \
+    -e "s/MVC24_BUILD_CHECKPOINT='MVC_V241_RELEASE'/MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'/" \
+    -e "s/mvc24_emit '# Multi VPN Controller 2.4.1 operational release\.'/mvc24_emit '# C24A Stage 3 v2.4.1 operational candidate.'/" \
+    -e 's/# Multi VPN Controller v2.4.1 release wrapper — audited dispatcher/# C24A Stage-3 v2.4.1 release wrapper — audited dispatcher, physical proof pending/' \
+    -e 's/Multi VPN Controller 2.4.1$/Multi VPN Controller 2.4.1 — public identity release candidate/' \
+    -e 's/This is the deterministic MVC v2.4.1 release artifact\. Validation evidence is/This MVC v2.4.1 candidate has completed offline identity\/build regression; physical proof/' \
+    -e 's/hash-specific; verify the exact artifact identity used for deployment\./of this exact hash remains pending controlled live-host validation./' \
+    -e 's/authority=audited-dispatch-mvc-v241-release/authority=audited-dispatch-mvc-v241-candidate-physical-pending/' \
+    -e 's/Multi VPN Controller v2.4.1 monolith is incomplete\./Multi VPN Controller v2.4.1 candidate monolith is incomplete./' \
+    "$R8_BUILDER"
+"$R8_BUILDER" "$TMP/r8-mvc" >/dev/null
+R8_SHA=594b4f747db4dd6cd7d3efe86994a3027f672c30db80749ffbca0c4113ec2edd
+if [[ $(sha256sum "$TMP/r8-mvc" | awk '{print $1}') == "$R8_SHA" ]]; then
+    ok 'test reconstructs the exact physically proven R8 predecessor identity'
+else
+    bad 'test reconstructs the exact physically proven R8 predecessor identity'
+fi
+
+# `install` remains conservative: the exact R8 predecessor must use explicit
+# update rather than being silently treated as a reinstall.
+cp -- "$TMP/r8-mvc" "$C_DST"
+chmod 755 "$C_DST"
+set +e
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r8-install.out" 2>&1
+r8_install_rc=$?
+set -e
+if (( r8_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r8-install.out" &&
+   [[ $(sha256sum "$C_DST" | awk '{print $1}') == "$R8_SHA" ]]; then
+    ok 'install refuses exact R8 predecessor and requires explicit update'
+else
+    bad 'install refuses exact R8 predecessor and requires explicit update'
+fi
+
+old_inode=$(stat -c %i -- "$C_DST")
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r8-update.out"
+new_inode=$(stat -c %i -- "$C_DST")
+if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
+   ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
+    ok 'update accepts exact approved R8 identity and atomically promotes to final 2.4.1'
+else
+    bad 'update accepts exact approved R8 identity and atomically promotes to final 2.4.1'
+fi
+
+# Reconstruct the exact R7 controller from the reconstructed R8 source using the
+# documented R8-only delta. This proves the older allowlist entry remains real.
 R7_ROOT=$TMP/r7-rebuild
 mkdir -p "$R7_ROOT"
-cp -a "$ROOT/source" "$R7_ROOT/source"
+cp -a "$R8_ROOT/source" "$R7_ROOT/source"
 sed -i "s/MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'/MVC24_BUILD_CHECKPOINT='MVC_R7_STANDALONE_PUBLIC_IDENTITY'/" \
     "$R7_ROOT/source/build/build-mvc-monolith.sh"
 sed -i 's/15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23/b2e817bf3f22853502f547feef07923e2c4ee5449e520cef6c72189611bd7b03/g' \
@@ -161,19 +213,19 @@ else
 fi
 
 # `update` accepts the exact allowlisted R7 content identity and atomically
-# promotes it to the current physically proven R8 controller.
+# promotes it directly to the final 2.4.1 controller.
 old_inode=$(stat -c %i -- "$C_DST")
 PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/prior-update.out"
 new_inode=$(stat -c %i -- "$C_DST")
 if [[ $new_inode != "$old_inode" ]] && cmp -s -- "$C_DST" "$DIST" &&
    ! find "$FAKE/usr/local/sbin" "$FAKE/root" -maxdepth 1 -name '.*.new.*' -print -quit | grep -q .; then
-    ok 'update accepts exact approved R7 identity and atomically promotes to R8'
+    ok 'update accepts exact approved R7 identity and atomically promotes to final 2.4.1'
 else
-    bad 'update accepts exact approved R7 identity and atomically promotes to R8'
+    bad 'update accepts exact approved R7 identity and atomically promotes to final 2.4.1'
 fi
 
 # A same-name/version impostor is not accepted: replacement is hash-bound to
-# the exact MVC package candidate.
+# the exact MVC package release.
 cp "$C_DST" "$TMP/good-controller"
 cat > "$C_DST" <<'UNKNOWN_CONTROLLER'
 #!/usr/bin/env bash
@@ -243,5 +295,5 @@ else
     bad 'installer contains no VPN/network mutation command surface'
 fi
 
-printf 'RESULT: MVC-R9 authenticated install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
+printf 'RESULT: MVC v2.4.1 authenticated install/update/remove %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
 (( FAIL == 0 ))

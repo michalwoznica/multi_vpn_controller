@@ -25,7 +25,7 @@ sha256sum /tmp/mvc.a /tmp/mvc.b
 Do not edit `dist/mvc` directly. Make changes in the modular source tree, then:
 
 1. update the SHA-256 entry for each intentionally changed manifest input;
-2. update version/provenance in the builder when producing a new release candidate;
+2. update version/provenance in the builder when producing a new release artifact;
 3. rebuild the monolith;
 4. run `./source/tests/run-tests.sh`;
 5. perform any required live-host validation for the new artifact before promoting it as a release.

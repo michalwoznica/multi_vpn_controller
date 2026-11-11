@@ -59,11 +59,11 @@ else
 fi
 
 info=$("$TMP/mvc" --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR' <<<"$info"; then
-  pass 'generated monolith carries R8 repair checkpoint'
+if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$info"; then
+  pass 'generated release retains repaired bootstrap resource path'
 else
-  fail 'generated monolith carries R8 repair checkpoint'
+  fail 'generated release retains repaired bootstrap resource path'
 fi
 
-printf 'RESULT: MVC-R8 bootstrap resource pin regression %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC v2.4.1 bootstrap resource pin regression %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

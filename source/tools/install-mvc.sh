@@ -68,6 +68,7 @@ mvc24i_hash() { sha256sum -- "$1" | awk '{print $1}'; }
 # Trust is content-hash based; version/banner strings are never sufficient.
 readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
     '05b12e106844af20fdce1390005ef01e638970215b3dbfa1726fbd0848837f44'
+    '594b4f747db4dd6cd7d3efe86994a3027f672c30db80749ffbca0c4113ec2edd'
 )
 
 mvc24i_is_approved_update_controller_sha256() {
@@ -100,8 +101,8 @@ mvc24i_package_verify() {
     builder_sha=$(mvc24i_hash "$builder")
     emergency_sha=$(mvc24i_hash "$emergency_src")
     dual_sha=$(mvc24i_hash "$dual_src")
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR ]] || mvc24i_die 'controller checkpoint mismatch'
-    [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v241-candidate-physical-pending ]] || mvc24i_die 'controller authority provenance mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_V241_RELEASE ]] || mvc24i_die 'controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v241-release ]] || mvc24i_die 'controller authority provenance mismatch'
     [[ $(mvc24i_info_value "$info" manifest_sha256) == "$manifest_sha" ]] || mvc24i_die 'controller/manifest provenance mismatch'
     [[ $(mvc24i_info_value "$info" builder_sha256) == "$builder_sha" ]] || mvc24i_die 'controller/builder provenance mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'emergency recovery provenance mismatch'
@@ -190,7 +191,7 @@ mvc24i_verify_installed() {
     mvc24i_verify_one "$dual_dst" 700 "$dual_sha" 'dual recovery tool'
     [[ $($controller_dst version) == 'Multi VPN Controller 2.4.1' ]] || mvc24i_die 'installed controller version mismatch'
     info=$($controller_dst --monolith-build-info) || mvc24i_die 'installed controller provenance unreadable'
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR ]] || mvc24i_die 'installed controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_V241_RELEASE ]] || mvc24i_die 'installed controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'installed emergency recovery identity mismatch'
     [[ $(mvc24i_info_value "$info" dual_recovery_sha256) == "$dual_sha" ]] || mvc24i_die 'installed dual recovery identity mismatch'
 }

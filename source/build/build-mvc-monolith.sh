@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Multi VPN Controller 2.4.1 — deterministic monolith builder.
-# Public v2.4.1 release candidate.
-# Lifecycle verbs delegate to the audited dispatcher; v2.4.1 physical proof remains pending.
+# Public v2.4.1 release.
+# Lifecycle verbs delegate to the audited dispatcher; validation evidence remains hash-specific.
 set -euo pipefail
 umask 077
 export LC_ALL=C
 
 MVC24_BUILD_VERSION='2.4.1'
-MVC24_BUILD_CHECKPOINT='MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR'
+MVC24_BUILD_CHECKPOINT='MVC_V241_RELEASE'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
@@ -166,7 +166,7 @@ mvc24_emit '# Multi VPN Controller 2.4.1'
 mvc24_emit '# GENERATED RELEASE ARTIFACT — DO NOT EDIT DIRECTLY'
 mvc24_emit '# Changes belong in the modular source tree and must be rebuilt.'
 mvc24_emit '#'
-mvc24_emit '# C24A Stage 3 v2.4.1 operational candidate.'
+mvc24_emit '# Multi VPN Controller 2.4.1 operational release.'
 mvc24_emit '# Generated-runtime equivalence is proven; lifecycle delegates to the audited public dispatcher.'
 mvc24_emit "# Source checkpoint: $MVC24_BUILD_CHECKPOINT"
 mvc24_emit "# Runtime manifest SHA-256: $mvc24_manifest_sha"
@@ -559,7 +559,7 @@ mvc24_build_emit_verify_functions
 cat >> "$mvc24_tmp" <<'BASH_STAGE5_WRAPPER'
 
 # ============================================================================
-# C24A Stage-3 v2.4.1 release wrapper — audited dispatcher, physical proof pending
+# Multi VPN Controller v2.4.1 release wrapper — audited dispatcher
 # ============================================================================
 # Monolith-specific verifier status callback. `verify` observes this artifact's
 # own read-only status implementation, never a sibling controller.
@@ -597,7 +597,7 @@ mvc24mon_require_stage5_functions() {
 
 mvc24mon_stage5_help() {
     cat <<'HELP'
-Multi VPN Controller 2.4.1 — public identity release candidate
+Multi VPN Controller 2.4.1
 
 Daily commands:
   version | --version
@@ -633,8 +633,8 @@ Independent recovery tools:
   /root/mvc-emergency-rollback
   /root/mvc-dual-recovery
 
-This MVC v2.4.1 candidate has completed offline identity/build regression; physical proof
-of this exact hash remains pending controlled live-host validation.
+This is the deterministic MVC v2.4.1 release artifact. Validation evidence is
+hash-specific; verify the exact artifact identity used for deployment.
 
 Development/internal diagnostics retained for regression testing:
   --monolith-build-info
@@ -645,7 +645,7 @@ HELP
 mvc24mon_stage5_build_info() {
     printf 'version=%s\n' "$MVC24_MONOLITH_VERSION"
     printf 'checkpoint=%s\n' "$MVC24_MONOLITH_CHECKPOINT"
-    printf 'authority=audited-dispatch-mvc-v241-candidate-physical-pending\n'
+    printf 'authority=audited-dispatch-mvc-v241-release\n'
     printf 'manifest_sha256=%s\n' "$MVC24_MONOLITH_MANIFEST_SHA256"
     printf 'builder_sha256=%s\n' "$MVC24_MONOLITH_BUILDER_SHA256"
     printf 'verify_source_sha256=%s\n' "$MVC24_MONOLITH_VERIFY_SOURCE_SHA256"
@@ -674,7 +674,7 @@ mvc24mon_stage5_resource_selftest() {
 
 mvc24mon_stage5_main() {
     mvc24mon_require_stage5_functions || {
-        printf '%s\n' 'Multi VPN Controller v2.4.1 candidate monolith is incomplete.' >&2
+        printf '%s\n' 'Multi VPN Controller v2.4.1 monolith is incomplete.' >&2
         return 70
     }
     case ${1:-} in

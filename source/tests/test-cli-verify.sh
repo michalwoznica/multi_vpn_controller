@@ -29,8 +29,8 @@ verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_R8_BOOTSTRAP_RESOURCE_PIN_REPAIR' <<<"$verbose" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v241-candidate-physical-pending' <<<"$verbose" &&
+if grep -Fxq 'checkpoint=MVC_V241_RELEASE' <<<"$verbose" &&
+   grep -Fxq 'authority=audited-dispatch-mvc-v241-release' <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
    grep -Fxq "verify_source_sha256=$verify_sha" <<<"$verbose"; then
@@ -54,10 +54,10 @@ if grep -Fq '/root/mvc-emergency-rollback' <<<"$help" &&
 else
     bad 'help documents both independent recovery paths'
 fi
-if grep -Fq 'diagnostic only' <<<"$help" && grep -Fq 'physical proof' <<<"$help"; then
-    ok 'help separates diagnostic verify and states v2.4.1 physical boundary'
+if grep -Fq 'diagnostic only' <<<"$help" && grep -Fq 'Validation evidence is' <<<"$help" && grep -Fq 'hash-specific' <<<"$help"; then
+    ok 'help separates diagnostic verify and states hash-specific validation boundary'
 else
-    bad 'help separates diagnostic verify and states v2.4.1 physical boundary'
+    bad 'help separates diagnostic verify and states hash-specific validation boundary'
 fi
 if $A verify --help | grep -Fq 'Usage: sudo mvc verify [--no-internet-check]'; then
     ok 'verify help uses monolith-native CLI syntax'
