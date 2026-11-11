@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Multi VPN Controller 2.4.1 — authenticated package installer.
+# Multi VPN Controller 2.4.2 — authenticated package installer.
 # File-management only. Never mutates VPN/network state.
 # Lowercase internal functions use mvc24*; uppercase internal variables use MVC24*.
 set -euo pipefail
@@ -69,6 +69,7 @@ mvc24i_hash() { sha256sum -- "$1" | awk '{print $1}'; }
 readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
     '05b12e106844af20fdce1390005ef01e638970215b3dbfa1726fbd0848837f44'
     '594b4f747db4dd6cd7d3efe86994a3027f672c30db80749ffbca0c4113ec2edd'
+    'd1b3fb664a5873458a12fbb5a278a3e686c1d2b258ef15789187910b73512208'
 )
 
 mvc24i_is_approved_update_controller_sha256() {
@@ -101,8 +102,8 @@ mvc24i_package_verify() {
     builder_sha=$(mvc24i_hash "$builder")
     emergency_sha=$(mvc24i_hash "$emergency_src")
     dual_sha=$(mvc24i_hash "$dual_src")
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_V241_RELEASE ]] || mvc24i_die 'controller checkpoint mismatch'
-    [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v241-release ]] || mvc24i_die 'controller authority provenance mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP ]] || mvc24i_die 'controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" authority) == audited-dispatch-mvc-v242-candidate-physical-pending ]] || mvc24i_die 'controller authority provenance mismatch'
     [[ $(mvc24i_info_value "$info" manifest_sha256) == "$manifest_sha" ]] || mvc24i_die 'controller/manifest provenance mismatch'
     [[ $(mvc24i_info_value "$info" builder_sha256) == "$builder_sha" ]] || mvc24i_die 'controller/builder provenance mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'emergency recovery provenance mismatch'
@@ -189,9 +190,9 @@ mvc24i_verify_installed() {
     mvc24i_verify_one "$controller_dst" 755 "$controller_sha" controller
     mvc24i_verify_one "$emergency_dst" 700 "$emergency_sha" 'emergency recovery tool'
     mvc24i_verify_one "$dual_dst" 700 "$dual_sha" 'dual recovery tool'
-    [[ $($controller_dst version) == 'Multi VPN Controller 2.4.1' ]] || mvc24i_die 'installed controller version mismatch'
+    [[ $($controller_dst version) == 'Multi VPN Controller 2.4.2' ]] || mvc24i_die 'installed controller version mismatch'
     info=$($controller_dst --monolith-build-info) || mvc24i_die 'installed controller provenance unreadable'
-    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_V241_RELEASE ]] || mvc24i_die 'installed controller checkpoint mismatch'
+    [[ $(mvc24i_info_value "$info" checkpoint) == MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP ]] || mvc24i_die 'installed controller checkpoint mismatch'
     [[ $(mvc24i_info_value "$info" emergency_recovery_sha256) == "$emergency_sha" ]] || mvc24i_die 'installed emergency recovery identity mismatch'
     [[ $(mvc24i_info_value "$info" dual_recovery_sha256) == "$dual_sha" ]] || mvc24i_die 'installed dual recovery identity mismatch'
 }
@@ -229,7 +230,7 @@ mvc24i_install_or_update() {
     mv -fT -- "$controller_tmp" "$controller_dst" || { rm -f -- "$controller_tmp"; mvc24i_die 'failed to commit controller; recovery tools may already be updated, which is fail-closed'; }
 
     mvc24i_verify_installed
-    printf 'RESULT: MULTI VPN CONTROLLER 2.4.1 FILE SET INSTALLED AND VERIFIED%s\n' "$( [[ $root_prefix == / ]] && printf '' || printf ' IN FAKE ROOT' )"
+    printf 'RESULT: MULTI VPN CONTROLLER 2.4.2 FILE SET INSTALLED AND VERIFIED%s\n' "$( [[ $root_prefix == / ]] && printf '' || printf ' IN FAKE ROOT' )"
 }
 
 mvc24i_uninstall() {
@@ -253,11 +254,11 @@ mvc24i_uninstall() {
     for p in "$controller_dst" "$emergency_dst" "$dual_dst"; do
         [[ ! -e $p && ! -L $p ]] || mvc24i_die "failed to remove target: $p"
     done
-    printf 'RESULT: MULTI VPN CONTROLLER 2.4.1 FILE SET REMOVED; NETWORK STATE WAS NOT MUTATED%s\n' "$( [[ $root_prefix == / ]] && printf '' || printf ' (FAKE ROOT)' )"
+    printf 'RESULT: MULTI VPN CONTROLLER 2.4.2 FILE SET REMOVED; NETWORK STATE WAS NOT MUTATED%s\n' "$( [[ $root_prefix == / ]] && printf '' || printf ' (FAKE ROOT)' )"
 }
 
 case $action in
     install|update) mvc24i_install_or_update ;;
-    verify) mvc24i_package_verify; mvc24i_verify_installed; printf '%s\n' 'RESULT: INSTALLED MULTI VPN CONTROLLER 2.4.1 FILE SET VERIFIED' ;;
+    verify) mvc24i_package_verify; mvc24i_verify_installed; printf '%s\n' 'RESULT: INSTALLED MULTI VPN CONTROLLER 2.4.2 FILE SET VERIFIED' ;;
     uninstall) mvc24i_uninstall ;;
 esac

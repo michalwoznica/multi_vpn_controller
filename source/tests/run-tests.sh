@@ -9,6 +9,7 @@ TESTS=(
   test-builder.sh
   test-bootstrap-resource-pin.sh
   test-runtime-seams.sh
+  test-dependency-preflight-cleanup.sh
   test-verifier.sh
   test-cli-verify.sh
   test-structural-equivalence.sh

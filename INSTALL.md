@@ -2,13 +2,17 @@
 
 ## Host prerequisites
 
-MVC uses NetworkManager for connection lifecycle and performs a live-admission command check before protected activation. The host must provide these commands:
+MVC uses NetworkManager for connection lifecycle and performs a complete connect-time command inventory during read-only admission, before it publishes a transaction or mutates nftables, routes, NetworkManager profiles, or VPN state. The host must provide these commands:
 
 ```text
-nft jq ip nmcli gdbus flock wg pgrep sha256sum awk cmp stat sleep
+awk cat chmod cmp cp cut dig dirname find flock gdbus getent grep ip jq ln
+mkdir mktemp mv nft nmcli pgrep readlink realpath rm rmdir sed sha256sum
+sleep sort stat tr wc wg
 ```
 
-Command names are listed rather than distribution package names because package ownership differs across Linux distributions. OpenVPN modes additionally require NetworkManager OpenVPN support and a saved NetworkManager OpenVPN profile that MVC can use non-interactively.
+Command names are listed rather than distribution package names because package ownership differs across Linux distributions. Most of the longer list is ordinary base userspace; the explicit inventory exists so MVC can name a missing command before protected activation rather than discover it after mutation. OpenVPN modes additionally require NetworkManager OpenVPN support and a saved NetworkManager OpenVPN profile that MVC can use non-interactively.
+
+The generated monolith also performs a smaller bootstrap check before materializing its private embedded resources in `/dev/shm`. Failed or successful lifecycle commands remove that scratch directory on process exit.
 
 ### Validated MVC 2.4.1 environment
 
@@ -32,6 +36,8 @@ MVC does not currently claim these as minimum supported versions. They are the e
 | NetworkManager OpenVPN plugin | 1.12.5 | `networkmanager-openvpn 1.12.5-2` |
 
 `gdbus` itself does not expose a `--version` command in this environment; its reference version is therefore the providing `glib2` package version. MVC's AWK code intentionally uses a conservative, portable subset of AWK rather than GNU-only facilities, although the final release was validated with GNU Awk 5.4.1.
+
+The 2.4.1 capture recorded the versions most relevant during release validation, not every base utility later surfaced by the stricter 2.4.2 command inventory. Utilities such as `dig`, `find`, `grep`, `sed`, and `getent` were present on the validated host where their code paths were exercised, but their exact package versions were not separately captured for the 2.4.1 release record.
 
 ## Boot policy
 

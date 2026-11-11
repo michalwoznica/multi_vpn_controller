@@ -200,7 +200,7 @@ done
 mkdir -m 700 "$TMP/isolated" "$TMP/isolated/resources"
 cp -- "$MONOLITH" "$TMP/isolated/mvc"
 chmod 755 "$TMP/isolated/mvc"
-if [[ $($TMP/isolated/mvc version) == 'Multi VPN Controller 2.4.1' ]] &&
+if [[ $($TMP/isolated/mvc version) == 'Multi VPN Controller 2.4.2' ]] &&
    "$TMP/isolated/mvc" --help | grep -Fq 'WireGuard-only split' &&
    "$TMP/isolated/mvc" --monolith-resource-selftest "$TMP/isolated/resources" >/dev/null &&
    cmp -s -- "$TMP/isolated/resources/gvariant-settings-to-json.awk" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&

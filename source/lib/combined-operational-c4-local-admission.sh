@@ -11,6 +11,7 @@ mvc24gc4_reset() {
     MVC24GC4_ATTEMPTED=no
     MVC24GC4_IFACE=
     MVC24GC4_NM_OWNER=
+    MVC24GC4_MISSING_COMMAND=
     MVC24GC4_PREFLIGHT_STAGE=idle
 }
 
@@ -27,8 +28,13 @@ mvc24gc4_recovery_installed() {
 mvc24gc4_dependencies() {
     (( $# == 0 )) || return 1
     local bin
-    for bin in nft jq ip nmcli gdbus flock wg pgrep sha256sum awk cmp stat sleep; do
-        command -v "$bin" >/dev/null 2>&1 || return 1
+    MVC24GC4_MISSING_COMMAND=
+    for bin in awk cat chmod cmp cp cut dig dirname find flock gdbus getent grep ip jq ln mkdir mktemp mv nft nmcli pgrep readlink realpath rm rmdir sed sha256sum sleep sort stat tr wc wg; do
+        if ! command -v "$bin" >/dev/null 2>&1; then
+            MVC24GC4_MISSING_COMMAND=$bin
+            printf 'Multi VPN Controller: missing prerequisite: %s\n' "$bin" >&2
+            return 1
+        fi
     done
 }
 

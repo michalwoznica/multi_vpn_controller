@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# Multi VPN Controller 2.4.1 — deterministic monolith builder.
-# Public v2.4.1 release.
+# Multi VPN Controller 2.4.2 — deterministic monolith builder.
+# Public v2.4.2 development candidate.
 # Lifecycle verbs delegate to the audited dispatcher; validation evidence remains hash-specific.
 set -euo pipefail
 umask 077
 export LC_ALL=C
 
-MVC24_BUILD_VERSION='2.4.1'
-MVC24_BUILD_CHECKPOINT='MVC_V241_RELEASE'
+MVC24_BUILD_VERSION='2.4.2'
+MVC24_BUILD_CHECKPOINT='MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
     printf 'build-mvc-monolith: %s\n' "$*" >&2
     exit 1
+}
+
+mvc24_build_require_commands() {
+    local bin
+    for bin in awk bash cat chmod grep mkdir mktemp mv od rm rmdir sed sha256sum stat tail tr; do
+        command -v "$bin" >/dev/null 2>&1 || mvc24_build_die "missing build prerequisite: $bin"
+    done
 }
 
 mvc24_build_script=${BASH_SOURCE[0]}
@@ -22,6 +29,7 @@ mvc24_project_root=$(cd -- "$mvc24_build_dir/../.." && pwd -P) || exit 1
 mvc24_manifest="$mvc24_project_root/$MVC24_BUILD_MANIFEST_REL"
 
 (( $# == 1 )) || mvc24_build_die 'usage: build-mvc-monolith.sh OUTPUT'
+mvc24_build_require_commands
 mvc24_output=$1
 [[ $mvc24_output == /* ]] || mvc24_output=$PWD/$mvc24_output
 mvc24_output_dir=${mvc24_output%/*}
@@ -162,11 +170,11 @@ chmod 600 "$mvc24_tmp"
 mvc24_emit() { printf '%s\n' "$*" >> "$mvc24_tmp"; }
 
 mvc24_emit '#!/usr/bin/env bash'
-mvc24_emit '# Multi VPN Controller 2.4.1'
+mvc24_emit '# Multi VPN Controller 2.4.2'
 mvc24_emit '# GENERATED RELEASE ARTIFACT — DO NOT EDIT DIRECTLY'
 mvc24_emit '# Changes belong in the modular source tree and must be rebuilt.'
 mvc24_emit '#'
-mvc24_emit '# Multi VPN Controller 2.4.1 operational release.'
+mvc24_emit '# Multi VPN Controller 2.4.2 development candidate.'
 mvc24_emit '# Generated-runtime equivalence is proven; lifecycle delegates to the audited public dispatcher.'
 mvc24_emit "# Source checkpoint: $MVC24_BUILD_CHECKPOINT"
 mvc24_emit "# Runtime manifest SHA-256: $mvc24_manifest_sha"
@@ -251,6 +259,17 @@ mvc24mon_materialize_resource() {
     [[ -f $dest && ! -L $dest && $(stat -c %a -- "$dest") == 600 ]] || return 1
 }
 
+mvc24mon_bootstrap_dependencies() {
+    (( $# == 0 )) || return 1
+    local bin
+    for bin in awk cat chmod mktemp mv rm rmdir sha256sum stat; do
+        if ! command -v "$bin" >/dev/null 2>&1; then
+            printf 'Multi VPN Controller: missing bootstrap prerequisite: %s\n' "$bin" >&2
+            return 1
+        fi
+    done
+}
+
 MVC24_MONOLITH_ASSET_DIR=''
 
 mvc24mon_runtime_assets_cleanup() {
@@ -268,6 +287,7 @@ mvc24mon_runtime_assets_cleanup() {
 mvc24mon_runtime_assets_prepare() {
     (( $# == 0 )) || return 1
     local dir
+    mvc24mon_bootstrap_dependencies || return 1
     if [[ -n ${MVC24_MONOLITH_ASSET_DIR:-} ]]; then
         dir=$MVC24_MONOLITH_ASSET_DIR
         [[ -d $dir && ! -L $dir && $(stat -c '%u:%a:%h' -- "$dir" 2>/dev/null) == "$EUID:700:2" ]] || return 1
@@ -559,7 +579,7 @@ mvc24_build_emit_verify_functions
 cat >> "$mvc24_tmp" <<'BASH_STAGE5_WRAPPER'
 
 # ============================================================================
-# Multi VPN Controller v2.4.1 release wrapper — audited dispatcher
+# Multi VPN Controller v2.4.2 candidate wrapper — audited dispatcher
 # ============================================================================
 # Monolith-specific verifier status callback. `verify` observes this artifact's
 # own read-only status implementation, never a sibling controller.
@@ -597,7 +617,7 @@ mvc24mon_require_stage5_functions() {
 
 mvc24mon_stage5_help() {
     cat <<'HELP'
-Multi VPN Controller 2.4.1
+Multi VPN Controller 2.4.2
 
 Daily commands:
   version | --version
@@ -633,8 +653,8 @@ Independent recovery tools:
   /root/mvc-emergency-rollback
   /root/mvc-dual-recovery
 
-This is the deterministic MVC v2.4.1 release artifact. Validation evidence is
-hash-specific; verify the exact artifact identity used for deployment.
+This is the deterministic MVC v2.4.2 development candidate. Validation evidence is
+hash-specific; controlled live-host validation is required before release promotion.
 
 Development/internal diagnostics retained for regression testing:
   --monolith-build-info
@@ -645,7 +665,7 @@ HELP
 mvc24mon_stage5_build_info() {
     printf 'version=%s\n' "$MVC24_MONOLITH_VERSION"
     printf 'checkpoint=%s\n' "$MVC24_MONOLITH_CHECKPOINT"
-    printf 'authority=audited-dispatch-mvc-v241-release\n'
+    printf 'authority=audited-dispatch-mvc-v242-candidate-physical-pending\n'
     printf 'manifest_sha256=%s\n' "$MVC24_MONOLITH_MANIFEST_SHA256"
     printf 'builder_sha256=%s\n' "$MVC24_MONOLITH_BUILDER_SHA256"
     printf 'verify_source_sha256=%s\n' "$MVC24_MONOLITH_VERIFY_SOURCE_SHA256"
@@ -674,7 +694,7 @@ mvc24mon_stage5_resource_selftest() {
 
 mvc24mon_stage5_main() {
     mvc24mon_require_stage5_functions || {
-        printf '%s\n' 'Multi VPN Controller v2.4.1 monolith is incomplete.' >&2
+        printf '%s\n' 'Multi VPN Controller v2.4.2 candidate monolith is incomplete.' >&2
         return 70
     }
     case ${1:-} in
@@ -728,6 +748,7 @@ mvc24mon_stage5_main() {
     esac
 }
 
+trap 'mvc24mon_runtime_assets_cleanup' EXIT
 mvc24mon_stage5_main "$@"
 BASH_STAGE5_WRAPPER
 

@@ -50,10 +50,10 @@ else
   fail 'public installer has no predecessor migration contract'
 fi
 
-if rg -Fq 'checkpoint=MVC_V241_RELEASE' < <("$ROOT/dist/mvc" --monolith-build-info); then
-  pass 'generated artifact carries stable v2.4.1 release checkpoint identity'
+if rg -Fq 'checkpoint=MVC_242_R1_DEPENDENCY_PREFLIGHT_CLEANUP' < <("$ROOT/dist/mvc" --monolith-build-info); then
+  pass 'generated artifact carries stable v2.4.2 candidate checkpoint identity'
 else
-  fail 'generated artifact carries stable v2.4.1 release checkpoint identity'
+  fail 'generated artifact carries stable v2.4.2 candidate checkpoint identity'
 fi
 
 if rg -Fq 'check-mvc-live-saved-ovpn-readonly' "$ROOT/source/tests/test-runtime-seams.sh"; then
@@ -68,5 +68,5 @@ else
   fail 'private handoff and generated dist remain outside the public Git surface'
 fi
 
-printf 'RESULT: MVC v2.4.1 standalone public identity audit %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC v2.4.2 standalone public identity audit %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

@@ -52,6 +52,7 @@ mvc24gd4_reset() {
     MVC24GD4_NM_DOWN_EXIT_STATUS=unset
     MVC24GD4_HOLD_PROTO=187
     MVC24GD4_HOLD_METRIC=4241
+    MVC24GD4_MISSING_COMMAND=
 }
 
 mvc24gd4_authority_witness() {
@@ -68,9 +69,15 @@ mvc24gd4_authority_witness() {
 }
 
 mvc24gd4_dependencies() {
+    (( $# == 0 )) || return 1
     local cmd
-    for cmd in awk chmod cmp find getent grep ip jq mktemp mv nft nmcli readlink rm rmdir sha256sum stat wg; do
-        command -v "$cmd" >/dev/null 2>&1 || return 1
+    MVC24GD4_MISSING_COMMAND=
+    for cmd in awk cat chmod cmp cp cut dig dirname find flock gdbus getent grep ip jq ln mkdir mktemp mv nft nmcli pgrep readlink realpath rm rmdir sed sha256sum sleep sort stat tr wc wg; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            MVC24GD4_MISSING_COMMAND=$cmd
+            printf 'Multi VPN Controller: missing prerequisite: %s\n' "$cmd" >&2
+            return 1
+        fi
     done
 }
 

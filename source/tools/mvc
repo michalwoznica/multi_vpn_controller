@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Multi VPN Controller 2.4.1 — public modular entrypoint.
-# Public MVC command surface with v2.4.1 partial-dropout reconciliation.
+# Multi VPN Controller 2.4.2 — public modular entrypoint.
+# Public MVC 2.4.2 command surface; 2.4.1 lifecycle semantics retained.
 # Legacy internal implementation identifiers are intentionally retained for this refactor.
 set -euo pipefail
 umask 077
