@@ -62,7 +62,9 @@ Repository-only changes such as documentation, issue templates or CI configurati
 
 ## 5. Promote stable release provenance
 
-After the intended candidate is validated, promote the builder/release metadata to stable release provenance. If the promotion changes the generated executable, treat the resulting SHA-256 as a new artifact.
+Set the intended release in `source/release-version`. This one-line file is the single current-version source for the modular CLI, deterministic builder, installer expectations and release regressions. The builder derives the release checkpoint and authority from that value; do not duplicate the current version as literals in other `source/` files.
+
+Update the manifest SHA-256 for `source/release-version`, rebuild the generated executable, and treat the resulting SHA-256 as a new artifact.
 
 The installer update policy must explicitly authenticate any supported predecessor by exact content identity. Do not authorize an update based only on a version string or filename.
 

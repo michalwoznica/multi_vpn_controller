@@ -6,6 +6,8 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 PROBE=$ROOT/source/tools/check-mvc-live-saved-ovpn-readonly.sh
 PASS=0
@@ -22,13 +24,14 @@ A=$TMP/a/mvc
 B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3A independent builds are byte-identical' || bad 'Stage-3A independent builds are byte-identical'
-[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
-$A --help | grep -Fxq 'Multi VPN Controller 2.4.2' && ok 'current help identifies v2.4.2 release' || bad 'current help identifies v2.4.2 release'
+[[ $($A version) == "$MVC_TEST_RELEASE_BANNER" ]] && ok 'Stage-3A version identity is exact' || bad 'Stage-3A version identity is exact'
+help=$($A --help)
+grep -Fxq "$MVC_TEST_RELEASE_BANNER" <<<"$help" && ok 'current help identifies release' || bad 'current help identifies release'
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
    grep -Fq 'mvc24e_dispatch "$@"' "$A"; then
-    ok 'v2.4.2 wrapper delegates lifecycle verbs to audited dispatcher'
+    ok 'release wrapper delegates lifecycle verbs to audited dispatcher'
 else
-    bad 'v2.4.2 wrapper delegates lifecycle verbs to audited dispatcher'
+    bad 'release wrapper delegates lifecycle verbs to audited dispatcher'
 fi
 
 # Source the generated artifact only to inspect/test its definitions. Passing

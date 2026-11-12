@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for command_name in bash awk cat chmod cmp cp cut dirname find flock getent grep ln mkdir mktemp mv od python3 readlink realpath rg rm rmdir sed sha256sum sleep sort stat tail tr wc; do
+          for command_name in bash awk cat chmod cmp cp cut dirname find flock getent grep ln mkdir mktemp mv od readlink realpath rg rm rmdir sed sha256sum sleep sort stat tail tr wc; do
             command -v "$command_name" >/dev/null 2>&1 || {
               printf 'missing CI prerequisite: %s\n' "$command_name" >&2
               exit 1

@@ -6,6 +6,8 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 VERIFY_SOURCE=$ROOT/source/tools/verify-mvc-state-readonly.sh
@@ -23,14 +25,14 @@ A=$TMP/a/mvc
 B=$TMP/b/mvc
 
 cmp -s -- "$A" "$B" && ok 'Stage-3B independent builds are byte-identical' || bad 'Stage-3B independent builds are byte-identical'
-[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
+[[ $($A version) == "$MVC_TEST_RELEASE_BANNER" ]] && ok 'plain version remains concise and exact' || bad 'plain version remains concise and exact'
 
 verbose=$($A version --verbose)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
 verify_sha=$(sha256sum -- "$VERIFY_SOURCE" | awk '{print $1}')
-if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$verbose" &&
-   grep -Fxq 'authority=audited-dispatch-mvc-v242-release' <<<"$verbose" &&
+if grep -Fxq "checkpoint=$MVC_TEST_RELEASE_CHECKPOINT" <<<"$verbose" &&
+   grep -Fxq "authority=$MVC_TEST_RELEASE_AUTHORITY" <<<"$verbose" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<<"$verbose" &&
    grep -Fxq "builder_sha256=$builder_sha" <<<"$verbose" &&
    grep -Fxq "verify_source_sha256=$verify_sha" <<<"$verbose"; then
@@ -200,14 +202,32 @@ EOF
 chmod +x "$TMP/bin/nmcli" "$TMP/bin/nft" "$TMP/bin/ip" "$TMP/bin/curl"
 
 echo 'nameserver 192.168.200.1' > "$TMP/resolv"
+
+# Execute the branch-built monolith without its final process entrypoint so the
+# verifier fixture can control only the environmental MVC-runtime-presence
+# predicate. This prevents real /run/mvc-* state on the test host from
+# contaminating the synthetic baseline while still exercising the monolith's
+# actual verify/status implementation.
+VERIFY_BODY=$TMP/verify-branch-artifact-without-main
+sed '$d' "$A" > "$VERIFY_BODY"
+
 run_verify_case() {
     local case_name=$1 output=$2
     VERIFY_CASE=$case_name \
+    BODY="$VERIFY_BODY" \
     MVC24V_DUAL_RECOVERY="$TMP/dual" \
     MVC24V_EMERGENCY_RECOVERY="$TMP/emergency" \
     MVC24V_RESOLV_CONF="$TMP/resolv" \
-    PATH="$TMP/bin:$PATH" \
-        "$A" verify --no-internet-check > "$output" 2>&1
+    TEST_PATH="$TMP/bin:$PATH" \
+        bash -c '
+set -euo pipefail
+# shellcheck disable=SC1090
+source "$BODY"
+mvc24pub_any_runtime_present() { return 1; }
+PATH=$TEST_PATH
+export PATH
+mvc24mon_stage5_main verify --no-internet-check
+' > "$output" 2>&1
 }
 
 run_verify_case baseline "$TMP/baseline.out"
