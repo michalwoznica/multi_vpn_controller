@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-# Multi VPN Controller 2.4.2 — deterministic monolith builder.
-# Public v2.4.2 release.
+# Multi VPN Controller — deterministic monolith builder.
+# Release identity is read from the manifest-pinned source/release-version file.
 # Lifecycle verbs delegate to the audited dispatcher; validation evidence remains hash-specific.
 set -euo pipefail
 umask 077
 export LC_ALL=C
 
-MVC24_BUILD_VERSION='2.4.2'
-MVC24_BUILD_CHECKPOINT='MVC_V242_RELEASE'
 MVC24_BUILD_MANIFEST_REL='source/build/monolith-runtime.manifest'
 
 mvc24_build_die() {
@@ -126,7 +124,7 @@ while IFS='|' read -r kind key expected_sha rel detail extra; do
             ;;
         INTEGRATE)
             case $key in
-                openvpn-source-preview|verify) ;;
+                release-version|openvpn-source-preview|verify) ;;
                 *) mvc24_build_die "unexpected INTEGRATE key: $key" ;;
             esac
             MVC24_BUILD_INTEGRATE_PATH[$key]=$rel
@@ -143,16 +141,31 @@ while IFS='|' read -r kind key expected_sha rel detail extra; do
     esac
 done < "$mvc24_manifest"
 
-[[ $mvc24_record_count == 57 ]] || mvc24_build_die "manifest record count changed: $mvc24_record_count"
+[[ $mvc24_record_count == 58 ]] || mvc24_build_die "manifest record count changed: $mvc24_record_count"
 [[ $mvc24_module_count == 49 ]] || mvc24_build_die "MODULE count changed: $mvc24_module_count"
 [[ ${MVC24_BUILD_KIND_COUNT[ASSET]:-0} == 2 &&
-   ${MVC24_BUILD_KIND_COUNT[INTEGRATE]:-0} == 2 &&
+   ${MVC24_BUILD_KIND_COUNT[INTEGRATE]:-0} == 3 &&
    ${MVC24_BUILD_KIND_COUNT[EXTERNAL_RECOVERY]:-0} == 2 &&
    ${MVC24_BUILD_KIND_COUNT[EXCLUDE]:-0} == 2 ]] || mvc24_build_die 'manifest role counts changed'
 [[ ${MVC24_BUILD_ASSET_PATH[gvariant-awk]:-} == source/lib/combined-gvariant-settings-to-json.awk ]] || \
     mvc24_build_die 'gvariant asset path changed'
 [[ ${MVC24_BUILD_ASSET_PATH[b4-bootstrap-nft]:-} == source/nftables/mvc-preclone-quarantine-offline.nft ]] || \
     mvc24_build_die 'B4 nft asset path changed'
+[[ ${MVC24_BUILD_INTEGRATE_PATH[release-version]:-} == source/release-version ]] || \
+    mvc24_build_die 'release-version integration path changed'
+mvc24_release_version_file=$mvc24_project_root/${MVC24_BUILD_INTEGRATE_PATH[release-version]}
+mapfile -t mvc24_release_version_lines < "$mvc24_release_version_file" || \
+    mvc24_build_die 'cannot read release-version'
+[[ ${#mvc24_release_version_lines[@]} == 1 ]] || \
+    mvc24_build_die 'release-version must contain exactly one line'
+MVC24_BUILD_VERSION=${mvc24_release_version_lines[0]}
+unset mvc24_release_version_lines
+[[ $MVC24_BUILD_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
+    mvc24_build_die 'release-version must be semantic version X.Y.Z'
+MVC24_BUILD_VERSION_ID=${MVC24_BUILD_VERSION//./}
+MVC24_BUILD_CHECKPOINT="MVC_V${MVC24_BUILD_VERSION_ID}_RELEASE"
+MVC24_BUILD_AUTHORITY="audited-dispatch-mvc-v${MVC24_BUILD_VERSION_ID}-release"
+readonly MVC24_BUILD_VERSION MVC24_BUILD_VERSION_ID MVC24_BUILD_CHECKPOINT MVC24_BUILD_AUTHORITY
 [[ ${MVC24_BUILD_INTEGRATE_PATH[openvpn-source-preview]:-} == source/tools/check-mvc-live-saved-ovpn-readonly.sh ]] || \
     mvc24_build_die 'OpenVPN preview integration path changed'
 [[ ${MVC24_BUILD_INTEGRATE_PATH[verify]:-} == source/tools/verify-mvc-state-readonly.sh ]] || \
@@ -170,11 +183,11 @@ chmod 600 "$mvc24_tmp"
 mvc24_emit() { printf '%s\n' "$*" >> "$mvc24_tmp"; }
 
 mvc24_emit '#!/usr/bin/env bash'
-mvc24_emit '# Multi VPN Controller 2.4.2'
+mvc24_emit "# Multi VPN Controller $MVC24_BUILD_VERSION"
 mvc24_emit '# GENERATED RELEASE ARTIFACT — DO NOT EDIT DIRECTLY'
 mvc24_emit '# Changes belong in the modular source tree and must be rebuilt.'
 mvc24_emit '#'
-mvc24_emit '# Multi VPN Controller 2.4.2 operational release.'
+mvc24_emit "# Multi VPN Controller $MVC24_BUILD_VERSION operational release."
 mvc24_emit '# Generated-runtime equivalence is proven; lifecycle delegates to the audited public dispatcher.'
 mvc24_emit "# Source checkpoint: $MVC24_BUILD_CHECKPOINT"
 mvc24_emit "# Runtime manifest SHA-256: $mvc24_manifest_sha"
@@ -185,8 +198,10 @@ mvc24_emit ''
 mvc24_emit 'set -euo pipefail'
 mvc24_emit 'umask 077'
 mvc24_emit 'export LC_ALL=C'
-mvc24_emit "readonly MVC24_MONOLITH_VERSION='$MVC24_BUILD_VERSION'"
-mvc24_emit "readonly MVC24_MONOLITH_CHECKPOINT='$MVC24_BUILD_CHECKPOINT'"
+mvc24_emit "readonly MVC24_RELEASE_VERSION='$MVC24_BUILD_VERSION'"
+mvc24_emit "readonly MVC24_RELEASE_CHECKPOINT='$MVC24_BUILD_CHECKPOINT'"
+mvc24_emit "readonly MVC24_RELEASE_AUTHORITY='$MVC24_BUILD_AUTHORITY'"
+mvc24_emit "readonly MVC24_RELEASE_VERSION_SHA256='${MVC24_BUILD_INTEGRATE_SHA[release-version]}'"
 mvc24_emit "readonly MVC24_MONOLITH_MANIFEST_SHA256='$mvc24_manifest_sha'"
 mvc24_emit "readonly MVC24_MONOLITH_BUILDER_SHA256='$mvc24_builder_sha'"
 mvc24_emit "readonly MVC24_MONOLITH_VERIFY_SOURCE_SHA256='${MVC24_BUILD_INTEGRATE_SHA[verify]}'"
@@ -579,7 +594,7 @@ mvc24_build_emit_verify_functions
 cat >> "$mvc24_tmp" <<'BASH_STAGE5_WRAPPER'
 
 # ============================================================================
-# Multi VPN Controller v2.4.2 release wrapper — audited dispatcher
+# Multi VPN Controller release wrapper — audited dispatcher
 # ============================================================================
 # Monolith-specific verifier status callback. `verify` observes this artifact's
 # own read-only status implementation, never a sibling controller.
@@ -616,9 +631,8 @@ mvc24mon_require_stage5_functions() {
 }
 
 mvc24mon_stage5_help() {
+    printf 'Multi VPN Controller %s\n\n' "$MVC24_RELEASE_VERSION"
     cat <<'HELP'
-Multi VPN Controller 2.4.2
-
 Daily commands:
   version | --version
   version --verbose
@@ -652,8 +666,9 @@ its observed-shape classification never grants cleanup/disconnect/recovery autho
 Independent recovery tools:
   /root/mvc-emergency-rollback
   /root/mvc-dual-recovery
-
-This is the deterministic MVC v2.4.2 release artifact. Validation evidence is
+HELP
+    printf '\nThis is the deterministic MVC v%s release artifact. Validation evidence is\n' "$MVC24_RELEASE_VERSION"
+    cat <<'HELP'
 hash-specific; verify the exact artifact identity used for deployment.
 
 Development/internal diagnostics retained for regression testing:
@@ -663,9 +678,10 @@ HELP
 }
 
 mvc24mon_stage5_build_info() {
-    printf 'version=%s\n' "$MVC24_MONOLITH_VERSION"
-    printf 'checkpoint=%s\n' "$MVC24_MONOLITH_CHECKPOINT"
-    printf 'authority=audited-dispatch-mvc-v242-release\n'
+    printf 'version=%s\n' "$MVC24_RELEASE_VERSION"
+    printf 'checkpoint=%s\n' "$MVC24_RELEASE_CHECKPOINT"
+    printf 'authority=%s\n' "$MVC24_RELEASE_AUTHORITY"
+    printf 'release_version_sha256=%s\n' "$MVC24_RELEASE_VERSION_SHA256"
     printf 'manifest_sha256=%s\n' "$MVC24_MONOLITH_MANIFEST_SHA256"
     printf 'builder_sha256=%s\n' "$MVC24_MONOLITH_BUILDER_SHA256"
     printf 'verify_source_sha256=%s\n' "$MVC24_MONOLITH_VERIFY_SOURCE_SHA256"
@@ -676,7 +692,7 @@ mvc24mon_stage5_build_info() {
 }
 
 mvc24mon_stage5_version_verbose() {
-    printf 'Multi VPN Controller %s\n' "$MVC24_MONOLITH_VERSION"
+    printf 'Multi VPN Controller %s\n' "$MVC24_RELEASE_VERSION"
     mvc24mon_stage5_build_info
 }
 
@@ -694,7 +710,7 @@ mvc24mon_stage5_resource_selftest() {
 
 mvc24mon_stage5_main() {
     mvc24mon_require_stage5_functions || {
-        printf '%s\n' 'Multi VPN Controller v2.4.2 monolith is incomplete.' >&2
+        printf 'Multi VPN Controller v%s monolith is incomplete.\n' "$MVC24_RELEASE_VERSION" >&2
         return 70
     }
     case ${1:-} in

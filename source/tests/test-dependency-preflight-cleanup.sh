@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# MVC 2.4.2 R1 — dependency preflight diagnostics and monolith scratch cleanup.
+# MVC dependency preflight diagnostics and monolith scratch cleanup.
 set -euo pipefail
 umask 077
 export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 PASS=0
 FAIL=0
@@ -17,6 +19,29 @@ trap 'rm -rf -- "$TMP"' EXIT
 mkdir -p "$TMP/build"
 "$BUILDER" "$TMP/build/mvc" >/dev/null
 A=$TMP/build/mvc
+
+BASH_BIN=$(command -v bash) || { printf '%s\n' 'missing test prerequisite: bash' >&2; exit 1; }
+TEST_BODY=$TMP/branch-artifact-without-main
+sed '$d' "$A" > "$TEST_BODY"
+
+# Exercise the branch-built monolith and its real public dispatcher while
+# replacing only the environmental fixed-live-root predicate with the clean
+# state required by this dependency test. This prevents installed/live MVC
+# state under the host's /run from influencing the result without adding a
+# production test hook or executing /usr/local/sbin/mvc.
+run_with_clean_fixed_roots() {
+    local test_path=$1
+    shift
+    BODY="$TEST_BODY" TEST_PATH="$test_path" "$BASH_BIN" -c '''
+set -euo pipefail
+# shellcheck disable=SC1090
+source "$BODY"
+mvc24pubc_fixed_live_roots_absent() { return 0; }
+PATH=$TEST_PATH
+export PATH
+mvc24mon_stage5_main "$@"
+''' _ "$@"
+}
 
 asset_inventory() {
     find /dev/shm -maxdepth 1 -type d -name 'mvc-monolith-assets.*' -printf '%f\n' 2>/dev/null | sort
@@ -66,8 +91,11 @@ else
 fi
 
 # Build a PATH that satisfies bootstrap + D4 inventory while replacing network
-# commands with marker stubs. A dependency failure must occur before any of
-# those network commands are executed, and the EXIT trap must remove assets.
+# commands with marker stubs. The branch artifact is dispatched with only its
+# fixed-live-root environmental predicate controlled by the harness, so real
+# MVC runtime roots on the host cannot influence the result. A dependency
+# failure must occur before any network command is executed, and the EXIT trap
+# must remove assets.
 run_missing_runtime_case() {
     local missing=$1
     local case_dir=$TMP/runtime-$missing
@@ -103,7 +131,7 @@ STUB
     done
     before=$(asset_inventory)
     set +e
-    PATH="$bin" "$A" preflight wg --split ovpn >"$case_dir/out" 2>&1
+    run_with_clean_fixed_roots "$bin" preflight wg --split ovpn >"$case_dir/out" 2>&1
     rc=$?
     set -e
     after=$(asset_inventory)
@@ -171,5 +199,5 @@ else
     bad 'OpenVPN C4 inventory reports the exact missing command'
 fi
 
-printf 'RESULT: MVC 2.4.2 dependency/preflight cleanup regression %d/%d checks passed\n' "$PASS" "$((PASS+FAIL))"
+printf 'RESULT: MVC %s dependency/preflight cleanup regression %d/%d checks passed\n' "$MVC_TEST_RELEASE_VERSION" "$PASS" "$((PASS+FAIL))"
 (( FAIL == 0 ))

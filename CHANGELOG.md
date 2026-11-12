@@ -1,4 +1,12 @@
 # Changelog
+## MVC 2.4.3 CI, release infrastructure and identity centralization
+- Add GitHub Actions CI and contributor/release documentation for the public regression workflow.
+- Remove retired predecessor-era public source/install/test artifacts and scope identity/module audits to the authoritative production surface.
+- Introduce manifest-pinned `source/release-version` as the single current-version source; the builder derives release checkpoint and authority from it instead of repeating release literals.
+- Make the modular CLI, generated monolith, installer verification and release regressions consume the same release identity and add a regression that forbids duplicating the current version literal elsewhere under `source/`.
+- Make dependency/preflight regressions independent of installed/live MVC state by exercising the branch-built monolith with a controlled clean fixed-root predicate; host `/run/mvc-*` state can no longer contaminate these cases.
+- Authorize the exact final MVC 2.4.2 controller hash `a83aeb10a5cda9e055fe4aedee69c5797a7dc7a06470e085647b2d77554f9eeb` as an approved update predecessor.
+- Keep routing policy, nftables rule semantics, DNS policy, recovery-tool content, persistent record schema and VPN lifecycle behavior unchanged.
 
 ## MVC 2.4.2 final release promotion
 

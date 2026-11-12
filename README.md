@@ -33,6 +33,8 @@ MVC currently supports four practical connection styles:
 
 MVC is intentionally a **CLI application**. It is designed for Linux systems using NetworkManager and integrates directly with the existing OpenVPN and WireGuard connection profiles rather than introducing its own VPN configuration format.
 
+MVC is also designed to be **init-system agnostic**. Its runtime lifecycle does not depend on systemd or OpenRC service management, which is intended to make the controller portable across Linux distributions that provide compatible networking components.
+
 ## Security model
 
 MVC does more than bring VPN interfaces up and down. A significant part of the project is concerned with ensuring that traffic cannot silently escape through an unintended path while a protected session is active.
@@ -62,6 +64,14 @@ Starting a protected session is a deliberate user action. After a reboot there i
 The project is built as a readable Bash codebase with a deterministic build process that produces a single `mvc` executable for installation. It uses standard Linux networking tools including NetworkManager, nftables, iproute2, WireGuard, OpenVPN, jq, and AWK.
 
 The current release has been developed and physically validated on Linux with real OpenVPN and WireGuard connections, including simultaneous dual-tunnel operation, kill-switch behavior, tunnel-loss cleanup, same-boot reconnection, deterministic local builds, and restoration of the original network state after disconnect.
+
+## Platform support
+
+MVC is designed to be **init-system agnostic**. Its runtime does not rely on systemd or OpenRC service management; networking is controlled through NetworkManager, the system D-Bus, nftables, iproute2, and the relevant WireGuard and OpenVPN tooling.
+
+The current MVC 2.4.x release line has been physically validated on **Arch Linux**.
+
+Other Linux distributions that provide compatible versions of the required networking components may work, but they should be considered **unvalidated until tested**. The project intentionally distinguishes architectural portability from physically proven platform support.
 
 ## Supported modes
 
@@ -127,7 +137,9 @@ The suite is hermetic and does not require live VPN activation.
 
 ## Internal compatibility names
 
-The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership uses `/run/mvc-*` and `mvc_preclone_*`. Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated record signatures are MVC-native and runtime module filenames are version-neutral. The public project contains no predecessor-specific migration compatibility; any private development-host migration is handled outside the Git-facing tree.
+The public project identity is **Multi VPN Controller** and the command is `mvc`. Runtime-visible MVC ownership uses `/run/mvc-*` and `mvc_preclone_*`. Internal Bash functions/helpers use the `mvc24*` namespace and internal variables/constants use `MVC24*`. Current authenticated record signatures are MVC-native and runtime module filenames are version-neutral.
+
+The public project contains no predecessor-specific migration compatibility; any private development-host migration is handled outside the Git-facing tree.
 
 ## License
 

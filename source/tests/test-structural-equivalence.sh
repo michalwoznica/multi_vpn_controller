@@ -6,6 +6,8 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 MONOLITH=$ROOT/dist/mvc
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
@@ -135,10 +137,10 @@ function_equal=0
 while IFS= read -r fn; do
     cmp -s -- "$TMP/modular-functions/$fn" "$TMP/generated-functions/$fn" && function_equal=$((function_equal+1))
 done < "$COMPARE"
-if [[ $function_total == 751 && $function_equal == 751 ]]; then
-    ok '751 production functions are byte-equivalent after final Bash definition resolution'
+if [[ $function_total == 752 && $function_equal == 752 ]]; then
+    ok '752 production functions are byte-equivalent after final Bash definition resolution'
 else
-    bad "final function parity expected 751/751, observed $function_equal/$function_total"
+    bad "final function parity expected 752/752, observed $function_equal/$function_total"
 fi
 
 # Explicitly verify the 18 intentional override chains terminate at the audited
@@ -200,8 +202,9 @@ done
 mkdir -m 700 "$TMP/isolated" "$TMP/isolated/resources"
 cp -- "$MONOLITH" "$TMP/isolated/mvc"
 chmod 755 "$TMP/isolated/mvc"
-if [[ $($TMP/isolated/mvc version) == 'Multi VPN Controller 2.4.2' ]] &&
-   "$TMP/isolated/mvc" --help | grep -Fq 'WireGuard-only split' &&
+isolated_help=$($TMP/isolated/mvc --help)
+if [[ $($TMP/isolated/mvc version) == "$MVC_TEST_RELEASE_BANNER" ]] &&
+   grep -Fq 'WireGuard-only split' <<<"$isolated_help" &&
    "$TMP/isolated/mvc" --monolith-resource-selftest "$TMP/isolated/resources" >/dev/null &&
    cmp -s -- "$TMP/isolated/resources/gvariant-settings-to-json.awk" "$ROOT/source/lib/combined-gvariant-settings-to-json.awk" &&
    cmp -s -- "$TMP/isolated/resources/preclone-quarantine.nft" "$ROOT/source/nftables/mvc-preclone-quarantine-offline.nft"; then

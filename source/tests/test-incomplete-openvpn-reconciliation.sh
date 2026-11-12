@@ -166,6 +166,7 @@ mvc24pube_publish_retire_intent(){ LOG+=(publish-retire); : > "$retire_intent"; 
 mvc24pube_retire_intent_valid(){ LOG+=(retire-valid); return 0; }
 mvc24gb2_close(){ LOG+=(close-b2); return 0; }
 mvc24pube_retire_archive_continue(){ LOG+=(archive); return 0; }
+mvc24pube_retirement_blockers_absent(){ return 0; }
 MVC24PUBE_CLONE_UUID=44444444-4444-4444-8444-444444444444
 mvc24pube_retire_runtime_roots && pass retire-intent-before-runtime-move-succeeds || fail retire-intent-before-runtime-move-succeeds
 [[ ${LOG[*]} == 'release-valid release-post topology clone-absent tables-absent publish-retire retire-valid close-b2 archive' ]] && pass retire-intent-before-runtime-move-order || fail retire-intent-before-runtime-move-order
@@ -189,6 +190,7 @@ mvc24gc23t_clone_absent(){ return 0; }
 mvc24pube_owned_tables_absent_now(){ return 0; }
 mvc24pube_controller_dir_valid_for_retire(){ return 0; }
 mvc24pube_single_attempt_dir_valid(){ return 0; }
+mvc24pube_retirement_blockers_absent(){ return 0; }
 mvc24pube_retire_archive_continue && pass retire-resume-after-controller-move-succeeds || fail retire-resume-after-controller-move-succeeds
 [[ ! -e $AR/runtime && -d $AR/archive/44444444-4444-4444-8444-444444444444/public-session ]] && pass retire-public-runtime-moved-last || fail retire-public-runtime-moved-last
 

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export LC_ALL=C
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
 fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
@@ -50,10 +53,10 @@ else
   fail 'public installer has no predecessor migration contract'
 fi
 
-if rg -Fq 'checkpoint=MVC_V242_RELEASE' < <("$ROOT/dist/mvc" --monolith-build-info); then
-  pass 'generated artifact carries stable v2.4.2 release checkpoint identity'
+if rg -Fq "checkpoint=$MVC_TEST_RELEASE_CHECKPOINT" < <("$ROOT/dist/mvc" --monolith-build-info); then
+  pass 'generated artifact carries stable release checkpoint identity'
 else
-  fail 'generated artifact carries stable v2.4.2 release checkpoint identity'
+  fail 'generated artifact carries stable release checkpoint identity'
 fi
 
 if rg -Fq 'check-mvc-live-saved-ovpn-readonly' "$ROOT/source/tests/test-runtime-seams.sh"; then
@@ -68,5 +71,5 @@ else
   fail 'private handoff and generated dist remain outside the public Git surface'
 fi
 
-printf 'RESULT: MVC v2.4.2 standalone public identity audit %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC %s standalone public identity audit %d/%d checks passed\n' "$MVC_TEST_RELEASE_VERSION" "$P" "$((P+F))"
 (( F == 0 ))

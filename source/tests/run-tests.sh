@@ -7,6 +7,7 @@ PROJECT=$(cd -- "$SOURCE/.." && pwd -P)
 
 TESTS=(
   test-builder.sh
+  test-release-identity.sh
   test-bootstrap-resource-pin.sh
   test-runtime-seams.sh
   test-dependency-preflight-cleanup.sh

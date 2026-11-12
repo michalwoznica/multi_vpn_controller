@@ -4,6 +4,8 @@ umask 077
 export LC_ALL=C
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 A=$ROOT/dist/mvc
 PASS=0; FAIL=0
 ok(){ printf 'PASS: %s\n' "$1"; PASS=$((PASS+1)); }
@@ -11,7 +13,7 @@ bad(){ printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
 TMP=$(mktemp -d); trap 'rm -rf -- "$TMP"' EXIT
 sed '$d' "$A" > "$TMP/body"
 
-[[ $($A version) == 'Multi VPN Controller 2.4.2' ]] && ok 'generated release reports v2.4.2' || bad 'generated release reports v2.4.2'
+[[ $($A version) == "$MVC_TEST_RELEASE_BANNER" ]] && ok 'generated release reports current version' || bad 'generated release reports current version'
 
 BODY=$TMP/body bash -s <<'CHECK' && ok 'generated release contains both authenticated dropout reconciler families' || bad 'generated release contains both authenticated dropout reconciler families'
 set -euo pipefail
