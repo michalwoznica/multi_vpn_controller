@@ -1,0 +1,88 @@
+name: Bug report
+description: Report a reproducible problem with Multi VPN Controller
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem.
+
+        Before submitting, remove any sensitive information from command output, including VPN credentials, private keys, hostnames, SSIDs, usernames, private addresses, or other identifying information.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened?
+      placeholder: Describe the problem clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable sequence that reproduces the problem.
+      placeholder: |
+        1. Run ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: mvc_version
+    attributes:
+      label: MVC version
+      description: Output of `mvc version --verbose`, with any sensitive information removed.
+      placeholder: "Multi VPN Controller 2.4.2"
+    validations:
+      required: true
+
+  - type: input
+    id: distribution
+    attributes:
+      label: Linux distribution
+      placeholder: "Arch Linux"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: MVC mode
+      options:
+        - Combined OpenVPN + WireGuard
+        - OpenVPN-only protected
+        - WireGuard-only protected
+        - WireGuard split
+        - Preflight / verification
+        - Installation / update
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      description: Paste relevant MVC output or errors. Remove sensitive information first.
+      render: shell
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I have reviewed the information above and removed credentials, keys, hostnames, SSIDs, usernames, and other sensitive information.
+          required: true

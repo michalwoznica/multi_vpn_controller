@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an improvement or new capability for Multi VPN Controller
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: Describe how you think MVC should behave.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Is there an existing MVC mode or workflow that almost solves this?
+
+  - type: textarea
+    id: implications
+    attributes:
+      label: Networking or security implications
+      description: If relevant, describe any routing, firewall, DNS, VPN, or security implications you are aware of.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I have checked that this is not already covered by an existing issue.
+          required: true
