@@ -6,6 +6,8 @@ export LC_ALL=C
 
 HERE=$(cd -- "${BASH_SOURCE[0]%/*}" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 BUILDER=$ROOT/source/build/build-mvc-monolith.sh
 MANIFEST=$ROOT/source/build/monolith-runtime.manifest
 PASS=0
@@ -31,12 +33,13 @@ if [[ $sha_a == "$sha_b" ]]; then ok 'independent build SHA-256 values are ident
 if [[ $(stat -c %a -- "$A") == 755 ]]; then ok 'generated artifact mode is 0755'; else bad 'generated artifact mode is 0755'; fi
 if bash -n "$A"; then ok 'generated artifact passes bash -n'; else bad 'generated artifact passes bash -n'; fi
 
-if [[ $($A version) == 'Multi VPN Controller 2.4.2' ]]; then ok 'generated version identity is exact'; else bad 'generated version identity is exact'; fi
-if $A --help | grep -Fxq 'Multi VPN Controller 2.4.2'; then ok 'current generated help identifies v2.4.2 release'; else bad 'current generated help identifies v2.4.2 release'; fi
+if [[ $($A version) == "$MVC_TEST_RELEASE_BANNER" ]]; then ok 'generated version identity is exact'; else bad 'generated version identity is exact'; fi
+help=$($A --help)
+if grep -Fxq "$MVC_TEST_RELEASE_BANNER" <<<"$help"; then ok 'current generated help identifies release'; else bad 'current generated help identifies release'; fi
 info=$($A --monolith-build-info)
 manifest_sha=$(sha256sum -- "$MANIFEST" | awk '{print $1}')
 builder_sha=$(sha256sum -- "$BUILDER" | awk '{print $1}')
-if grep -Fxq "checkpoint=MVC_V242_RELEASE" <<< "$info" &&
+if grep -Fxq "checkpoint=$MVC_TEST_RELEASE_CHECKPOINT" <<< "$info" &&
    grep -Fxq "manifest_sha256=$manifest_sha" <<< "$info" &&
    grep -Fxq "builder_sha256=$builder_sha" <<< "$info"; then
     ok 'build-info provenance matches source manifest and builder'
@@ -47,9 +50,9 @@ fi
 if grep -Fq 'preflight|list|status|connect|disconnect)' "$A" &&
    grep -Fq 'mvc24e_dispatch "$@"' "$A" &&
    ! grep -Fq 'mvc24mon_stage3b_refuse_lifecycle' "$A"; then
-    ok 'v2.4.2 wrapper promotes lifecycle only through audited dispatcher'
+    ok 'release wrapper promotes lifecycle only through audited dispatcher'
 else
-    bad 'v2.4.2 wrapper promotes lifecycle only through audited dispatcher'
+    bad 'release wrapper promotes lifecycle only through audited dispatcher'
 fi
 
 $A --monolith-resource-selftest "$TMP/resources" >"$TMP/resources.out"

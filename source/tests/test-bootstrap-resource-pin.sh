@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export LC_ALL=C
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 P=0 F=0
 pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
 fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
@@ -60,11 +63,11 @@ else
 fi
 
 info=$("$TMP/mvc" --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info"; then
+if grep -Fxq "checkpoint=$MVC_TEST_RELEASE_CHECKPOINT" <<<"$info"; then
   pass 'generated release retains repaired bootstrap resource path'
 else
   fail 'generated release retains repaired bootstrap resource path'
 fi
 
-printf 'RESULT: MVC v2.4.2 bootstrap resource pin regression %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: MVC %s bootstrap resource pin regression %d/%d checks passed\n' "$MVC_TEST_RELEASE_VERSION" "$P" "$((P+F))"
 (( F == 0 ))

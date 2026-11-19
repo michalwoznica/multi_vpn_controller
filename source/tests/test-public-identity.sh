@@ -3,6 +3,8 @@ set -euo pipefail
 export LC_ALL=C
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 ROOT=$(cd -- "$HERE/../.." && pwd -P)
+# shellcheck source=release-identity-fixture.sh
+source "$HERE/release-identity-fixture.sh"
 
 pass=0
 fail=0
@@ -34,16 +36,17 @@ done
 
 [[ -x $ROOT/dist/mvc ]] && ok 'generated public artifact is dist/mvc' || bad 'generated public artifact is dist/mvc'
 
-if [[ $($ROOT/dist/mvc version) == 'Multi VPN Controller 2.4.2' ]] &&
-   $ROOT/dist/mvc --help | grep -Fq 'Multi VPN Controller 2.4.2' &&
-   $ROOT/dist/mvc --help | grep -Fq 'sudo mvc connect'; then
+help=$($ROOT/dist/mvc --help)
+if [[ $($ROOT/dist/mvc version) == "$MVC_TEST_RELEASE_BANNER" ]] &&
+   grep -Fq "$MVC_TEST_RELEASE_BANNER" <<<"$help" &&
+   grep -Fq 'sudo mvc connect' <<<"$help"; then
     ok 'generated artifact reports and documents MVC identity'
 else
     bad 'generated artifact reports and documents MVC identity'
 fi
 
 info=$($ROOT/dist/mvc --monolith-build-info)
-if grep -Fxq 'checkpoint=MVC_V242_RELEASE' <<<"$info" &&
+if grep -Fxq "checkpoint=$MVC_TEST_RELEASE_CHECKPOINT" <<<"$info" &&
    grep -Fxq 'emergency_recovery=/root/mvc-emergency-rollback' <<<"$info" &&
    grep -Fxq 'dual_recovery=/root/mvc-dual-recovery' <<<"$info"; then
     ok 'generated provenance exposes standalone MVC checkpoint and recovery paths'

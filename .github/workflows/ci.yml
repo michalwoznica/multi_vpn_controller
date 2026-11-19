@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mvc-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-regression:
+    name: Public regression suite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install CI test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ripgrep
+
+      - name: Verify runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          for command_name in bash awk cat chmod cmp cp cut dirname find flock getent grep ln mkdir mktemp mv od readlink realpath rg rm rmdir sed sha256sum sleep sort stat tail tr wc; do
+            command -v "$command_name" >/dev/null 2>&1 || {
+              printf 'missing CI prerequisite: %s\n' "$command_name" >&2
+              exit 1
+            }
+          done
+
+      - name: Check Bash syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            bash -n "$file"
+          done < <(find source -type f -name '*.sh' -print0 | sort -z)
+
+      - name: Build deterministic monolith
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          ./source/build/build-mvc-monolith.sh ./dist/mvc
+
+          build_a=$(mktemp)
+          build_b=$(mktemp)
+          trap 'rm -f -- "$build_a" "$build_b"' EXIT
+
+          ./source/build/build-mvc-monolith.sh "$build_a"
+          ./source/build/build-mvc-monolith.sh "$build_b"
+
+          cmp -- "$build_a" "$build_b"
+          cmp -- "$build_a" ./dist/mvc
+          sha256sum -- "$build_a" "$build_b" ./dist/mvc
+
+      - name: Run public regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo env "PATH=$PATH" ./source/tests/run-tests.sh

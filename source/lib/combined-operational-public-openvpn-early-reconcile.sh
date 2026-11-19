@@ -948,6 +948,13 @@ mvc24pube_move_runtime_dir_once() {
     fi
 }
 
+mvc24pube_retirement_blockers_absent() {
+    (( $# == 0 )) || return 1
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]]
+}
+
 mvc24pube_retire_archive_continue() {
     (( $# == 0 )) || return 1
     local runtime root archive controller activation output
@@ -960,9 +967,7 @@ mvc24pube_retire_archive_continue() {
     # the independently checkable safety poststate needed to retire journals.
     mvc24gb4_no_active_vpn && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
       mvc24pube_owned_tables_absent_now || return 1
-    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
-       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
-       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
+    mvc24pube_retirement_blockers_absent || return 1
     root=$(mvc24pube_archive_root) || return 1
     archive=$root/$MVC24PUBE_CLONE_UUID
     if [[ ! -e $root && ! -L $root ]]; then (umask 077; mkdir -m 700 -- "$root") || return 1; fi
@@ -992,9 +997,7 @@ mvc24pube_retire_runtime_roots() {
     mvc24pube_release_intent_valid && mvc24gc23t_release_post_witness &&
       mvc24gc23t_b2_topology_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
       mvc24pube_owned_tables_absent_now || return 1
-    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
-       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
-       ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
+    mvc24pube_retirement_blockers_absent || return 1
     local intent; intent=$(mvc24pube_retire_intent_path) || return 1
     if [[ ! -e $intent && ! -L $intent ]]; then mvc24pube_publish_retire_intent || return 1; fi
     mvc24pube_retire_intent_valid || return 1

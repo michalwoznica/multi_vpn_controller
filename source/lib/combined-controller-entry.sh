@@ -42,7 +42,8 @@ mvc24e_dispatch() {
     case "$verb" in
         version|--version)
             (( $# == 1 )) || return 2
-            printf '%s\n' 'Multi VPN Controller 2.4.2'
+            [[ -n ${MVC24_RELEASE_VERSION:-} ]] || { mvc24e_error 'Release identity is unavailable.'; return 70; }
+            printf 'Multi VPN Controller %s\n' "$MVC24_RELEASE_VERSION"
             ;;
         preflight)
             # Explicit read-only admission verb; v2.3.0 is not involved.
