@@ -141,6 +141,14 @@ if grep -Fq "'$V242_FINAL_SHA'" "$INSTALLER"; then
 else
     bad 'installer allowlist contains exact final v2.4.2 predecessor hash'
 fi
+# The exact final 2.4.3 release is the direct update predecessor for this line.
+V243_FINAL_SHA=e7b57753b7bb11f144e4686647f5a0cba387d18166df93d6559ced5515d5ea9c
+if grep -Fq "'$V243_FINAL_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact final v2.4.3 predecessor hash'
+else
+    bad 'installer allowlist contains exact final v2.4.3 predecessor hash'
+fi
+
 # Exercise predecessor semantics hermetically with a synthetic controller whose
 # exact hash is injected only into a private copied package. This proves the
 # content-hash gate without bundling an old monolith in the public repository.

@@ -1,4 +1,11 @@
 # Changelog
+## MVC 2.4.4 underlay-replacement investigation
+- Begin the 2.4.4 maintenance line from the exact released 2.4.3 baseline.
+- Preserve existing fail-closed B2/C23T convergence semantics; no replacement-underlay acceptance rule is added yet.
+- Surface C23T's fixed post-stop convergence category in public `disconnect` failures so a controlled reproduction can distinguish link, IPv4-route and IPv6-route mismatch without weakening teardown authentication.
+- Add regression coverage for the existing exact B2 snapshot contract and its narrow NetworkManager `+20000` default-route metric exception.
+- Authorize the exact physically validated 2.4.3 executable as an authenticated installer update predecessor.
+
 ## MVC 2.4.3 CI, release infrastructure and identity centralization
 - Add GitHub Actions CI and contributor/release documentation for the public regression workflow.
 - Remove retired predecessor-era public source/install/test artifacts and scope identity/module audits to the authoritative production surface.

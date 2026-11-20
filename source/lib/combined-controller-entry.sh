@@ -210,7 +210,12 @@ mvc24e_dispatch() {
                 esac
                 return 0
             fi
-            mvc24e_error "Disconnect failed at stage: ${MVC24PUBD_STAGE:-unverified}; authenticated state may remain. Do not retry blindly; inspect packaged recovery tools."
+            local completion_detail=
+            if [[ ${MVC24PUBD_STAGE:-} == session-completion-failed-* &&
+                  ${MVC24PUBD_COMPLETION_DETAIL:-unverified} != unverified ]]; then
+                completion_detail="; completion detail: ${MVC24PUBD_COMPLETION_DETAIL}"
+            fi
+            mvc24e_error "Disconnect failed at stage: ${MVC24PUBD_STAGE:-unverified}${completion_detail}; authenticated state may remain. Do not retry blindly; inspect packaged recovery tools."
             return 1
             ;;
         *)

@@ -25,6 +25,25 @@ mvc24pubd_reset() {
     MVC24PUBD_MARKER_KIND=none
     MVC24PUBD_TRANSACTION_STATE=none
     MVC24PUBD_COMPLETED_MARKER_FILE=
+    MVC24PUBD_COMPLETION_DETAIL=unverified
+}
+
+# Preserve only C23T's fixed diagnostic categories for the public caller.
+# This is observation text only: it grants no teardown, release or retry authority.
+mvc24pubd_record_completion_failure() {
+    (( $# == 0 )) || return 1
+    local detail=${MVC24GC23T_CONVERGENCE_DETAIL:-unverified}
+    case $detail in
+        unverified|topology-runtime-unavailable|topology-runtime-invalid|topology-scratch-create-failed|\
+        topology-capture-failed|links-not-restored|routes4-not-restored|routes6-not-restored|\
+        topology-session-journal-changed|topology-restored-nm-connectivity-penalty-equivalent|\
+        topology-restored|topology-scratch-cleanup-failed|session-reconstruction|\
+        no-active-vpn-before-c1|c1-firewall-and-foreign-policy|no-active-vpn-after-topology|\
+        final-lock|verified) ;;
+        *) detail=unverified ;;
+    esac
+    MVC24PUBD_COMPLETION_DETAIL=$detail
+    MVC24PUBD_STAGE="session-completion-failed-${MVC24GC23T_STAGE:-unknown}"
 }
 
 mvc24pubd_active_path() {
@@ -1115,7 +1134,7 @@ mvc24pubd_disconnect_once() {
 
         MVC24PUBD_STAGE=completing-session
         if ! mvc24gco_complete_once; then
-            MVC24PUBD_STAGE="session-completion-failed-${MVC24GC23T_STAGE:-unknown}"
+            mvc24pubd_record_completion_failure || MVC24PUBD_STAGE=session-completion-failed-diagnostic-recording-refused
             mvc24pubd_consume_authority
             return 1
         fi
@@ -1189,7 +1208,7 @@ mvc24pubd_disconnect_once() {
         fi
         MVC24PUBD_STAGE=completing-session
         if ! mvc24gco_complete_once; then
-            MVC24PUBD_STAGE="session-completion-failed-${MVC24GC23T_STAGE:-unknown}"
+            mvc24pubd_record_completion_failure || MVC24PUBD_STAGE=session-completion-failed-diagnostic-recording-refused
             mvc24pubd_consume_authority
             return 1
         fi
@@ -1278,7 +1297,7 @@ mvc24pubd_disconnect_once() {
 
     MVC24PUBD_STAGE=completing-session
     if ! mvc24gco_complete_once; then
-        MVC24PUBD_STAGE="session-completion-failed-${MVC24GC23T_STAGE:-unknown}"
+        mvc24pubd_record_completion_failure || MVC24PUBD_STAGE=session-completion-failed-diagnostic-recording-refused
         mvc24pubd_consume_authority
         return 1
     fi
