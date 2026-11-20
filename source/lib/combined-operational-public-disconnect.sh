@@ -370,13 +370,11 @@ mvc24pubd_parse_completed_session_marker() {
     MVC24PUBD_COMPLETED_MARKER_FILE=$file
 }
 
-# Break-glass recovered-session support.  This path grants no authority from
-# B4 absence alone.  It is eligible only after the original same-boot OpenVPN
-# session journals authenticate, all VPN/WireGuard and MVC-owned routing state
-# is absent, foreign nftables policy is unchanged, and post-session topology
-# satisfies the normal convergence/security witness.  It exists so a deliberate
-# emergency B4 disarm can be followed by one authenticated `mvc disconnect`
-# which retires the failed session without rebooting.
+# Read-only B4-absence observation used to enforce the catastrophic-recovery
+# boundary.  B4 absence alone grants no lifecycle authority: after emergency
+# rollback this release deliberately retains failed-session evidence and requires
+# reboot before another MVC session.  Interrupted normal teardown is handled
+# separately only when its authenticated guard-release intent already exists.
 mvc24pubd_b4_all_absent() {
     (( $# == 0 )) || return 1
     local json count

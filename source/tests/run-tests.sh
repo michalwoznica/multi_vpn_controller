@@ -28,6 +28,7 @@ TESTS=(
   test-disconnect-convergence-core.sh
   test-standalone-wireguard-disconnect-convergence.sh
   test-standalone-wireguard-partial-start-disconnect.sh
+  test-release-facing-convergence-contract.sh
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh

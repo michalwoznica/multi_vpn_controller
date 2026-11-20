@@ -56,7 +56,7 @@ Record the exact executable SHA-256 used for any subsequent physical validation.
 
 When a release changes VPN lifecycle/runtime behavior, routing, DNS, firewall policy, NetworkManager interaction, persistent ownership records, recovery behavior, or other live networking semantics, validate the exact candidate artifact on an appropriate real host before final promotion.
 
-The required scenario depends on the change. At minimum, validate the behavior directly affected by the release and prove clean restoration to baseline. Do not expand destructive testing beyond the release scope without a concrete reason.
+The required scenario depends on the change. At minimum, validate the behavior directly affected by the release and prove a clean MVC-free final state. Disconnect does not require the current physical/IPv4 topology to reproduce the pre-connect snapshot, so validation should distinguish MVC-owned cleanup from ordinary host topology changes. Do not expand destructive testing beyond the release scope without a concrete reason.
 
 Repository-only changes such as documentation, issue templates or CI configuration do not require live VPN validation unless they also change generated/runtime bytes.
 
@@ -80,7 +80,7 @@ If final promotion changed the executable hash, perform the bounded final physic
 - ordinary Internet routes through OpenVPN;
 - protected state is observed while active;
 - authenticated `mvc disconnect` succeeds;
-- baseline routes, DNS, managed profiles/links, nftables state and runtime roots are restored;
+- MVC-owned routes, DNS/tunnel state, managed temporary profiles/links, nftables state and live runtime authority are retired as expected;
 - temporary monolith resources are not left behind.
 
 Use a known responsive private host for WireGuard data-plane liveness rather than assuming every configured gateway address answers ICMP.

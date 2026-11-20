@@ -1,4 +1,12 @@
 # Changelog
+## MVC 2.4.4 final integration and release-facing convergence contract
+- Complete the post-R10 integration audit across OpenVPN-only, protected WireGuard-only, split WireGuard-only and combined teardown. Remaining disconnect hard stops are limited to authenticated ownership/journal failure, foreign or ambiguous managed state, unprovable nftables/final-safety state, or cleanup/finalization outcomes that cannot be safely classified. No additional runtime convergence gap was found.
+- Correct release-facing disconnect semantics after the current-underlay policy change: successful teardown now reports that MVC-owned state has been retired rather than claiming a fresh connection is automatically eligible. A later same-boot `connect` attempt must independently pass normal strict admission.
+- Clarify that authenticated disconnect converges MVC-owned state without requiring the current physical interface, IPv4 address/gateway/default-route set or route metric to match the pre-connect snapshot. The final safety boundary still rejects IPv6 default routing, residual MVC-reserved routes, foreign/ambiguous managed state and unprovable firewall state.
+- Remove the obsolete R3 source comment that described emergency B4 disarm followed by `mvc disconnect`. The MVC 2.4.4 catastrophic-recovery boundary remains: emergency rollback is terminal for the boot and reboot is required before another MVC session.
+- Update README, OPERATIONS, architecture, security and release-validation documentation to distinguish MVC-owned cleanup from host-topology restoration and to describe recovery as exceptional rather than part of normal disconnect.
+- Add a release-facing contract regression preventing future documentation/CLI drift around fresh-connect eligibility, original-topology restoration and post-emergency finalization.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 6
 - Make authenticated OpenVPN teardown convergence-driven when the exact MVC-owned temporary clone is still active but its historical tun/default-route/DNS shape has degraded. The immutable public-session/clone identity remains the ownership authority; degraded routing or DNS is diagnostic rather than a reason to strand cleanup.
 - Add an exact owned-active OpenVPN observation that accepts only the authenticated `vpnks-ovpn` clone, optional MVC tun state, and—in combined mode—the authenticated MVC WireGuard survivor. Foreign managed VPN/tap/ppp/WireGuard state remains a hard refusal before mutation.

@@ -167,7 +167,7 @@ mvc24e_dispatch() {
             case ${MVC24PUBC_STAGE:-unverified} in
                 *-auto-cleaned-baseline|connect-failed-clean-baseline-restored)
                     mvc24e_error "Connect failed at stage: ${MVC24PUBC_STAGE}; authenticated cleanup completed."
-                    printf '%s\n' 'RESULT: CONNECT FAILED — AUTHENTICATED CLEANUP COMPLETE; BASELINE RESTORED'
+                    printf '%s\n' 'RESULT: CONNECT FAILED — AUTHENTICATED MVC CLEANUP COMPLETE'
                     ;;
                 *)
                     mvc24e_error "Connect failed at stage: ${MVC24PUBC_STAGE:-unverified}; authenticated state may remain. Run mvc disconnect once; if it refuses, inspect packaged recovery tools."
@@ -189,23 +189,27 @@ mvc24e_dispatch() {
                         ;;
                     public-openvpn-session-complete-sameboot-ready)
                         printf '%s\n' 'PASS: authenticated OpenVPN-only session stopped and finalized'
-                        printf '%s\n' 'RESULT: OPENVPN SESSION COMPLETE — SAME-BOOT FRESH SESSION ELIGIBLE'
+                        printf '%s\n' 'RESULT: OPENVPN SESSION COMPLETE — MVC OWNED STATE RETIRED'
                         ;;
                     public-wireguard-protected-session-complete-sameboot-ready)
                         printf '%s\n' 'PASS: authenticated WireGuard-only protected session stopped and finalized'
-                        printf '%s\n' 'RESULT: WIREGUARD PROTECTED SESSION COMPLETE — SAME-BOOT FRESH SESSION ELIGIBLE'
+                        printf '%s\n' 'RESULT: WIREGUARD PROTECTED SESSION COMPLETE — MVC OWNED STATE RETIRED'
                         ;;
                     public-wireguard-split-session-complete-sameboot-ready)
                         printf '%s\n' 'PASS: authenticated WireGuard-only split session stopped and finalized'
-                        printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION COMPLETE — SAME-BOOT FRESH SESSION ELIGIBLE'
+                        printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION COMPLETE — MVC OWNED STATE RETIRED'
                         ;;
                     public-openvpn-partial-session-complete-sameboot-ready|public-incomplete-openvpn-start-clean-baseline-restored)
                         printf '%s\n' 'PASS: authenticated partial OpenVPN session stopped and finalized'
-                        printf '%s\n' 'RESULT: PARTIAL SESSION CLEANUP COMPLETE — BASELINE RESTORED'
+                        printf '%s\n' 'RESULT: PARTIAL SESSION CLEANUP COMPLETE — MVC OWNED STATE RETIRED'
+                        ;;
+                    public-completed-session-marker-retired-sameboot-ready)
+                        printf '%s\n' 'PASS: authenticated completed-session marker retired'
+                        printf '%s\n' 'RESULT: MVC SESSION COMPLETE — MVC OWNED STATE RETIRED'
                         ;;
                     *)
                         printf '%s\n' 'PASS: authenticated same-boot parallel session stopped and finalized'
-                        printf '%s\n' 'RESULT: DUAL SESSION COMPLETE — SAME-BOOT FRESH SESSION ELIGIBLE'
+                        printf '%s\n' 'RESULT: DUAL SESSION COMPLETE — MVC OWNED STATE RETIRED'
                         ;;
                 esac
                 return 0
@@ -215,7 +219,7 @@ mvc24e_dispatch() {
                   ${MVC24PUBD_COMPLETION_DETAIL:-unverified} != unverified ]]; then
                 completion_detail="; completion detail: ${MVC24PUBD_COMPLETION_DETAIL}"
             fi
-            mvc24e_error "Disconnect failed at stage: ${MVC24PUBD_STAGE:-unverified}${completion_detail}; authenticated state may remain. Do not retry blindly; inspect packaged recovery tools."
+            mvc24e_error "Disconnect failed at stage: ${MVC24PUBD_STAGE:-unverified}${completion_detail}; normal convergence could not prove a safe final state. Do not retry blindly; inspect packaged recovery tools."
             return 1
             ;;
         *)
