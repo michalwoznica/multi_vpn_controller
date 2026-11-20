@@ -120,34 +120,42 @@ else
     bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
-# This checkpoint changes only the emergency tool's final operator guidance. Recreate
-# the exact released/earlier-development recovery bytes and prove package
-# maintenance remains hash-authenticated: install refuses the prior identity,
-# while explicit update promotes it to the current recovery tool.
-OLD_EMERGENCY_SHA=b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c
-sed 's/NOTE: failed-session journals are intentionally retained; run sudo mvc disconnect once to authenticate and finalize recovery before starting a new MVC session/NOTE: B2\/B3 journal is intentionally retained; do not retry B4 install in this boot/' \
-    "$EMERGENCY" > "$TMP/old-emergency"
-chmod 700 "$TMP/old-emergency"
-if [[ $(sha256sum "$TMP/old-emergency" | awk '{print $1}') == "$OLD_EMERGENCY_SHA" ]]; then
-    ok 'test fixture reconstructs exact prior emergency recovery identity'
+# This checkpoint changes the emergency tool's final operator guidance again:
+# R6 delegated post-disarm retirement to `mvc disconnect`; R7 restores the
+# terminal recovery boundary and requires reboot. Reconstruct exact R6 bytes
+# and prove explicit update promotes them to the current recovery tool.
+R6_EMERGENCY_SHA=e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b
+sed 's/NOTE: failed-session journals are intentionally retained; reboot before starting another MVC session/NOTE: failed-session journals are intentionally retained; run sudo mvc disconnect once to authenticate and finalize recovery before starting a new MVC session/' \
+    "$EMERGENCY" > "$TMP/r6-emergency"
+chmod 700 "$TMP/r6-emergency"
+if [[ $(sha256sum "$TMP/r6-emergency" | awk '{print $1}') == "$R6_EMERGENCY_SHA" ]]; then
+    ok 'test fixture reconstructs exact R6 emergency recovery identity'
 else
-    bad 'test fixture reconstructs exact prior emergency recovery identity'
+    bad 'test fixture reconstructs exact R6 emergency recovery identity'
 fi
-cp -- "$TMP/old-emergency" "$E_DST"; chmod 700 "$E_DST"
+cp -- "$TMP/r6-emergency" "$E_DST"; chmod 700 "$E_DST"
 set +e
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/old-emergency-install.out" 2>&1
-old_emergency_install_rc=$?
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r6-emergency-install.out" 2>&1
+r6_emergency_install_rc=$?
 set -e
-if (( old_emergency_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/old-emergency-install.out"; then
-    ok 'install refuses approved prior emergency recovery identity and requires update'
+if (( r6_emergency_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r6-emergency-install.out"; then
+    ok 'install refuses exact R6 emergency recovery identity and requires update'
 else
-    bad 'install refuses approved prior emergency recovery identity and requires update'
+    bad 'install refuses exact R6 emergency recovery identity and requires update'
 fi
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/old-emergency-update.out"
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r6-emergency-update.out"
 if cmp -s -- "$E_DST" "$EMERGENCY"; then
-    ok 'update authenticates and promotes exact prior emergency recovery identity'
+    ok 'update authenticates and promotes exact R6 emergency recovery identity'
 else
-    bad 'update authenticates and promotes exact prior emergency recovery identity'
+    bad 'update authenticates and promotes exact R6 emergency recovery identity'
+fi
+
+# The final 2.4.3 recovery tool remains an approved direct predecessor as well.
+V243_EMERGENCY_SHA=b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c
+if grep -Fq "'$V243_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist retains exact released emergency recovery predecessor'
+else
+    bad 'installer allowlist retains exact released emergency recovery predecessor'
 fi
 
 # The public v2.4.1 release remains a supported predecessor for 2.4.2.

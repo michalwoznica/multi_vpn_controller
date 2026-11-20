@@ -22,7 +22,7 @@ TESTS=(
   test-underlay-replacement-convergence-diagnostics.sh
   test-post-session-ipv6-safety-convergence.sh
   test-current-underlay-final-safety-convergence.sh
-  test-breakglass-recovery-finalization.sh
+  test-emergency-recovery-boundary.sh
   test-disconnect-convergence-core.sh
   test-standalone-wireguard-disconnect-convergence.sh
   test-installer.sh

@@ -49,14 +49,14 @@ MODULE|044|c2bdde9235a60c538ed5555fbdafb911de14bdcb5c543f7f89fc9fe0c96a9d09|sour
 MODULE|045|ffd05fea73754e9475de69154aaa6aebc358382eea552680cfb7e84b66e38782|source/lib/combined-operational-public-openvpn-early-reconcile.sh|ordered-runtime-module
 MODULE|046|5a7828c14a8a851256a38c9dd29d9067a8859eb42d3c40a9caf234f097ba5de1|source/lib/combined-operational-public-readonly.sh|ordered-runtime-module
 MODULE|047|b70cc2acc3eedfdd00ecc2db56c2b066eec5e8627cd9b7ab0d167848917700b9|source/lib/combined-operational-public-connect.sh|ordered-runtime-module
-MODULE|048|b8163b6a53d888ce54c7612851033141f25ec70b6af1ba36dda3dee1a610c26b|source/lib/combined-operational-public-disconnect.sh|ordered-runtime-module
-MODULE|049|dc734626e4aa7b5d9591b3912902ac39a9f2302eb82c3b77e06872cd34bf75a2|source/lib/combined-controller-entry.sh|ordered-runtime-module
+MODULE|048|5fb000f2d07407a42abe2b7c0cc8d6bb35bbf657706416f47e6fd3868318be25|source/lib/combined-operational-public-disconnect.sh|ordered-runtime-module
+MODULE|049|a02ba8b61f2632076794ed59ce30137655c176ecdc1b1fcd69521d9f64efe3af|source/lib/combined-controller-entry.sh|ordered-runtime-module
 ASSET|gvariant-awk|6b454021a543afb9593d9f06bdb8d5e15ee119f4ade30b776af6ad70ed718ac1|source/lib/combined-gvariant-settings-to-json.awk|embed-as-deterministic-runtime-resource
 ASSET|b4-bootstrap-nft|15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23|source/nftables/mvc-preclone-quarantine-offline.nft|embed-as-deterministic-runtime-resource
 INTEGRATE|release-version|9ecc8cb252b269596adeed39e2636ff205ca8235b44a3db8212d03255fd55c0b|source/release-version|release-identity-data
 INTEGRATE|openvpn-source-preview|043bbca72023e13dbe1bf3be5a75ef8104b4520330982b99239977c9b5ff8bd3|source/tools/check-mvc-live-saved-ovpn-readonly.sh|internalize-only-controller-required-preview-derivative-path;do-not-bundle-unused-diagnostic-actions
 INTEGRATE|verify|85366d00291bd462083438e9a538c684a2ec83724cf8db0cfac5926488da4306|source/tools/verify-mvc-state-readonly.sh|integrate-as-main-verify-subcommand;diagnostic-only
-EXTERNAL_RECOVERY|emergency|e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
+EXTERNAL_RECOVERY|emergency|cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
 EXTERNAL_RECOVERY|dual|211b68fc610ea8e184ab5ee2f0b8a1b7d79c9389323714dceec2a7ccf05f99cc|source/tools/recover-mvc-dual-local.sh|installed=/root/mvc-dual-recovery;remain-independent;main-help-must-document
 EXCLUDE|loader|fa76a70e49a929b830b1cc6b22298151775a1c68affee20bb8cb72569588e101|source/lib/combined-controller-wiring.sh|loader-only;must-not-appear-in-monolith-body
 EXCLUDE|loader|a1c6a95b668b596972a3197747f9e6b101b2ea5d50d919b514dd19c3846b6c16|source/lib/combined-operational-public-composition.sh|loader-only;must-not-appear-in-monolith-body

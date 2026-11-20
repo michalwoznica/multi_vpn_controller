@@ -34,13 +34,15 @@ else
 fi
 
 
-# Break-glass recovery has its own truthful intent -> clone-delete -> archive
-# chain; it must not masquerade as normal C23T B4 release completion.
-for sig in mvc-c24b-breakglass-finalize-v1 mvc-c24b-breakglass-clone-delete-v1 mvc-c24b-breakglass-archive-plan-v1; do
-  count=$(rg -F "$sig" "$DISC" | wc -l)
-  if (( count >= 2 )); then pass "$sig producer/validator pair present"; else fail "$sig producer/validator pair present"; fi
-done
+# this MVC release intentionally has no second break-glass lifecycle-finalization
+# namespace. Emergency B4 rollback retains the failed-session journals and
+# requires reboot; same-boot recovery finalization is deferred.
+if ! rg -q 'mvc-c24b-breakglass-(finalize|clone-delete|archive-plan)-v1' "$DISC"; then
+  pass 'provisional R3 break-glass finalization namespace is absent'
+else
+  fail 'provisional R3 break-glass finalization namespace is absent'
+fi
 
 
-printf 'RESULT: MVC-R5D disconnect/finalization record namespace %d/%d checks passed\n' "$P" "$((P+F))"
+printf 'RESULT: this MVC release disconnect/finalization record namespace %d/%d checks passed\n' "$P" "$((P+F))"
 (( F == 0 ))

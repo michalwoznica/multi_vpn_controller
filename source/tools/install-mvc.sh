@@ -98,6 +98,7 @@ readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
 # overwritten.
 readonly -a MVC24I_APPROVED_UPDATE_EMERGENCY_SHA256=(
     'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'
+    'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'
 )
 
 mvc24i_is_approved_update_emergency_sha256() {

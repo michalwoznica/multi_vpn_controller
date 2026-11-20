@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+export LC_ALL=C
+cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
+export MVC24E_CODE_ROOT=$PWD
+source lib/combined-operational-public-composition.sh
+source lib/combined-operational-public-disconnect.sh
+
+P=0 F=0
+pass(){ printf 'PASS: %s\n' "$1"; P=$((P+1)); }
+fail(){ printf 'FAIL: %s\n' "$1" >&2; F=$((F+1)); }
+
+DISC=lib/combined-operational-public-disconnect.sh
+ENTRY=lib/combined-controller-entry.sh
+REC=tools/recover-mvc-host-guard-local.sh
+INST=tools/install-mvc.sh
+
+# 1. The provisional R3 lifecycle-retirement protocol must be gone from the
+# public disconnect implementation. Emergency recovery is no longer a second
+# normal lifecycle path in this release.
+if ! grep -Eq 'mvc-c24b-breakglass-(finalize|clone-delete|archive-plan)-v1|mvc24pubd_parse_breakglass_marker|mvc24pubd_breakglass_finalize_once' "$DISC"; then
+    pass 'R3 break-glass lifecycle-finalization protocol is absent from public disconnect'
+else
+    fail 'R3 break-glass lifecycle-finalization protocol removal'
+fi
+
+# 2. The public CLI must not advertise a recovered-session same-boot success
+# state that the current release no longer provides.
+if ! grep -Fq 'EMERGENCY RECOVERY FINALIZED — SAME-BOOT FRESH SESSION ELIGIBLE' "$ENTRY" &&
+   ! grep -Fq 'public-breakglass-recovered-session-retired-sameboot-ready' "$ENTRY"; then
+    pass 'controller exposes no post-emergency same-boot finalization success'
+else
+    fail 'controller post-emergency success removal'
+fi
+
+# 3. Emergency rollback remains narrow and tells the operator the actual current-release
+# boundary: retained evidence, reboot before another MVC session.
+if grep -Fq 'failed-session journals are intentionally retained; reboot before starting another MVC session' "$REC" &&
+   ! grep -Fq 'run sudo mvc disconnect once to authenticate and finalize recovery' "$REC"; then
+    pass 'emergency rollback guidance requires reboot and no follow-up disconnect'
+else
+    fail 'emergency rollback terminal guidance'
+fi
+
+# 4. B4 absence without a normal release intent is the emergency-disarm
+# boundary. This is a classification only; B4 absence grants no cleanup authority.
+mvc24pubd_reset
+MVC24PUBD_SESSION_MODE=combined
+mvc24pubd_b4_all_absent(){ return 0; }
+mvc24pubd_normal_guard_release_intent_present(){ return 1; }
+if mvc24pubd_emergency_disarm_boundary_observed; then
+    pass 'B4 absence without normal release intent is classified as emergency boundary'
+else
+    fail 'emergency boundary classification'
+fi
+
+# 5. A normal teardown that already published its authenticated guard-release
+# intent must remain resumable even if B4 is already absent after the commit.
+mvc24pubd_normal_guard_release_intent_present(){ return 0; }
+if ! mvc24pubd_emergency_disarm_boundary_observed; then
+    pass 'normal release-intent resume is not misclassified as emergency recovery'
+else
+    fail 'normal release resume classification'
+fi
+
+# 6. Coordinator ordering: an authenticated protected session with B4 absent
+# and no normal release intent refuses before any tunnel/profile mutation.
+mvc24pubd_reset
+LOG=()
+mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
+mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
+mvc24pubd_emergency_disarm_boundary_observed(){ LOG+=(emergency-boundary); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(MUTATION-PATH-MUST-NOT-RUN); return 0; }
+mvc24gb2_close(){ LOG+=(close); return 0; }
+if ! mvc24pubd_disconnect_once &&
+   [[ ${LOG[*]} == 'marker lock emergency-boundary close' &&
+      $MVC24PUBD_STAGE == emergency-disarm-reboot-required ]]; then
+    pass 'disconnect refuses post-emergency lifecycle mutation and requires reboot'
+else
+    fail 'disconnect emergency-boundary coordinator order'
+fi
+
+# 7. Normal guarded teardown still proceeds when the emergency boundary is not
+# present. This protects R2-R6 convergence behavior from the R7 cleanup.
+mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
+LOG=()
+mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
+mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
+mvc24pubd_emergency_disarm_boundary_observed(){ LOG+=(boundary-check); return 1; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn); return 0; }
+mvc24pubd_load_d4_intent(){ LOG+=(wg); return 0; }
+mvc24gd4_dual_active_observed(){ return 0; }
+mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-clean); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
+mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
+mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
+mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
+mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
+if mvc24pubd_disconnect_once && [[ $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready ]]; then
+    pass 'ordinary authenticated disconnect convergence remains active'
+else
+    fail 'ordinary disconnect preserved after recovery-boundary cleanup'
+fi
+
+# 8. Installer must accept both the released emergency tool and the exact R6
+# development predecessor when promoting to the new recovery-tool bytes.
+if grep -Fq "'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'" "$INST" &&
+   grep -Fq "'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'" "$INST"; then
+    pass 'installer authenticates released and R6 emergency recovery predecessors'
+else
+    fail 'installer emergency predecessor authorization'
+fi
+
+printf 'Results: %d passed, %d failed\n' "$P" "$F"
+(( F == 0 ))

@@ -1,4 +1,13 @@
 # Changelog
+## MVC 2.4.4 emergency recovery boundary
+- Remove the provisional R3 post-emergency lifecycle-finalization subsystem from normal `mvc disconnect`; B4 absence no longer grants authority to archive failed-session journals, delete an inactive OpenVPN clone, retire the public-session marker, or claim same-boot reuse.
+- Restore `/root/mvc-emergency-rollback` as a narrow independent catastrophic B4 disarm. After a successful emergency disarm, failed-session evidence is intentionally retained and the operator must reboot before starting another MVC session.
+- Preserve normal crash-resume semantics: if an authenticated normal teardown had already published its own guard-release intent before interruption, subsequent `mvc disconnect` may continue that normal teardown even when B4 is already absent.
+- Add an explicit emergency-boundary classifier so an authenticated protected session with B4 absent and no normal guard-release intent refuses before OpenVPN/WireGuard/profile mutation with `emergency-disarm-reboot-required`.
+- Remove the provisional `mvc-c24b-breakglass-*` record namespace and the public CLI success result that advertised post-emergency same-boot readiness.
+- Keep the released 2.4.3 emergency tool and the exact R6 emergency-tool bytes as authenticated installer update predecessors.
+- Same-boot MVC reuse after successful catastrophic recovery remains an explicit design goal, deferred to 2.4.5 where recovery success can be defined as complete lifecycle recovery rather than B4 disarm alone.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 3
 - Replace post-session byte-for-byte physical-link/IPv4 restoration with the owner-approved final-safety convergence policy. Once the same-boot MVC session is authenticated, saved B2 link/IPv4 snapshots remain admission/forensic evidence rather than teardown restoration targets.
 - Accept changed physical interface, address, gateway, route metric, multiple ordinary IPv4 defaults, or no IPv4 default at all during authenticated teardown. These conditions are diagnostic topology drift and no longer block cleanup or B4 release by themselves.

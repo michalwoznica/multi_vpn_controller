@@ -58,6 +58,8 @@ sudo /root/mvc-emergency-rollback --inspect
 
 Use a recovery mutation only when its inspector authenticates the corresponding owned residue. The independent recovery tools deliberately have narrower authority than the main controller.
 
+`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. In MVC 2.4.4 it does **not** perform full lifecycle retirement: failed-session journals are intentionally retained for evidence, normal `mvc disconnect` must not be used as a post-rollback finalizer, and the host must be rebooted before starting another MVC session. Same-boot reuse after a successful catastrophic recovery is deferred to a later release.
+
 ## NetworkManager route refresh
 
 On some NetworkManager configurations a physical default route may temporarily retain a raised metric after a protected session has otherwise been retired. If all MVC-managed state is gone, NetworkManager can be asked to reevaluate connectivity:
