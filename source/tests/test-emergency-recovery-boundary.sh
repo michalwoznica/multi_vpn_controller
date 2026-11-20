@@ -34,15 +34,17 @@ else
     fail 'controller post-emergency success removal'
 fi
 
-# 3. Emergency rollback remains mutation-narrow in this R1 checkpoint. The new
-# finalization classifier is read-only; rollback still requires reboot before
-# reuse because lifecycle retirement has not been implemented yet.
-if grep -Fq -- '--finalization-inspect' "$REC" &&
-   grep -Fq 'recovery finalization is read-only in this development checkpoint' "$REC" &&
+# 3. Recovery finalization now belongs only to the independent emergency tool.
+# B4 disarm remains phase 1, while --finalize can resume authenticated lifecycle
+# retirement after the kill switch is already off. Normal mvc disconnect remains
+# outside this catastrophic recovery path.
+if grep -Fq -- '--finalization-inspect|--finalize' "$REC" &&
+   grep -Fq 'RESULT: EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED' "$REC" &&
+   grep -Fq 'mvc_er_finalize_recovery' "$REC" &&
    ! grep -Fq 'run sudo mvc disconnect once to authenticate and finalize recovery' "$REC"; then
-    pass 'emergency rollback remains terminal while exposing read-only finalization classification'
+    pass 'independent emergency tool owns authenticated post-disarm finalization'
 else
-    fail 'emergency rollback R1 read-only finalization boundary'
+    fail 'independent emergency finalization boundary'
 fi
 
 # 4. B4 absence without a normal release intent is the emergency-disarm
@@ -107,12 +109,13 @@ else
 fi
 
 # 8. The current package must authenticate the exact released 2.4.4 controller
-# and emergency-recovery bytes as direct update predecessors.
+# plus both the released 2.4.4 and R1 emergency-recovery bytes as update predecessors.
 if grep -Fq "'c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db'" "$INST" &&
-   grep -Fq "'cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897'" "$INST"; then
-    pass 'installer authenticates exact released 2.4.4 controller and emergency recovery predecessors'
+   grep -Fq "'cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897'" "$INST" &&
+   grep -Fq "'9eca9dc61bb76dee7f4c06579a5609d46e85e514121628f03eab604518462717'" "$INST"; then
+    pass 'installer authenticates released 2.4.4 and R1 emergency recovery predecessors'
 else
-    fail 'installer 2.4.4 predecessor authorization'
+    fail 'installer recovery predecessor authorization'
 fi
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"

@@ -604,8 +604,8 @@ mvc24gwg_pre_d4_release_guard_once() {
     batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
     if [[ ! -e $intent && ! -L $intent ]]; then
         # Absence without our normal-disconnect intent is deliberately not
-        # adopted: it may be the result of emergency rollback, which remains a
-        # terminal recovery boundary for this release.
+        # adopted: it may be the result of emergency rollback, whose lifecycle
+        # finalization authority belongs only to the independent recovery tool.
         mvc24gwg_b2_guard_exact_now || return 1
         mvc24gwg_pre_d4_publish_release_intent || return 1
     fi

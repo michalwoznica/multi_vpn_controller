@@ -1,3 +1,16 @@
+## MVC 2.4.5 emergency recovery same-boot reuse — R2 authenticated finalization
+
+- Implement the independent post-disarm recovery finalizer while keeping B4 release itself journal-independent. `--rollback` still performs the atomic B4 break-glass deletion first, then attempts authenticated finalization; `--finalize` can resume only the lifecycle-retirement phase when B4 is already absent.
+- Reuse the R1 mature-session eligibility predicate as the mandatory pre-mutation gate. Active/foreign VPN or tunnel state, WireGuard residue, MVC proto-186/proto-187 routes, an IPv6 default route, ambiguous temporary profile identity, unsafe runtime trees or failed same-boot journal authentication remain hard blockers.
+- Preserve failed-session evidence before profile mutation in a root-only `/run/mvc-recovered/<session-marker-sha256>/` archive. The archive stores the exact fixed-root snapshot, a hash manifest and same-boot recovery metadata; archive tampering or metadata mismatch blocks retirement.
+- Journal the exact authenticated inactive OpenVPN-clone delete attempt before issuing it. A nonzero NetworkManager reply is accepted only when post-state independently proves the clone absent; an ambiguous attempted deletion is never blindly retried.
+- Re-run final managed-network safety after clone cleanup. If safety is no longer proven, retain the evidence archive and live public authority so same-boot reuse stays blocked while a later safe `--finalize` can continue.
+- Publish a recovery retirement plan only after all network mutation is complete and proven. From that point recovery is filesystem-only and crash-resumable from the archived snapshot even if hash-bound live journals have already disappeared.
+- Retire fixed MVC runtime roots with `/run/mvc-public-session` last, then verify all fixed roots are absent and the managed-network safety witness still passes before recording recovery completion.
+- Define full success as `EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED`; a fresh same-boot MVC session may then be attempted, but ordinary strict connect admission still applies.
+- Keep normal `mvc disconnect` outside catastrophic recovery authority and keep pre-mutation/partial-start emergency finalization deferred.
+- Extend installer predecessor authentication to the exact R1 emergency-recovery tool and add focused mutation/crash-resume regressions. The complete public suite now contains 39 tests.
+
 ## MVC 2.4.5 emergency recovery same-boot reuse — R1 read-only finalization classifier
 
 - Begin the 2.4.5 development line from the exact physically validated and released MVC 2.4.4 runtime baseline.

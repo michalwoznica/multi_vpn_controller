@@ -182,7 +182,7 @@ set +e
 mvc_er_parse_transaction_marker
 rc=$?
 set -e
-if (( rc == 2 )) && [[ $MVC_ER_PARSE_DETAIL == partial-start-not-supported-r1 ]]; then
+if (( rc == 2 )) && [[ $MVC_ER_PARSE_DETAIL == partial-start-not-supported ]]; then
     pass 'R1 explicitly defers partial-start recovery finalization'
 else
     fail 'partial-start R1 classification'

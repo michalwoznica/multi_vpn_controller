@@ -129,6 +129,13 @@ else
     bad 'installer allowlist contains exact released v2.4.4 emergency recovery predecessor'
 fi
 
+R1_EMERGENCY_SHA=9eca9dc61bb76dee7f4c06579a5609d46e85e514121628f03eab604518462717
+if grep -Fq "'$R1_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact R1 emergency recovery predecessor'
+else
+    bad 'installer allowlist contains exact R1 emergency recovery predecessor'
+fi
+
 # Exercise emergency-tool predecessor semantics hermetically without bundling
 # historical recovery bytes in the public repository. A private copied package
 # receives one synthetic approved hash, proving install refuses it while update

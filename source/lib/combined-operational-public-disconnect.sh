@@ -371,10 +371,10 @@ mvc24pubd_parse_completed_session_marker() {
 }
 
 # Read-only B4-absence observation used to enforce the catastrophic-recovery
-# boundary.  B4 absence alone grants no lifecycle authority: after emergency
-# rollback this release deliberately retains failed-session evidence and requires
-# reboot before another MVC session.  Interrupted normal teardown is handled
-# separately only when its authenticated guard-release intent already exists.
+# boundary inside normal disconnect. B4 absence alone grants this controller no
+# lifecycle authority: post-emergency retirement belongs only to the independent
+# recovery tool. Interrupted normal teardown is handled separately only when its
+# authenticated guard-release intent already exists.
 mvc24pubd_b4_all_absent() {
     (( $# == 0 )) || return 1
     local json count
@@ -1197,12 +1197,11 @@ mvc24pubd_disconnect_once() {
         return 1
     fi
 
-    # A successful emergency B4 rollback is a terminal recovery boundary in
-    # this MVC release.  It deliberately retains failed-session evidence and requires
-    # reboot before another MVC session.  Do not reinterpret B4 absence as
-    # authority for normal lifecycle retirement.  The only exception is an
-    # interrupted *normal* teardown that already published its authenticated
-    # guard-release intent; downstream code validates that intent before use.
+    # Emergency B4 absence is never adopted as normal-disconnect cleanup
+    # authority. The independent recovery tool owns authenticated post-disarm
+    # finalization and may retire the failed session separately. The only normal
+    # disconnect exception is an interrupted teardown that already published its
+    # authenticated guard-release intent; downstream code validates that intent.
     if mvc24pubd_emergency_disarm_boundary_observed; then
         MVC24PUBD_STAGE=emergency-disarm-reboot-required
         mvc24gb2_close >/dev/null 2>&1 || true
