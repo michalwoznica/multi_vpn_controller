@@ -1,4 +1,13 @@
 # Changelog
+## MVC 2.4.4 release-candidate physical validation
+- Physically validate the exact integrated 2.4.4 candidate executable SHA-256 `c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db` on the development host after authenticated update from the earlier 2.4.4 diagnostic candidate. Installation verification and the pre-session baseline were clean.
+- Prove a normal protected parallel OpenVPN + split-WireGuard session end-to-end: ordinary Internet and DNS used OpenVPN while configured private destinations remained reachable through WireGuard.
+- Reproduce the original same-interface Wi-Fi underlay/profile replacement incident while the combined session was active. OpenVPN disappeared, WireGuard survived, ordinary Internet became unusable under B4 protection, and the host entered the same degraded class that previously stranded teardown.
+- Prove the 2.4.4 convergence fix physically: ordinary authenticated `mvc disconnect` logged physical/IPv4 topology drift as a warning, converged the degraded session without either recovery tool, removed all MVC-owned temporary profiles, links, routes, B4 tables and live runtime authority, and restored ordinary connectivity.
+- Prove same-boot reuse after successful convergent disconnect: once the host topology again satisfied normal admission, combined preflight passed, a fresh same-boot combined session started successfully, and its ordinary authenticated disconnect returned to a clean MVC-free baseline.
+- Final verification after the campaign showed no managed VPN/WireGuard/tun state, no MVC-reserved routes, B4 `0/3`, no fixed live runtime roots, normal DNS/Internet, and both recovery inspectors clean. The exact physically validated executable hash is unchanged from the R11 integrated candidate.
+- No emergency recovery was required. Same-boot reuse after catastrophic emergency rollback remains intentionally deferred to MVC 2.4.5; in 2.4.4 emergency rollback remains terminal for the boot.
+
 ## MVC 2.4.4 final integration and release-facing convergence contract
 - Complete the post-R10 integration audit across OpenVPN-only, protected WireGuard-only, split WireGuard-only and combined teardown. Remaining disconnect hard stops are limited to authenticated ownership/journal failure, foreign or ambiguous managed state, unprovable nftables/final-safety state, or cleanup/finalization outcomes that cannot be safely classified. No additional runtime convergence gap was found.
 - Correct release-facing disconnect semantics after the current-underlay policy change: successful teardown now reports that MVC-owned state has been retired rather than claiming a fresh connection is automatically eligible. A later same-boot `connect` attempt must independently pass normal strict admission.
