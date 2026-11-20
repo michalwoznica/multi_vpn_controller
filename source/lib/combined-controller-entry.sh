@@ -199,6 +199,10 @@ mvc24e_dispatch() {
                         printf '%s\n' 'PASS: authenticated WireGuard-only split session stopped and finalized'
                         printf '%s\n' 'RESULT: WIREGUARD SPLIT SESSION COMPLETE — SAME-BOOT FRESH SESSION ELIGIBLE'
                         ;;
+                    public-breakglass-recovered-session-retired-sameboot-ready)
+                        printf '%s\n' 'PASS: authenticated break-glass-recovered MVC session finalized and archived'
+                        printf '%s\n' 'RESULT: EMERGENCY RECOVERY FINALIZED — SAME-BOOT FRESH SESSION ELIGIBLE'
+                        ;;
                     public-openvpn-partial-session-complete-sameboot-ready|public-incomplete-openvpn-start-clean-baseline-restored)
                         printf '%s\n' 'PASS: authenticated partial OpenVPN session stopped and finalized'
                         printf '%s\n' 'RESULT: PARTIAL SESSION CLEANUP COMPLETE — BASELINE RESTORED'

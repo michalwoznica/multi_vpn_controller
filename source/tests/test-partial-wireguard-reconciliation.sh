@@ -79,6 +79,7 @@ LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=transaction; MVC24PUBD_TRANSACTION_STATE=openvpn-protected; MVC24PUBD_OVPN_SOURCE_UUID=11111111-1111-4111-8111-111111111111; MVC24PUBD_OVPN_CLONE_UUID=22222222-2222-4222-8222-222222222222; MVC24PUBD_WG_SOURCE_UUID=33333333-3333-4333-8333-333333333333; MVC24PUBD_WG_TEMP_UUID=44444444-4444-4444-8444-444444444444; MVC24PUBD_UNDERLAY=f15ra; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
+mvc24pubd_b4_all_absent(){ return 1; }
 mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(rehydrate-ovpn); return 0; }
 mvc24pubd_load_d4_intent(){ LOG+=(rehydrate-wg); return 0; }
 mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(partial-reconcile); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }

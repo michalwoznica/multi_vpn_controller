@@ -26,6 +26,8 @@ mvc24pubd_reset() {
     MVC24PUBD_TRANSACTION_STATE=none
     MVC24PUBD_COMPLETED_MARKER_FILE=
     MVC24PUBD_COMPLETION_DETAIL=unverified
+    MVC24PUBD_BREAKGLASS_MARKER=no
+    MVC24PUBD_RECOVERY_ARCHIVE=
 }
 
 # Preserve only C23T's fixed diagnostic categories for the public caller.
@@ -365,11 +367,470 @@ mvc24pubd_parse_completed_session_marker() {
     MVC24PUBD_COMPLETED_MARKER_FILE=$file
 }
 
+# Break-glass recovered-session support.  This path grants no authority from
+# B4 absence alone.  It is eligible only after the original same-boot OpenVPN
+# session journals authenticate, all VPN/WireGuard and MVC-owned routing state
+# is absent, foreign nftables policy is unchanged, and post-session topology
+# satisfies the normal convergence/security witness.  It exists so a deliberate
+# emergency B4 disarm can be followed by one authenticated `mvc disconnect`
+# which retires the failed session without rebooting.
+mvc24pubd_b4_all_absent() {
+    (( $# == 0 )) || return 1
+    local json count
+    json=$(nft -j list tables 2>/dev/null) || return 1
+    count=$(jq -er '
+      if type != "object" or (.nftables | type) != "array" or
+         any(.nftables[]; type != "object" or (keys | length) != 1)
+      then error("malformed nft list-tables JSON")
+      else
+        [.nftables[] | .table? | select(type == "object") |
+          select((.family == "inet" and .name == "mvc_preclone_quarantine") or
+                 (.family == "bridge" and .name == "mvc_preclone_bridge") or
+                 (.family == "netdev" and .name == "mvc_preclone_underlay"))] | length
+      end
+    ' <<< "$json") || return 1
+    [[ $count == 0 ]]
+}
+
+mvc24pubd_managed_routes_absent() {
+    (( $# == 0 )) || return 1
+    local r186 r187
+    r186=$(ip -j -N -4 route show table all proto 186) || return 1
+    r187=$(ip -j -N -4 route show table all proto 187) || return 1
+    jq -e 'type=="array" and length==0' <<< "$r186" >/dev/null 2>&1 &&
+      jq -e 'type=="array" and length==0' <<< "$r187" >/dev/null 2>&1
+}
+
+mvc24pubd_breakglass_wg_absent() {
+    (( $# == 0 )) || return 1
+    [[ ${MVC24PUBD_SESSION_MODE:-none} == combined ]] || return 0
+    mvc24_valid_uuid "${MVC24PUBD_WG_TEMP_UUID:-}" || return 1
+    MVC24GD4_TEMP_NAME=vpnks-wg
+    MVC24GD4_TEMP_UUID=$MVC24PUBD_WG_TEMP_UUID
+    mvc24pubr_nm_inventory && [[ $MVC24PUBR_NM_STATUS == absent ]] || return 1
+    mvc24pubr_kernel_inventory && [[ $MVC24PUBR_KERNEL_STATUS == absent ]] || return 1
+    [[ ! -e ${MVC24GD4_TEMP_FILE:-/run/NetworkManager/system-connections/vpnks-wg.nmconnection} &&
+       ! -L ${MVC24GD4_TEMP_FILE:-/run/NetworkManager/system-connections/vpnks-wg.nmconnection} ]]
+}
+
+# Recovery-only public marker parser.  The normal active parser requires the
+# live D4 intent for a combined session.  After authenticated disconnect has
+# already removed WireGuard that intent is intentionally gone, so emergency
+# disarm may leave a truthful active/transaction marker whose OpenVPN/B2 hashes
+# are still verifiable but whose D4 hash is now historical evidence only.
+# This parser is used only by the break-glass retirement path below.
+mvc24pubd_parse_breakglass_marker() {
+    (( $# == 0 )) || return 1
+    local runtime file entry state boot userns netns mntns
+    local -a rows=() entries=()
+    runtime=$(mvc24pub_session_runtime_root) || return 1
+    [[ -d $runtime && ! -L $runtime && $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' ]] || return 1
+    mapfile -d '' -t entries < <(find "$runtime" -mindepth 1 -maxdepth 1 -print0) || return 1
+    (( ${#entries[@]} == 1 )) || return 1
+    entry=${entries[0]##*/}
+    case $entry in active|transaction) file=$runtime/$entry ;; *) return 1 ;; esac
+    [[ -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file" 2>/dev/null) == '0:400:1' ]] || return 1
+    mapfile -t rows < "$file" || return 1
+    (( ${#rows[@]} == 16 )) || return 1
+    if [[ $entry == active ]]; then
+        [[ ${rows[0]} == mvc-public-active-v1 && ${rows[1]} == state=dual-active-published ]] || return 1
+        state=dual-active-observed
+    else
+        [[ ${rows[0]} == mvc-public-transaction-v1 && ${rows[1]} == state=* ]] || return 1
+        state=${rows[1]#state=}
+        case $state in openvpn-protected|dual-active-observed) ;; *) return 1 ;; esac
+    fi
+    [[ ${rows[2]} == boot=* && ${rows[3]} == userns=* && ${rows[4]} == netns=* && ${rows[5]} == mntns=* &&
+       ${rows[6]} == ovpn_source_uuid=* && ${rows[7]} == ovpn_clone_uuid=* &&
+       ${rows[8]} == wg_source_uuid=* && ${rows[9]} == wg_temp_uuid=* && ${rows[10]} == underlay=* &&
+       ${rows[11]} == controller_prepare_sha=* && ${rows[12]} == controller_transition_sha=* &&
+       ${rows[13]} == activation_sha=* && ${rows[14]} == output_sha=* && ${rows[15]} == d4_intent_sha=* ]] || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    userns=$(readlink /proc/self/ns/user) || return 1
+    netns=$(readlink /proc/self/ns/net) || return 1
+    mntns=$(readlink /proc/self/ns/mnt) || return 1
+    [[ ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
+       ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" ]] || return 1
+
+    MVC24PUBD_OVPN_SOURCE_UUID=${rows[6]#ovpn_source_uuid=}
+    MVC24PUBD_OVPN_CLONE_UUID=${rows[7]#ovpn_clone_uuid=}
+    MVC24PUBD_WG_SOURCE_UUID=${rows[8]#wg_source_uuid=}
+    MVC24PUBD_WG_TEMP_UUID=${rows[9]#wg_temp_uuid=}
+    MVC24PUBD_UNDERLAY=${rows[10]#underlay=}
+    mvc24_valid_uuid "$MVC24PUBD_OVPN_SOURCE_UUID" && mvc24_valid_uuid "$MVC24PUBD_OVPN_CLONE_UUID" &&
+      mvc24gb1_valid_ifname "$MVC24PUBD_UNDERLAY" || return 1
+    if [[ $MVC24PUBD_WG_SOURCE_UUID == - && $MVC24PUBD_WG_TEMP_UUID == - ]]; then
+        [[ $state == openvpn-protected && ${rows[15]} == d4_intent_sha=- ]] || return 1
+        MVC24PUBD_SESSION_MODE=openvpn-only
+    else
+        mvc24_valid_uuid "$MVC24PUBD_WG_SOURCE_UUID" && mvc24_valid_uuid "$MVC24PUBD_WG_TEMP_UUID" || return 1
+        [[ $state == dual-active-observed && ${rows[15]#d4_intent_sha=} =~ ^[0-9a-f]{64}$ ]] || return 1
+        MVC24PUBD_SESSION_MODE=combined
+    fi
+    [[ ${rows[11]#controller_prepare_sha=} == "$(mvc24pubd_hash_file "$(mvc24pubc_controller_prepare_path)")" &&
+       ${rows[12]#controller_transition_sha=} == "$(mvc24pubd_hash_file "$(mvc24pubc_controller_transition_path)")" &&
+       ${rows[13]#activation_sha=} == "$(mvc24pubd_hash_file "$(mvc24pubc_activation_path)")" &&
+       ${rows[14]#output_sha=} == "$(mvc24pubd_hash_file "$(mvc24pubc_output_path)")" ]] || return 1
+    MVC24PUBD_MARKER_KIND=$entry
+    MVC24PUBD_TRANSACTION_STATE=$state
+    MVC24PUBD_BREAKGLASS_MARKER=yes
+}
+
+mvc24pubd_breakglass_authority_witness() {
+    (( $# == 0 )) || return 1
+    [[ ${MVC24PUBD_OPERATION:-none} == disconnect &&
+       ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
+       ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]] || return 1
+    case ${MVC24PUBD_STAGE:-idle} in
+      finalizing-breakglass-recovered-session|breakglass-clone-delete|breakglass-archive) ;;
+      *) return 1 ;;
+    esac
+    mvc24gb2_root_scope && mvc24gb2_lock_valid
+}
+
+mvc24pubd_breakglass_recovery_intent_valid() {
+    (( $# == 0 )) || return 1
+    local dir file boot userns netns mntns marker_file marker_sha c19_sha
+    local -a rows=()
+    dir=$(mvc24gc23t_runtime) || return 1
+    file=$dir/recovery-finalize-intent
+    [[ -d $dir && ! -L $dir && $(stat -c '%u:%a' -- "$dir") == 0:700 &&
+       -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file") == 0:400:1 ]] || return 1
+    mapfile -t rows < "$file" || return 1
+    (( ${#rows[@]} == 12 )) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    userns=$(readlink /proc/self/ns/user) || return 1
+    netns=$(readlink /proc/self/ns/net) || return 1
+    mntns=$(readlink /proc/self/ns/mnt) || return 1
+    marker_file="$(mvc24pub_session_runtime_root)/${rows[6]#marker=}"
+    [[ $marker_file == /run/mvc-public-session/active || $marker_file == /run/mvc-public-session/transaction ]] || return 1
+    marker_sha=$(mvc24pubd_hash_file "$marker_file") || return 1
+    c19_sha=$(mvc24pubd_hash_file /run/mvc-disconnect/attempt) || return 1
+    [[ ${rows[0]} == mvc-c24b-breakglass-finalize-v1 &&
+       ${rows[1]} == state=breakglass-session-retirement-prepared &&
+       ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" &&
+       ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" &&
+       ${rows[6]} == marker=* && ${rows[7]} == "marker_sha=$marker_sha" &&
+       ${rows[8]} == "c19_sha=$c19_sha" &&
+       ${rows[9]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
+       ${rows[10]} == "clone=${MVC24GC23T_CLONE_UUID:-}" &&
+       ${rows[11]} == "nm_owner=${MVC24GC23T_NM_OWNER:-}" ]] || return 1
+    mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "${MVC24GC23T_CLONE_UUID:-}" &&
+      mvc24gc7_nm_owner_valid "${MVC24GC23T_NM_OWNER:-}"
+}
+
+mvc24pubd_publish_breakglass_recovery_intent() {
+    (( $# == 0 )) || return 1
+    local dir tmp boot userns netns mntns marker marker_sha c19_sha
+    mvc24pubd_breakglass_authority_witness || return 1
+    mvc24pubd_b4_all_absent && mvc24gb4_no_active_vpn && mvc24pubd_managed_routes_absent &&
+      mvc24pubd_breakglass_wg_absent && mvc24gc23t_b2_topology_witness && mvc24gc23t_release_post_witness || return 1
+    dir=$(mvc24gc23t_runtime) || return 1
+    [[ ! -e $dir && ! -L $dir && $(stat -f -c %T /run) == tmpfs ]] || return 1
+    (umask 077; mkdir -m 700 -- "$dir") || return 1
+    marker=${MVC24PUBD_MARKER_KIND:-none}
+    case $marker in active|transaction) ;; *) return 1 ;; esac
+    marker_sha=$(mvc24pubd_hash_file "$(mvc24pub_session_runtime_root)/$marker") || return 1
+    c19_sha=$(mvc24pubd_hash_file /run/mvc-disconnect/attempt) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    userns=$(readlink /proc/self/ns/user) || return 1
+    netns=$(readlink /proc/self/ns/net) || return 1
+    mntns=$(readlink /proc/self/ns/mnt) || return 1
+    tmp=$(umask 077; mktemp "$dir/.recovery.XXXXXXXX") || return 1
+    printf '%s\n' mvc-c24b-breakglass-finalize-v1 \
+      state=breakglass-session-retirement-prepared "boot=$boot" "userns=$userns" \
+      "netns=$netns" "mntns=$mntns" "marker=$marker" "marker_sha=$marker_sha" \
+      "c19_sha=$c19_sha" "source=$MVC24GC23T_SOURCE_UUID" "clone=$MVC24GC23T_CLONE_UUID" \
+      "nm_owner=$MVC24GC23T_NM_OWNER" > "$tmp" || return 1
+    chmod 400 -- "$tmp" || return 1
+    mv -T -- "$tmp" "$dir/recovery-finalize-intent" || return 1
+    mvc24pubd_breakglass_recovery_intent_valid
+}
+
+mvc24pubd_breakglass_clone_delete_intent_valid() {
+    (( $# == 0 )) || return 1
+    local dir file boot recovery
+    local -a rows=()
+    dir=$(mvc24gc23t_runtime) || return 1
+    file=$dir/recovery-clone-delete-intent
+    [[ -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file") == 0:400:1 ]] || return 1
+    mapfile -t rows < "$file" || return 1
+    (( ${#rows[@]} == 7 )) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    recovery=$(mvc24pubd_hash_file "$dir/recovery-finalize-intent") || return 1
+    [[ ${rows[0]} == mvc-c24b-breakglass-clone-delete-v1 &&
+       ${rows[1]} == state=nm-delete-attempted-once-outcome-uncertain &&
+       ${rows[2]} == "boot=$boot" && ${rows[3]} == "recovery=$recovery" &&
+       ${rows[4]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
+       ${rows[5]} == "clone=${MVC24GC23T_CLONE_UUID:-}" &&
+       ${rows[6]} == "nm_owner=${MVC24GC23T_NM_OWNER:-}" ]] || return 1
+    mvc24ga_uuid_valid "${MVC24GC23T_SOURCE_UUID:-}" && mvc24ga_uuid_valid "${MVC24GC23T_CLONE_UUID:-}" &&
+      mvc24gc7_nm_owner_valid "${MVC24GC23T_NM_OWNER:-}"
+}
+
+mvc24pubd_publish_breakglass_clone_delete_intent() {
+    (( $# == 0 )) || return 1
+    local dir tmp boot recovery
+    mvc24pubd_breakglass_authority_witness && mvc24pubd_breakglass_recovery_intent_valid || return 1
+    mvc24gc23t_clone_present "$MVC24GC23T_CLONE_UUID" || return 1
+    dir=$(mvc24gc23t_runtime) || return 1
+    [[ ! -e $dir/recovery-clone-delete-intent && ! -L $dir/recovery-clone-delete-intent ]] || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    recovery=$(mvc24pubd_hash_file "$dir/recovery-finalize-intent") || return 1
+    tmp=$(umask 077; mktemp "$dir/.clone-delete.XXXXXXXX") || return 1
+    printf '%s\n' mvc-c24b-breakglass-clone-delete-v1 \
+      state=nm-delete-attempted-once-outcome-uncertain "boot=$boot" "recovery=$recovery" \
+      "source=$MVC24GC23T_SOURCE_UUID" "clone=$MVC24GC23T_CLONE_UUID" \
+      "nm_owner=$MVC24GC23T_NM_OWNER" > "$tmp" || return 1
+    chmod 400 -- "$tmp" || return 1
+    mv -T -- "$tmp" "$dir/recovery-clone-delete-intent" || return 1
+    mvc24pubd_breakglass_clone_delete_intent_valid
+}
+
+mvc24pubd_breakglass_archive_plan_valid() {
+    (( $# == 0 )) || return 1
+    local dir file root archive boot recovery del marker marker_sha
+    local -a rows=()
+    dir=$(mvc24gc23t_runtime) || return 1
+    file=$dir/recovery-archive-plan
+    [[ -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file") == 0:400:1 ]] || return 1
+    mapfile -t rows < "$file" || return 1
+    (( ${#rows[@]} == 10 )) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    recovery=$(mvc24pubd_hash_file "$dir/recovery-finalize-intent") || return 1
+    del=$(mvc24pubd_hash_file "$dir/recovery-clone-delete-intent") || return 1
+    marker=${rows[5]#marker=}
+    case $marker in active|transaction) ;; *) return 1 ;; esac
+    marker_sha=$(mvc24pubd_hash_file "$(mvc24pub_session_runtime_root)/$marker") || return 1
+    root=$(mvc24gc23t_archive_root) || return 1
+    archive="$root/${MVC24GC23T_CLONE_UUID:-}"
+    [[ ${rows[0]} == mvc-c24b-breakglass-archive-plan-v1 &&
+       ${rows[1]} == state=recovered-session-archive-pending &&
+       ${rows[2]} == "boot=$boot" && ${rows[3]} == "recovery=$recovery" &&
+       ${rows[4]} == "delete=$del" && ${rows[5]} == "marker=$marker" &&
+       ${rows[6]} == "marker_sha=$marker_sha" &&
+       ${rows[7]} == "source=${MVC24GC23T_SOURCE_UUID:-}" &&
+       ${rows[8]} == "clone=${MVC24GC23T_CLONE_UUID:-}" &&
+       ${rows[9]} == "archive=$archive" ]] || return 1
+    MVC24PUBD_RECOVERY_ARCHIVE=$archive
+}
+
+mvc24pubd_publish_breakglass_archive_plan() {
+    (( $# == 0 )) || return 1
+    local dir root archive tmp boot recovery del marker marker_sha
+    mvc24pubd_breakglass_authority_witness && mvc24pubd_breakglass_recovery_intent_valid &&
+      mvc24pubd_breakglass_clone_delete_intent_valid && mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID" || return 1
+    dir=$(mvc24gc23t_runtime) || return 1
+    root=$(mvc24gc23t_archive_root) || return 1
+    archive="$root/$MVC24GC23T_CLONE_UUID"
+    [[ ! -e $dir/recovery-archive-plan && ! -L $dir/recovery-archive-plan &&
+       ! -e $archive && ! -L $archive ]] || return 1
+    if [[ ! -e $root ]]; then (umask 077; mkdir -m 700 -- "$root") || return 1; fi
+    [[ -d $root && ! -L $root && $(stat -c '%u:%a' -- "$root") == 0:700 ]] || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    recovery=$(mvc24pubd_hash_file "$dir/recovery-finalize-intent") || return 1
+    del=$(mvc24pubd_hash_file "$dir/recovery-clone-delete-intent") || return 1
+    marker=${MVC24PUBD_MARKER_KIND:-none}
+    marker_sha=$(mvc24pubd_hash_file "$(mvc24pub_session_runtime_root)/$marker") || return 1
+    tmp=$(umask 077; mktemp "$dir/.archive.XXXXXXXX") || return 1
+    printf '%s\n' mvc-c24b-breakglass-archive-plan-v1 \
+      state=recovered-session-archive-pending "boot=$boot" "recovery=$recovery" "delete=$del" \
+      "marker=$marker" "marker_sha=$marker_sha" "source=$MVC24GC23T_SOURCE_UUID" \
+      "clone=$MVC24GC23T_CLONE_UUID" "archive=$archive" > "$tmp" || return 1
+    chmod 400 -- "$tmp" || return 1
+    mv -T -- "$tmp" "$dir/recovery-archive-plan" || return 1
+    mvc24pubd_breakglass_archive_plan_valid
+}
+
+mvc24pubd_breakglass_archive_continue() {
+    (( $# == 0 )) || return 1
+    local completion root archive src name
+    mvc24pubd_breakglass_authority_witness || return 1
+    completion=$(mvc24gc23t_runtime) || return 1
+    mvc24pubd_breakglass_archive_plan_valid || return 1
+    root=$(mvc24gc23t_archive_root) || return 1
+    archive=$MVC24PUBD_RECOVERY_ARCHIVE
+    [[ -d $root && ! -L $root && $(stat -c '%u:%a' -- "$root") == 0:700 ]] || return 1
+    if [[ ! -e $archive ]]; then (umask 077; mkdir -m 700 -- "$archive") || return 1; fi
+    [[ -d $archive && ! -L $archive && $(stat -c '%u:%a' -- "$archive") == 0:700 ]] || return 1
+    for name in activation output-transition disconnect; do
+        src="/run/mvc-$name"
+        if [[ -e $src || -L $src ]]; then
+            [[ -d $src && ! -L $src && ! -e $archive/$name && ! -L $archive/$name ]] || return 1
+            mvc24gc23t_archive_move "$src" "$archive/$name" || return 1
+        else
+            [[ -d $archive/$name && ! -L $archive/$name ]] || return 1
+        fi
+    done
+    src=/run/mvc-controller
+    if [[ -e $src || -L $src ]]; then
+        [[ -d $src && ! -L $src && ! -e $archive/controller && ! -L $archive/controller ]] || return 1
+        mvc24gc23t_archive_move "$src" "$archive/controller" || return 1
+    else
+        [[ -d $archive/controller && ! -L $archive/controller ]] || return 1
+    fi
+    if [[ -e $completion || -L $completion ]]; then
+        [[ -d $completion && ! -L $completion && ! -e $archive/completion && ! -L $archive/completion ]] || return 1
+        mvc24gc23t_archive_move "$completion" "$archive/completion" || return 1
+    fi
+    [[ -d $archive/controller && -d $archive/activation && -d $archive/output-transition &&
+       -d $archive/disconnect && -d $archive/completion &&
+       ! -e /run/mvc-controller && ! -e /run/mvc-activation &&
+       ! -e /run/mvc-output-transition && ! -e /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -e /run/mvc-wireguard ]] || return 1
+    MVC24PUBD_RECOVERY_ARCHIVE=$archive
+    mvc24gb2_close
+}
+
+mvc24pubd_breakglass_recovered_observed() {
+    (( $# == 0 )) || return 1
+    case ${MVC24PUBD_SESSION_MODE:-none} in combined|openvpn-only) ;; *) return 1 ;; esac
+    mvc24pubd_b4_all_absent && mvc24gb4_no_active_vpn && mvc24pubd_managed_routes_absent || return 1
+    [[ ! -e /run/mvc-wireguard && ! -L /run/mvc-wireguard ]] || return 1
+    mvc24pubd_breakglass_wg_absent || return 1
+    mvc24gc23t_recover_locked_session || return 1
+    [[ ${MVC24GC23T_SOURCE_UUID:-} == "${MVC24PUBD_OVPN_SOURCE_UUID:-}" &&
+       ${MVC24GC23T_CLONE_UUID:-} == "${MVC24PUBD_OVPN_CLONE_UUID:-}" ]] || return 1
+    mvc24gc23t_b2_topology_witness && mvc24gc23t_release_post_witness || return 1
+    if [[ -e /run/mvc-completion || -L /run/mvc-completion ]]; then
+        mvc24pubd_breakglass_recovery_intent_valid || return 1
+    else
+        mvc24gc23t_clone_present "$MVC24GC23T_CLONE_UUID" || return 1
+    fi
+}
+
+mvc24pubd_breakglass_finalize_once() {
+    (( $# == 0 )) || return 1
+    local dir rc=0
+    mvc24pubd_breakglass_authority_witness || return 1
+    dir=$(mvc24gc23t_runtime) || return 1
+    if [[ ! -e $dir && ! -L $dir ]]; then
+        mvc24pubd_publish_breakglass_recovery_intent || return 1
+    else
+        mvc24pubd_breakglass_recovery_intent_valid || return 1
+    fi
+    if [[ ! -f $dir/recovery-clone-delete-intent ]]; then
+        MVC24PUBD_STAGE=breakglass-clone-delete
+        mvc24pubd_publish_breakglass_clone_delete_intent || return 1
+        mvc24gc23t_nm_delete "$MVC24GC23T_CLONE_UUID" || rc=$?
+        if ! mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID"; then
+            return 1
+        fi
+        : "$rc"
+    else
+        mvc24pubd_breakglass_clone_delete_intent_valid || return 1
+        mvc24gc23t_clone_absent "$MVC24GC23T_CLONE_UUID" || return 1
+    fi
+    MVC24PUBD_STAGE=breakglass-archive
+    if [[ ! -f $dir/recovery-archive-plan ]]; then
+        mvc24pubd_publish_breakglass_archive_plan || return 1
+    else
+        mvc24pubd_breakglass_archive_plan_valid || return 1
+    fi
+    mvc24pubd_breakglass_archive_continue
+}
+
+# Authenticate a public marker left behind after the recovery archive itself
+# completed but marker retirement was interrupted.  No network mutation is
+# possible here: all fixed live roots must already be absent and the archive
+# must independently bind the marker, failed C19 session and clone deletion.
+mvc24pubd_parse_recovered_completed_marker() {
+    (( $# == 0 )) || return 1
+    local runtime file entry state boot userns netns mntns root archive plan recovery del c19 marker_sha route186 route187
+    local -a rows=() entries=() plan_rows=() recovery_rows=() del_rows=()
+    runtime=$(mvc24pub_session_runtime_root) || return 1
+    [[ -d $runtime && ! -L $runtime && $(stat -c '%u:%a:%h' -- "$runtime" 2>/dev/null) == '0:700:2' ]] || return 1
+    mapfile -d '' -t entries < <(find "$runtime" -mindepth 1 -maxdepth 1 -print0) || return 1
+    (( ${#entries[@]} == 1 )) || return 1
+    entry=${entries[0]##*/}
+    case $entry in active|transaction) file=$runtime/$entry ;; *) return 1 ;; esac
+    [[ -f $file && ! -L $file && $(stat -c '%u:%a:%h' -- "$file") == 0:400:1 ]] || return 1
+    mapfile -t rows < "$file" || return 1
+    (( ${#rows[@]} == 16 )) || return 1
+    if [[ $entry == active ]]; then
+        [[ ${rows[0]} == mvc-public-active-v1 && ${rows[1]} == state=dual-active-published ]] || return 1
+        state=dual-active-observed
+    else
+        [[ ${rows[0]} == mvc-public-transaction-v1 && ${rows[1]} == state=* ]] || return 1
+        state=${rows[1]#state=}; case $state in openvpn-protected|dual-active-observed) ;; *) return 1 ;; esac
+    fi
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    userns=$(readlink /proc/self/ns/user) || return 1
+    netns=$(readlink /proc/self/ns/net) || return 1
+    mntns=$(readlink /proc/self/ns/mnt) || return 1
+    [[ ${rows[2]} == "boot=$boot" && ${rows[3]} == "userns=$userns" && ${rows[4]} == "netns=$netns" && ${rows[5]} == "mntns=$mntns" ]] || return 1
+    MVC24PUBD_OVPN_SOURCE_UUID=${rows[6]#ovpn_source_uuid=}
+    MVC24PUBD_OVPN_CLONE_UUID=${rows[7]#ovpn_clone_uuid=}
+    MVC24PUBD_WG_SOURCE_UUID=${rows[8]#wg_source_uuid=}
+    MVC24PUBD_WG_TEMP_UUID=${rows[9]#wg_temp_uuid=}
+    MVC24PUBD_UNDERLAY=${rows[10]#underlay=}
+    mvc24_valid_uuid "$MVC24PUBD_OVPN_SOURCE_UUID" && mvc24_valid_uuid "$MVC24PUBD_OVPN_CLONE_UUID" && mvc24gb1_valid_ifname "$MVC24PUBD_UNDERLAY" || return 1
+    if [[ $MVC24PUBD_WG_SOURCE_UUID == - && $MVC24PUBD_WG_TEMP_UUID == - ]]; then MVC24PUBD_SESSION_MODE=openvpn-only; else
+        mvc24_valid_uuid "$MVC24PUBD_WG_SOURCE_UUID" && mvc24_valid_uuid "$MVC24PUBD_WG_TEMP_UUID" || return 1
+        MVC24PUBD_SESSION_MODE=combined
+    fi
+    root=$(mvc24gc23t_archive_root) || return 1
+    archive=$root/$MVC24PUBD_OVPN_CLONE_UUID
+    [[ -d $archive/controller && -d $archive/activation && -d $archive/output-transition && -d $archive/disconnect && -d $archive/completion ]] || return 1
+    [[ ${rows[11]#controller_prepare_sha=} == "$(mvc24pubd_hash_file "$archive/controller/prepare-intent")" &&
+       ${rows[12]#controller_transition_sha=} == "$(mvc24pubd_hash_file "$archive/controller/transition-attempt")" &&
+       ${rows[13]#activation_sha=} == "$(mvc24pubd_hash_file "$archive/activation/attempt")" &&
+       ${rows[14]#output_sha=} == "$(mvc24pubd_hash_file "$archive/output-transition/attempt")" ]] || return 1
+    recovery=$archive/completion/recovery-finalize-intent
+    del=$archive/completion/recovery-clone-delete-intent
+    plan=$archive/completion/recovery-archive-plan
+    [[ -f $recovery && ! -L $recovery && -f $del && ! -L $del && -f $plan && ! -L $plan ]] || return 1
+    mapfile -t plan_rows < "$plan" || return 1
+    (( ${#plan_rows[@]} == 10 )) || return 1
+    marker_sha=$(mvc24pubd_hash_file "$file") || return 1
+    [[ ${plan_rows[0]} == mvc-c24b-breakglass-archive-plan-v1 &&
+       ${plan_rows[1]} == state=recovered-session-archive-pending && ${plan_rows[2]} == "boot=$boot" &&
+       ${plan_rows[3]} == "recovery=$(mvc24pubd_hash_file "$recovery")" &&
+       ${plan_rows[4]} == "delete=$(mvc24pubd_hash_file "$del")" &&
+       ${plan_rows[5]} == "marker=$entry" && ${plan_rows[6]} == "marker_sha=$marker_sha" &&
+       ${plan_rows[7]} == "source=$MVC24PUBD_OVPN_SOURCE_UUID" &&
+       ${plan_rows[8]} == "clone=$MVC24PUBD_OVPN_CLONE_UUID" && ${plan_rows[9]} == "archive=$archive" ]] || return 1
+    mapfile -t recovery_rows < "$recovery" || return 1
+    (( ${#recovery_rows[@]} == 12 )) || return 1
+    c19=$(mvc24pubd_hash_file "$archive/disconnect/attempt") || return 1
+    [[ ${recovery_rows[0]} == mvc-c24b-breakglass-finalize-v1 &&
+       ${recovery_rows[1]} == state=breakglass-session-retirement-prepared &&
+       ${recovery_rows[2]} == "boot=$boot" && ${recovery_rows[3]} == "userns=$userns" &&
+       ${recovery_rows[4]} == "netns=$netns" && ${recovery_rows[5]} == "mntns=$mntns" &&
+       ${recovery_rows[6]} == "marker=$entry" && ${recovery_rows[7]} == "marker_sha=$marker_sha" &&
+       ${recovery_rows[8]} == "c19_sha=$c19" && ${recovery_rows[9]} == "source=$MVC24PUBD_OVPN_SOURCE_UUID" &&
+       ${recovery_rows[10]} == "clone=$MVC24PUBD_OVPN_CLONE_UUID" ]] || return 1
+    mapfile -t del_rows < "$del" || return 1
+    (( ${#del_rows[@]} == 7 )) || return 1
+    [[ ${del_rows[0]} == mvc-c24b-breakglass-clone-delete-v1 &&
+       ${del_rows[1]} == state=nm-delete-attempted-once-outcome-uncertain &&
+       ${del_rows[2]} == "boot=$boot" && ${del_rows[3]} == "recovery=$(mvc24pubd_hash_file "$recovery")" &&
+       ${del_rows[4]} == "source=$MVC24PUBD_OVPN_SOURCE_UUID" &&
+       ${del_rows[5]} == "clone=$MVC24PUBD_OVPN_CLONE_UUID" ]] || return 1
+    for entry in /run/mvc-controller /run/mvc-activation /run/mvc-output-transition /run/mvc-disconnect /run/mvc-completion /run/mvc-wireguard; do
+        [[ ! -e $entry && ! -L $entry ]] || return 1
+    done
+    mvc24pubd_b4_all_absent && mvc24gb4_no_active_vpn && mvc24pubd_managed_routes_absent || return 1
+    MVC24GC23T_SOURCE_UUID=$MVC24PUBD_OVPN_SOURCE_UUID
+    MVC24GC23T_CLONE_UUID=$MVC24PUBD_OVPN_CLONE_UUID
+    mvc24gc23t_clone_absent "$MVC24PUBD_OVPN_CLONE_UUID" || return 1
+    mvc24pubd_completed_foreign_policy_witness "$archive/controller/prestate.json" || return 1
+    MVC24PUBD_MARKER_KIND=recovered-completed-$entry
+    MVC24PUBD_TRANSACTION_STATE=$state
+    MVC24PUBD_COMPLETED_MARKER_FILE=$file
+    MVC24PUBD_RECOVERY_ARCHIVE=$archive
+}
+
 mvc24pubd_finalize_completed_marker() {
     (( $# == 0 )) || return 1
     local runtime file
     runtime=$(mvc24pub_session_runtime_root) || return 1
     file=${MVC24PUBD_COMPLETED_MARKER_FILE:-}
+    if [[ -z $file ]]; then
+        case ${MVC24PUBD_MARKER_KIND:-none} in
+          active|transaction) file="$runtime/$MVC24PUBD_MARKER_KIND" ;;
+        esac
+    fi
     [[ $file == "$runtime/active" || $file == "$runtime/transaction" ]] || return 1
     [[ -d $runtime && ! -L $runtime && -f $file && ! -L $file ]] || return 1
     rm -f -- "$file" >/dev/null 2>&1 || :
@@ -807,7 +1268,9 @@ mvc24pubd_disconnect_once() {
     MVC24PUBD_OPERATION=disconnect
     MVC24PUBD_STAGE=authenticating-durable-session
     if ! mvc24pubd_parse_session_marker; then
-        if mvc24pubd_parse_completed_session_marker; then
+        if mvc24pubd_parse_breakglass_marker; then
+            MVC24PUBD_STAGE=authenticated-breakglass-recovery-marker
+        elif mvc24pubd_parse_completed_session_marker; then
             MVC24PUBD_STAGE=retiring-completed-public-marker
             if mvc24pubd_finalize_completed_marker; then
                 MVC24PUBD_STAGE=public-completed-session-marker-retired-sameboot-ready
@@ -815,13 +1278,21 @@ mvc24pubd_disconnect_once() {
             fi
             MVC24PUBD_STAGE=completed-public-marker-retirement-refused
             return 1
-        fi
-        if mvc24pub_baseline_clean_readonly; then
+        elif mvc24pubd_parse_recovered_completed_marker; then
+            MVC24PUBD_STAGE=retiring-recovered-public-marker
+            if mvc24pubd_finalize_completed_marker; then
+                MVC24PUBD_STAGE=public-breakglass-recovered-session-retired-sameboot-ready
+                return 0
+            fi
+            MVC24PUBD_STAGE=recovered-public-marker-retirement-refused
+            return 1
+        elif mvc24pub_baseline_clean_readonly; then
             MVC24PUBD_STAGE=already-clean-baseline
             return 0
+        else
+            MVC24PUBD_STAGE=durable-session-authentication-refused
+            return 1
         fi
-        MVC24PUBD_STAGE=durable-session-authentication-refused
-        return 1
     fi
 
     if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction &&
@@ -994,6 +1465,38 @@ mvc24pubd_disconnect_once() {
     if ! mvc24pubd_acquire_existing_lock; then
         MVC24PUBD_STAGE=durable-session-lock-refused
         return 1
+    fi
+
+    # Emergency B4 disarm intentionally leaves the authenticated failed-session
+    # journals behind.  If all owned guard tables are already absent, never
+    # re-enter normal guarded teardown.  Accept only the exact network-clean,
+    # same-boot C19-authenticated recovery state and retire it through a new
+    # intent-first filesystem/NM finalization chain.
+    if mvc24pubd_b4_all_absent; then
+        MVC24PUBD_STAGE=observing-breakglass-recovered-session
+        if ! mvc24pubd_breakglass_recovered_observed; then
+            MVC24PUBD_STAGE=breakglass-recovered-state-refused
+            mvc24gb2_close >/dev/null 2>&1 || true
+            return 1
+        fi
+        MVC24PUBD_APPROVAL=approved-process-local
+        MVC24PUBD_AUTHORITY=public-explicit-disconnect
+        MVC24PUBD_STAGE=finalizing-breakglass-recovered-session
+        if ! mvc24pubd_breakglass_finalize_once; then
+            MVC24PUBD_STAGE=breakglass-recovery-finalization-refused
+            mvc24pubd_consume_authority
+            mvc24gb2_close >/dev/null 2>&1 || true
+            return 1
+        fi
+        MVC24PUBD_STAGE=retiring-breakglass-public-marker
+        if ! mvc24pubd_finalize_completed_marker; then
+            MVC24PUBD_STAGE=breakglass-public-marker-retirement-refused
+            mvc24pubd_consume_authority
+            return 1
+        fi
+        MVC24PUBD_STAGE=public-breakglass-recovered-session-retired-sameboot-ready
+        mvc24pubd_consume_authority
+        return 0
     fi
 
     if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction &&

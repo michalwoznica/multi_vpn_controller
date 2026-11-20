@@ -1,5 +1,11 @@
 # Changelog
 ## MVC 2.4.4 underlay-replacement reconciliation
+- Add authenticated break-glass recovery finalization to normal `mvc disconnect`: after the independent emergency tool has already disarmed B4, an exact same-boot recovered OpenVPN-bearing session can be retired without reboot only when its public marker/journals authenticate and all managed VPN, WireGuard, route and guard residue is proven absent.
+- Publish a dedicated recovery-finalization intent before any recovered-session mutation, then a separate clone-delete intent before removing the authenticated inactive temporary OpenVPN clone; ambiguous outcomes remain resumable rather than blindly retried.
+- Archive the failed session under the existing root-only `/run/mvc-completed/<clone-uuid>` historical namespace with an explicit break-glass archive chain, then retire the live public-session authority so ordinary fresh admission can run again in the same boot.
+- Keep `/root/mvc-emergency-rollback` independent and B4-only; change only its successful-disarm guidance to direct the operator to one authenticated `mvc disconnect` finalization before starting a new session.
+- Keep ambiguous B4-absent states blocked: B4 absence alone grants no lifecycle authority, and nftables inventory failure cannot be mistaken for table absence.
+- Extend authenticated installer update to accept the exact prior emergency-recovery tool identity and the exact R1/R2 2.4.4 development controller predecessors while continuing to refuse unknown content.
 - Begin the 2.4.4 maintenance line from the exact released 2.4.3 baseline and authorize that exact controller as an authenticated update predecessor.
 - Surface C23T's fixed post-stop convergence category in public `disconnect` failures so physical reproduction can distinguish link, IPv4-route and IPv6-safety failures without weakening teardown authentication.
 - Preserve exact IPv6 snapshot stability during B1/B2 admission, B2 attestation, and protected transition establishment.

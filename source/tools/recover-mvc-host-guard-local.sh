@@ -108,4 +108,4 @@ remaining=$(owned_tables) || {
 printf '%s\n' \
   'PASS: all three B4 quarantine tables are absent' \
   'RESULT: EMERGENCY DISARM COMPLETE — MVC kill switch OFF; other nftables tables untouched' \
-  'NOTE: B2/B3 journal is intentionally retained; do not retry B4 install in this boot'
+  'NOTE: failed-session journals are intentionally retained; run sudo mvc disconnect once to authenticate and finalize recovery before starting a new MVC session'

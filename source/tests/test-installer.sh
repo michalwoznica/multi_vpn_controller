@@ -120,6 +120,36 @@ else
     bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
+# This checkpoint changes only the emergency tool's final operator guidance. Recreate
+# the exact released/earlier-development recovery bytes and prove package
+# maintenance remains hash-authenticated: install refuses the prior identity,
+# while explicit update promotes it to the current recovery tool.
+OLD_EMERGENCY_SHA=b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c
+sed 's/NOTE: failed-session journals are intentionally retained; run sudo mvc disconnect once to authenticate and finalize recovery before starting a new MVC session/NOTE: B2\/B3 journal is intentionally retained; do not retry B4 install in this boot/' \
+    "$EMERGENCY" > "$TMP/old-emergency"
+chmod 700 "$TMP/old-emergency"
+if [[ $(sha256sum "$TMP/old-emergency" | awk '{print $1}') == "$OLD_EMERGENCY_SHA" ]]; then
+    ok 'test fixture reconstructs exact prior emergency recovery identity'
+else
+    bad 'test fixture reconstructs exact prior emergency recovery identity'
+fi
+cp -- "$TMP/old-emergency" "$E_DST"; chmod 700 "$E_DST"
+set +e
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/old-emergency-install.out" 2>&1
+old_emergency_install_rc=$?
+set -e
+if (( old_emergency_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/old-emergency-install.out"; then
+    ok 'install refuses approved prior emergency recovery identity and requires update'
+else
+    bad 'install refuses approved prior emergency recovery identity and requires update'
+fi
+PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/old-emergency-update.out"
+if cmp -s -- "$E_DST" "$EMERGENCY"; then
+    ok 'update authenticates and promotes exact prior emergency recovery identity'
+else
+    bad 'update authenticates and promotes exact prior emergency recovery identity'
+fi
+
 # The public v2.4.1 release remains a supported predecessor for 2.4.2.
 # Keep the authorization bound to its exact physically validated
 # content hash; no banner/version string is sufficient.

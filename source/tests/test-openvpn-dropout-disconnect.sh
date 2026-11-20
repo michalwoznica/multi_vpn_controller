@@ -107,6 +107,7 @@ LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset; mvc24gc19_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
+mvc24pubd_b4_all_absent(){ return 1; }
 mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 1; }
 mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
 mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent); return 0; }
