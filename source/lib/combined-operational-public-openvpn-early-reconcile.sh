@@ -247,17 +247,13 @@ mvc24pube_preclone_guard_state_locked() {
     MVC24PUBE_PRECLONE_GUARD=$state
 }
 
-mvc24pube_preclone_topology_witness_dir() {
+mvc24pube_preclone_safety_witness_dir() {
     (( $# == 1 )) || return 1
-    local dir=$1 scratch links r4 r6 ok=1
-    [[ -d $dir && ! -L $dir ]] || return 1
-    scratch=$(umask 077; mktemp -d /run/mvc-pube-preclone-topo.XXXXXXXX) || return 1
-    links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
-    mvc24gb1_capture_links "$links" && mvc24gb1_capture_routes4 "$r4" && mvc24gb1_capture_routes6 "$r6" &&
-      cmp -s -- "$links" "$dir/links.json" && cmp -s -- "$r4" "$dir/routes4.json" &&
-      mvc24gb1_routes6_no_default "$r6" || ok=0
-    rm -rf -- "$scratch" || ok=0
-    (( ok == 1 ))
+    local dir=$1
+    # Cleanup convergence does not require the old physical-link/IPv4 B2
+    # topology to return.  Reuse the shared post-session safety witness; the
+    # pre-C7 path has no C3 transition journal to authenticate here.
+    mvc24gc23t_post_session_safety_witness_dir "$dir" no
 }
 
 mvc24pube_preclone_name_lookup() {
@@ -399,7 +395,7 @@ mvc24pube_preclone_release_guard() {
         mvc24pube_preclone_guard_state_locked || return 1
         nft --file "$batch" >/dev/null 2>&1 || return 1
     fi
-    mvc24gc23t_release_post_witness && mvc24pube_preclone_topology_witness_dir /run/mvc-controller
+    mvc24gc23t_release_post_witness && mvc24pube_preclone_safety_witness_dir /run/mvc-controller
 }
 
 mvc24pube_preclone_retire_intent_valid() {
@@ -428,7 +424,7 @@ mvc24pube_preclone_publish_retire_intent() {
     runtime=$(mvc24pube_runtime); path=$(mvc24pube_preclone_retire_intent_path) || return 1
     [[ ! -e $path && ! -L $path ]] || return 1
     mvc24gb4_no_active_vpn && [[ $(mvc24pube_preclone_name_lookup) == absent ]] && mvc24pube_owned_tables_absent_now &&
-      mvc24gc23t_release_post_witness && mvc24pube_preclone_topology_witness_dir /run/mvc-controller || return 1
+      mvc24gc23t_release_post_witness && mvc24pube_preclone_safety_witness_dir /run/mvc-controller || return 1
     entries=$(find /run/mvc-controller -mindepth 1 -maxdepth 1 -print | wc -l) || return 1
     if (( entries == 10 )); then transition=$(mvc24pube_sha /run/mvc-controller/transition-attempt) || return 1; elif (( entries != 8 )); then return 1; fi
     boot=$(cat /proc/sys/kernel/random/boot_id); userns=$(readlink /proc/self/ns/user); netns=$(readlink /proc/self/ns/net); mntns=$(readlink /proc/self/ns/mnt) || return 1
@@ -473,10 +469,10 @@ mvc24pube_preclone_retire_archive_continue() {
     [[ -d $archive && ! -L $archive && $(stat -c '%u:%a' -- "$archive") == '0:700' ]] || return 1
     if [[ -e $controller || -L $controller ]]; then
         [[ ! -e $archive/controller && ! -L $archive/controller ]] || return 1
-        mvc24pube_preclone_controller_dir_valid "$controller" && mvc24pube_preclone_topology_witness_dir "$controller" || return 1
+        mvc24pube_preclone_controller_dir_valid "$controller" && mvc24pube_preclone_safety_witness_dir "$controller" || return 1
         mv -T -- "$controller" "$archive/controller" || return 1
     else
-        mvc24pube_preclone_controller_dir_valid "$archive/controller" && mvc24pube_preclone_topology_witness_dir "$archive/controller" || return 1
+        mvc24pube_preclone_controller_dir_valid "$archive/controller" && mvc24pube_preclone_safety_witness_dir "$archive/controller" || return 1
     fi
     [[ -d $runtime && ! -L $runtime && ! -e $archive/public-session && ! -L $archive/public-session ]] || return 1
     mv -T -- "$runtime" "$archive/public-session" || return 1
@@ -492,7 +488,7 @@ mvc24pube_reconcile_pre_c7_locked() {
     release_intent=$(mvc24pube_preclone_release_intent_path) || return 1
     retire_intent=$(mvc24pube_preclone_retire_intent_path) || return 1
 
-    # Before release intent exists, exact B2/C1 observation is still required.
+    # Before release intent exists, authenticated B2/C1 guard observation is still required.
     # Once release intent is durable, its batch may already have taken effect;
     # resume from current observation rather than demanding the historical guard.
     if [[ ! -e $release_intent && ! -L $release_intent ]]; then
@@ -703,11 +699,11 @@ mvc24pube_active_clone_state() {
     if (( clone_count == 1 )); then printf '%s\n' active; elif (( tun_count == 0 )); then printf '%s\n' inactive; else return 1; fi
 }
 
-mvc24pube_converged_no_vpn_topology() {
+mvc24pube_converged_no_vpn_safety() {
     (( $# == 0 )) || return 1
     local i
     for ((i=1; i<=20; i++)); do
-        if mvc24gb4_no_active_vpn && mvc24gc23t_b2_topology_witness; then return 0; fi
+        if mvc24gb4_no_active_vpn && mvc24gc23t_final_safety_witness; then return 0; fi
         (( i < 20 )) || break
         mvc24gc23t_convergence_pause || return 1
     done
@@ -724,7 +720,7 @@ mvc24pube_stop_clone_if_needed() {
     if [[ $state == active ]]; then
         LC_ALL=C nmcli --wait 60 --colors no connection down uuid "$MVC24PUBE_CLONE_UUID" </dev/null >/dev/null 2>&1 || true
     fi
-    mvc24pube_converged_no_vpn_topology
+    mvc24pube_converged_no_vpn_safety
 }
 
 mvc24pube_clone_exact_or_absent() {
@@ -745,7 +741,7 @@ mvc24pube_clone_exact_or_absent() {
 mvc24pube_delete_clone_if_needed() {
     (( $# == 0 )) || return 1
     local intent
-    mvc24pube_converged_no_vpn_topology || return 1
+    mvc24pube_converged_no_vpn_safety || return 1
     MVC24GC23T_SOURCE_UUID=$MVC24PUBE_SOURCE_UUID
     if mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID"; then return 0; fi
     mvc24pube_clone_exact_or_absent || return 1
@@ -764,7 +760,7 @@ mvc24pube_publish_release_intent() {
     local runtime batch intent tmp boot plan_sha batch_sha
     runtime=$(mvc24pube_runtime); batch=$(mvc24pube_release_batch_path); intent=$(mvc24pube_release_intent_path) || return 1
     [[ ! -e $batch && ! -L $batch && ! -e $intent && ! -L $intent ]] || return 1
-    mvc24pube_converged_no_vpn_topology && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" && [[ $(mvc24pube_guard_state_now) == c1 ]] || return 1
+    mvc24pube_converged_no_vpn_safety && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" && [[ $(mvc24pube_guard_state_now) == c1 ]] || return 1
     tmp=$runtime/.early-release.tmp; : > "$tmp" || return 1; chmod 600 -- "$tmp" || return 1
     mvc24gc23t_release_batch_write "$tmp" || return 1; nft --check --file "$tmp" >/dev/null 2>&1 || return 1
     chmod 400 -- "$tmp" || return 1; mv -T -- "$tmp" "$batch" || return 1
@@ -805,10 +801,10 @@ mvc24pube_release_guard() {
     mvc24pube_release_intent_valid || return 1
     if ! mvc24pube_owned_tables_absent_now; then
         [[ $(mvc24pube_guard_state_now) == c1 ]] || return 1
-        mvc24pube_converged_no_vpn_topology && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" || return 1
+        mvc24pube_converged_no_vpn_safety && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" || return 1
         nft --file "$batch" >/dev/null 2>&1 || return 1
     fi
-    mvc24gc23t_release_post_witness && mvc24gc23t_b2_topology_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID"
+    mvc24gc23t_release_post_witness && mvc24gc23t_final_safety_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID"
 }
 
 mvc24pube_retire_intent_valid() {
@@ -859,7 +855,7 @@ mvc24pube_publish_retire_intent() {
     path=$(mvc24pube_retire_intent_path) || return 1
     [[ ! -e $path && ! -L $path ]] || return 1
     mvc24pube_release_intent_valid && mvc24gc23t_release_post_witness &&
-      mvc24gc23t_b2_topology_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
+      mvc24gc23t_final_safety_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
       mvc24pube_owned_tables_absent_now || return 1
     boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
     userns=$(readlink /proc/self/ns/user) || return 1
@@ -961,8 +957,8 @@ mvc24pube_retire_archive_continue() {
     local runtime root archive controller activation output
     runtime=$(mvc24pube_runtime) || return 1
     mvc24pube_retire_intent_valid && mvc24pube_retire_plan_hashes || return 1
-    # The retirement intent was published only after exact B2 topology was
-    # observed.  Continuation may run after the controller snapshot directory
+    # The retirement intent was published only after the post-session safety
+    # witness succeeded. Continuation may run after the controller snapshot directory
     # has already been archived, so do not require that fixed path again.
     # No network mutation occurs after the retirement intent: re-observe only
     # the independently checkable safety poststate needed to retire journals.
@@ -996,7 +992,7 @@ mvc24pube_retire_archive_continue() {
 mvc24pube_retire_runtime_roots() {
     (( $# == 0 )) || return 1
     mvc24pube_release_intent_valid && mvc24gc23t_release_post_witness &&
-      mvc24gc23t_b2_topology_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
+      mvc24gc23t_final_safety_witness && mvc24gc23t_clone_absent "$MVC24PUBE_CLONE_UUID" &&
       mvc24pube_owned_tables_absent_now || return 1
     mvc24pube_retirement_blockers_absent || return 1
     local intent; intent=$(mvc24pube_retire_intent_path) || return 1

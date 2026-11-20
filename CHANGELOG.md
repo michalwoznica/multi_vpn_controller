@@ -1,4 +1,14 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 3
+- Replace post-session byte-for-byte physical-link/IPv4 restoration with the owner-approved final-safety convergence policy. Once the same-boot MVC session is authenticated, saved B2 link/IPv4 snapshots remain admission/forensic evidence rather than teardown restoration targets.
+- Accept changed physical interface, address, gateway, route metric, multiple ordinary IPv4 defaults, or no IPv4 default at all during authenticated teardown. These conditions are diagnostic topology drift and no longer block cleanup or B4 release by themselves.
+- Preserve strict connect/preflight admission unchanged: starting a fresh protected session still requires the narrow supported baseline, including exactly one IPv4 default and no IPv6 default. Disconnect success therefore does not imply the current host is immediately eligible for a new connect.
+- Introduce a shared post-session safety witness used by combined finalization, protected standalone WireGuard teardown, and early OpenVPN/preclone reconciliation. It takes two live observations, requires both to have no IPv6 default route, requires MVC-reserved proto-186/proto-187 routes absent, and preserves transition-journal integrity where applicable.
+- Emit a one-time warning when current physical-link/IPv4 topology differs from the pre-connect snapshot, but continue cleanup. Remove the obsolete teardown-only NetworkManager `+20000` route-metric equivalence exception because IPv4 restoration is no longer a release prerequisite.
+- Keep foreign nftables policy, active-VPN absence, session/lock authentication, owned-resource cleanup, and no-IPv6-default safety checks fail-closed.
+- Add regression coverage for changed interface/gateway/address, no IPv4 default, multiple IPv4 defaults, IPv6-default refusal, managed-route residue refusal, journal-integrity refusal, and unchanged strict connect admission.
+- This stage intentionally does not yet redesign the provisional R3 emergency-recovery workflow.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 2
 - Extend authenticated observed-state convergence to standalone WireGuard protected and split teardown. Published standalone sessions no longer require the historical fully-active WG shape before cleanup begins.
 - Add one shared standalone WG cleanup primitive that authenticates the temporary profile identity, kernel WireGuard endpoint, and proto-186 endpoint route before touching them; already-absent owned resources are treated as clean post-state.

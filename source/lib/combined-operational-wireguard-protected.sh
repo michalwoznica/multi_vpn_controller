@@ -525,35 +525,16 @@ mvc24gwg_release_guard_once() {
     mvc24gwg_owned_tables_absent_now
 }
 
-mvc24gwg_controller_topology_restored() {
+# Protected standalone WireGuard teardown uses the same post-session safety
+# policy as combined teardown: the authenticated B2 snapshots are retained as
+# admission/forensic evidence, but current physical-link and IPv4 topology are
+# diagnostic only.  IPv6 default routing and MVC-reserved managed routes remain
+# release blockers.
+mvc24gwg_final_safety_witness() {
     (( $# == 0 )) || return 1
-    local dir scratch links r4 r6 ok=1
+    local dir
     dir=$(mvc24gb2_runtime) || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-topology.XXXXXXXX) || return 1
-    links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
-    if ! mvc24gb1_capture_links "$links" || ! mvc24gb1_capture_routes4 "$r4" || ! mvc24gb1_capture_routes6 "$r6"; then
-        ok=0
-    elif ! cmp -s -- "$links" "$dir/links.json"; then
-        ok=0
-    elif ! cmp -s -- "$r4" "$dir/routes4.json"; then
-        # C23BK: reuse C23T's physically proven narrow NetworkManager
-        # connectivity-penalty equivalence. The only accepted difference is
-        # exactly one saved underlay default route whose current metric is the
-        # saved integer metric + 20000; every other route field/order/member
-        # remains byte-semantically identical.
-        if ! mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$dir/routes4.json" "$r4"; then
-            ok=0
-        fi
-    fi
-    # Post-session IPv6 convergence mirrors B1 admission policy: MVC does not
-    # route IPv6, so incidental IPv6 topology changes are acceptable only while
-    # the live host still has no IPv6 default route.
-    if (( ok == 1 )) && ! mvc24gb1_routes6_no_default "$r6"; then
-        ok=0
-    fi
-    rm -f -- "$links" "$r4" "$r6" >/dev/null 2>&1 || ok=0
-    rmdir -- "$scratch" >/dev/null 2>&1 || ok=0
-    (( ok == 1 ))
+    mvc24gc23t_post_session_safety_witness_dir "$dir" no
 }
 
 mvc24gwg_network_clean_retirement_pending_observed() {
@@ -563,7 +544,7 @@ mvc24gwg_network_clean_retirement_pending_observed() {
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
     ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    mvc24gwg_controller_topology_restored
+    mvc24gwg_final_safety_witness
 }
 
 mvc24gwg_retire_runtime_once() {
@@ -575,7 +556,7 @@ mvc24gwg_retire_runtime_once() {
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
     ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    mvc24gwg_controller_topology_restored || return 1
+    mvc24gwg_final_safety_witness || return 1
     rm -rf -- "$runtime" || return 1
     [[ ! -e $runtime && ! -L $runtime ]] || return 1
     mvc24gb2_close

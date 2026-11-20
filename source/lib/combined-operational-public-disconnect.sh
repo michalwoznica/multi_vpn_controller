@@ -42,10 +42,9 @@ mvc24pubd_record_completion_failure() {
     local detail=${MVC24GC23T_CONVERGENCE_DETAIL:-unverified}
     case $detail in
         unverified|topology-runtime-unavailable|topology-runtime-invalid|topology-scratch-create-failed|\
-        topology-capture-failed|links-not-restored|routes4-not-restored|ipv6-safe-baseline-not-proven|\
-        topology-session-journal-changed|topology-restored-nm-connectivity-penalty-equivalent|\
-        topology-restored-nm-connectivity-penalty-ipv6-safe|topology-restored-ipv6-safe-baseline|\
-        topology-restored|topology-scratch-cleanup-failed|session-reconstruction|\
+        topology-capture-failed|topology-capture-invalid|ipv6-safe-baseline-not-proven|mvc-managed-routes-remain|\
+        topology-session-journal-changed|safe-current-topology|safe-current-topology-drift|\
+        topology-scratch-cleanup-failed|session-reconstruction|\
         no-active-vpn-before-c1|c1-firewall-and-foreign-policy|no-active-vpn-after-topology|\
         final-lock|verified) ;;
         *) detail=unverified ;;
@@ -529,7 +528,7 @@ mvc24pubd_publish_breakglass_recovery_intent() {
     local dir tmp boot userns netns mntns marker marker_sha c19_sha
     mvc24pubd_breakglass_authority_witness || return 1
     mvc24pubd_b4_all_absent && mvc24gb4_no_active_vpn && mvc24pubd_managed_routes_absent &&
-      mvc24pubd_breakglass_wg_absent && mvc24gc23t_b2_topology_witness && mvc24gc23t_release_post_witness || return 1
+      mvc24pubd_breakglass_wg_absent && mvc24gc23t_final_safety_witness && mvc24gc23t_release_post_witness || return 1
     dir=$(mvc24gc23t_runtime) || return 1
     [[ ! -e $dir && ! -L $dir && $(stat -f -c %T /run) == tmpfs ]] || return 1
     (umask 077; mkdir -m 700 -- "$dir") || return 1
@@ -696,7 +695,7 @@ mvc24pubd_breakglass_recovered_observed() {
     mvc24gc23t_recover_locked_session || return 1
     [[ ${MVC24GC23T_SOURCE_UUID:-} == "${MVC24PUBD_OVPN_SOURCE_UUID:-}" &&
        ${MVC24GC23T_CLONE_UUID:-} == "${MVC24PUBD_OVPN_CLONE_UUID:-}" ]] || return 1
-    mvc24gc23t_b2_topology_witness && mvc24gc23t_release_post_witness || return 1
+    mvc24gc23t_final_safety_witness && mvc24gc23t_release_post_witness || return 1
     if [[ -e /run/mvc-completion || -L /run/mvc-completion ]]; then
         mvc24pubd_breakglass_recovery_intent_valid || return 1
     else

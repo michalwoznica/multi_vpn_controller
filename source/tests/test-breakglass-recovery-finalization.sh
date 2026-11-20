@@ -23,7 +23,7 @@ mvc24gb4_no_active_vpn(){ LOG+=(vpn); return 0; }
 mvc24pubd_managed_routes_absent(){ LOG+=(routes); return 0; }
 mvc24pubd_breakglass_wg_absent(){ LOG+=(wg); return 0; }
 mvc24gc23t_recover_locked_session(){ LOG+=(session); MVC24GC23T_SOURCE_UUID=$MVC24PUBD_OVPN_SOURCE_UUID; MVC24GC23T_CLONE_UUID=$MVC24PUBD_OVPN_CLONE_UUID; MVC24GC23T_NM_OWNER=':1.7|100|0'; return 0; }
-mvc24gc23t_b2_topology_witness(){ LOG+=(topology); return 0; }
+mvc24gc23t_final_safety_witness(){ LOG+=(topology); return 0; }
 mvc24gc23t_release_post_witness(){ LOG+=(foreign); return 0; }
 mvc24gc23t_clone_present(){ LOG+=(clone); return 0; }
 # Keep this test hermetic instead of touching /run/mvc-completion.

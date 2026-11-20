@@ -20,14 +20,14 @@ else
   fail 'disconnect diagnostic detail resets to unverified'
 fi
 
-MVC24GC23T_STAGE=post-stop-b2-topology-not-converged
-MVC24GC23T_CONVERGENCE_DETAIL=routes4-not-restored
+MVC24GC23T_STAGE=post-stop-safety-not-converged
+MVC24GC23T_CONVERGENCE_DETAIL=ipv6-safe-baseline-not-proven
 mvc24pubd_record_completion_failure
-if [[ $MVC24PUBD_STAGE == session-completion-failed-post-stop-b2-topology-not-converged &&
-      $MVC24PUBD_COMPLETION_DETAIL == routes4-not-restored ]]; then
-  pass 'public disconnect retains fixed C23T topology detail without changing stage'
+if [[ $MVC24PUBD_STAGE == session-completion-failed-post-stop-safety-not-converged &&
+      $MVC24PUBD_COMPLETION_DETAIL == ipv6-safe-baseline-not-proven ]]; then
+  pass 'public disconnect retains fixed final-safety detail without changing stage'
 else
-  fail 'public disconnect retains fixed C23T topology detail without changing stage'
+  fail 'public disconnect retains fixed final-safety detail without changing stage'
 fi
 
 MVC24GC23T_CONVERGENCE_DETAIL='unexpected detail with spaces'
@@ -43,78 +43,51 @@ mvc24gc23t_c1_witness_once(){ count=$((count+1)); MVC24GC23T_CONVERGENCE_DETAIL=
 mvc24gc23t_convergence_pause(){ return 0; }
 MVC24GC23T_STAGE=unverified
 if ! mvc24gc23t_c1_witness && (( count == 20 )) &&
-   [[ $MVC24GC23T_STAGE == post-stop-b2-topology-not-converged &&
+   [[ $MVC24GC23T_STAGE == post-stop-safety-not-converged &&
       $MVC24GC23T_CONVERGENCE_DETAIL == ipv6-safe-baseline-not-proven ]]; then
-  pass 'bounded topology convergence preserves the final mismatch category'
+  pass 'bounded final-safety convergence retries only the IPv6 safety condition'
 else
-  fail 'bounded topology convergence preserves the final mismatch category'
+  fail 'bounded final-safety convergence retries only the IPv6 safety condition'
 fi
 
-mvc24gb2_derive_iface(){ printf '%s\n' test-wlan0; }
-cat > "$TMP/saved.json" <<'JSON'
-[
-  {"dst":"default","gateway":"192.0.2.1","dev":"test-wlan0","protocol":"dhcp","prefsrc":"192.0.2.20","metric":600},
-  {"dst":"192.0.2.0/24","dev":"test-wlan0","protocol":"kernel","scope":"link","prefsrc":"192.0.2.20","metric":600}
-]
-JSON
-cat > "$TMP/penalty.json" <<'JSON'
-[
-  {"dst":"default","gateway":"192.0.2.1","dev":"test-wlan0","protocol":"dhcp","prefsrc":"192.0.2.20","metric":20600},
-  {"dst":"192.0.2.0/24","dev":"test-wlan0","protocol":"kernel","scope":"link","prefsrc":"192.0.2.20","metric":600}
-]
-JSON
-if mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$TMP/saved.json" "$TMP/penalty.json"; then
-  pass 'existing B2 equivalence accepts only the observed default-route +20000 penalty'
+count=0
+mvc24gc23t_c1_witness_once(){ count=$((count+1)); MVC24GC23T_CONVERGENCE_DETAIL=topology-session-journal-changed; return 1; }
+MVC24GC23T_STAGE=unverified
+if ! mvc24gc23t_c1_witness && (( count == 1 )) && [[ $MVC24GC23T_STAGE == unverified ]]; then
+  pass 'journal-integrity failure is fatal and is not converted into a convergence retry'
 else
-  fail 'existing B2 equivalence accepts only the observed default-route +20000 penalty'
+  fail 'journal-integrity failure is fatal and is not converted into a convergence retry'
 fi
 
-cat > "$TMP/replacement.json" <<'JSON'
-[
-  {"dst":"default","gateway":"192.0.2.254","dev":"test-wlan0","protocol":"dhcp","prefsrc":"192.0.2.20","metric":20600},
-  {"dst":"192.0.2.0/24","dev":"test-wlan0","protocol":"kernel","scope":"link","prefsrc":"192.0.2.20","metric":600}
-]
-JSON
-if ! mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$TMP/saved.json" "$TMP/replacement.json"; then
-  pass 'existing B2 equivalence rejects replacement-underlay route identity drift'
+if ! grep -Fq 'mvc24gc23t_routes4_nm_connectivity_penalty_equivalent' "$ROOT/source/lib/combined-operational-c23t-session-finalize.sh" &&
+   ! grep -Eq 'links-not-restored|routes4-not-restored' "$ROOT/source/lib/combined-operational-c23t-session-finalize.sh"; then
+  pass 'teardown no longer carries exact old-link/IPv4 restoration policy'
 else
-  fail 'existing B2 equivalence rejects replacement-underlay route identity drift'
-fi
-
-cat > "$TMP/two-diffs.json" <<'JSON'
-[
-  {"dst":"default","gateway":"192.0.2.1","dev":"test-wlan0","protocol":"dhcp","prefsrc":"192.0.2.20","metric":20600},
-  {"dst":"192.0.2.0/24","dev":"test-wlan0","protocol":"kernel","scope":"link","prefsrc":"192.0.2.20","metric":20600}
-]
-JSON
-if ! mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$TMP/saved.json" "$TMP/two-diffs.json"; then
-  pass 'existing B2 equivalence rejects multiple route-object changes'
-else
-  fail 'existing B2 equivalence rejects multiple route-object changes'
+  fail 'teardown no longer carries exact old-link/IPv4 restoration policy'
 fi
 
 mvc24_parse_command(){ return 0; }
 mvc24pub_process_initialize(){ return 0; }
 mvc24e_c23aw_live_ready(){ return 0; }
 mvc24pubd_disconnect_once(){
-  MVC24PUBD_STAGE=session-completion-failed-post-stop-b2-topology-not-converged
-  MVC24PUBD_COMPLETION_DETAIL=links-not-restored
+  MVC24PUBD_STAGE=session-completion-failed-post-stop-safety-not-converged
+  MVC24PUBD_COMPLETION_DETAIL=mvc-managed-routes-remain
   return 1
 }
 set +e
 mvc24e_dispatch disconnect 2> "$TMP/completion.err"
 rc=$?
 set -e
-if (( rc == 1 )) && grep -Fq 'completion detail: links-not-restored' "$TMP/completion.err"; then
-  pass 'public disconnect error reports fixed convergence detail'
+if (( rc == 1 )) && grep -Fq 'completion detail: mvc-managed-routes-remain' "$TMP/completion.err"; then
+  pass 'public disconnect error reports fixed final-safety detail'
 else
   cat "$TMP/completion.err" >&2
-  fail 'public disconnect error reports fixed convergence detail'
+  fail 'public disconnect error reports fixed final-safety detail'
 fi
 
 mvc24pubd_disconnect_once(){
   MVC24PUBD_STAGE=active-session-reconstruction-refused
-  MVC24PUBD_COMPLETION_DETAIL=routes4-not-restored
+  MVC24PUBD_COMPLETION_DETAIL=ipv6-safe-baseline-not-proven
   return 1
 }
 set +e

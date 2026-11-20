@@ -74,26 +74,26 @@ mvc24gb1_capture_links(){ cp -- "$B2/links.json" "$1"; }
 mvc24gb1_capture_routes4(){ cp -- "$B2/routes4.json" "$1"; }
 mvc24gb1_capture_routes6(){ cp -- "$LIVE_R6" "$1"; }
 
-if mvc24gwg_controller_topology_restored; then
+if mvc24gwg_final_safety_witness; then
   pass 'protected WireGuard teardown accepts changed IPv6 topology when no default route exists'
 else
   fail 'protected WireGuard teardown accepts changed IPv6 topology when no default route exists'
 fi
 LIVE_R6=$TMP/routes6-default.json
-if ! mvc24gwg_controller_topology_restored; then
+if ! mvc24gwg_final_safety_witness; then
   pass 'protected WireGuard teardown remains fail-closed when an IPv6 default route exists'
 else
   fail 'protected WireGuard teardown remains fail-closed when an IPv6 default route exists'
 fi
 
 LIVE_R6=$TMP/routes6-regenerated.json
-if mvc24pube_preclone_topology_witness_dir "$B2"; then
+if mvc24pube_preclone_safety_witness_dir "$B2"; then
   pass 'OpenVPN early reconciliation accepts changed IPv6 topology when no default route exists'
 else
   fail 'OpenVPN early reconciliation accepts changed IPv6 topology when no default route exists'
 fi
 LIVE_R6=$TMP/routes6-default.json
-if ! mvc24pube_preclone_topology_witness_dir "$B2"; then
+if ! mvc24pube_preclone_safety_witness_dir "$B2"; then
   pass 'OpenVPN early reconciliation remains fail-closed when an IPv6 default route exists'
 else
   fail 'OpenVPN early reconciliation remains fail-closed when an IPv6 default route exists'
