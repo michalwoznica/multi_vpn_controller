@@ -1,4 +1,12 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 1
+- Begin refactoring authenticated `mvc disconnect` from historical-shape verification toward observed-state convergence; ownership/session authentication remains unchanged and fail-closed.
+- Reconstruct combined-session WireGuard teardown identity from the immutable same-boot D4 intent and authenticated public marker rather than requiring the mutable saved WireGuard source profile to remain present and byte-identical.
+- Route published combined-session WireGuard teardown through one exact-inventory reconciler for nominal, already-down, already-absent and partially retired MVC-owned state instead of separate enumerated running/dropout coordinator paths.
+- Treat an already-absent owned proto-186 endpoint route as an acceptable cleanup post-state when the authenticated parallel guard is still exact; foreign/ambiguous route or guard state remains fatal before mutation.
+- Emit a public warning when the authenticated dual WireGuard state differs from the nominal running shape, while continuing bounded cleanup of proven MVC-owned residue.
+- Preserve all existing OpenVPN-loss, WireGuard-loss, partial-D4, break-glass, foreign-policy and final-convergence safety checks. This stage does not yet relax exact post-session physical-link/IPv4 topology restoration or refactor standalone WireGuard teardown.
+
 ## MVC 2.4.4 underlay-replacement reconciliation
 - Add authenticated break-glass recovery finalization to normal `mvc disconnect`: after the independent emergency tool has already disarmed B4, an exact same-boot recovered OpenVPN-bearing session can be retired without reboot only when its public marker/journals authenticate and all managed VPN, WireGuard, route and guard residue is proven absent.
 - Publish a dedicated recovery-finalization intent before any recovered-session mutation, then a separate clone-delete intent before removing the authenticated inactive temporary OpenVPN clone; ambiguous outcomes remain resumable rather than blindly retried.

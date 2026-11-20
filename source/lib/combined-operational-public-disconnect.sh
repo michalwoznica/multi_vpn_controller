@@ -32,6 +32,11 @@ mvc24pubd_reset() {
 
 # Preserve only C23T's fixed diagnostic categories for the public caller.
 # This is observation text only: it grants no teardown, release or retry authority.
+mvc24pubd_warn() {
+    (( $# >= 1 )) || return 1
+    printf 'Multi VPN Controller: WARNING: disconnect reconciliation: %s\n' "$*" >&2
+}
+
 mvc24pubd_record_completion_failure() {
     (( $# == 0 )) || return 1
     local detail=${MVC24GC23T_CONVERGENCE_DETAIL:-unverified}
@@ -913,23 +918,13 @@ mvc24pubd_load_d4_intent() {
     done
     (( ${#MVC24GD4_ALLOWED_IPS[@]} >= 1 )) || return 1
 
-    # Re-read the current saved source profile and require byte/hash + semantic
-    # equality with the immutable D4 intent. Deliberately do NOT re-resolve the
-    # source hostname here: disconnect authority is bound to the endpoint pinned
-    # in the immutable live intent, and DNS rotation must not redirect teardown.
-    local source_type
-    source_type=$(nmcli --wait 10 -g connection.type connection show uuid "$MVC24GD4_SOURCE_UUID" 2>/dev/null) || return 1
-    [[ $source_type == wireguard ]] || return 1
-    mvc24gd2_find_saved_keyfile "$MVC24GD4_SOURCE_UUID" || return 1
-    mvc24gd2_validate_keyfile "$MVC24GD2_KEYFILE" "$MVC24GD4_SOURCE_UUID" "$MVC24GD4_UNDERLAY" || return 1
-    MVC24GD4_SOURCE_FILE=$MVC24GD2_KEYFILE
-    [[ $(mvc24gd4_hash_file "$MVC24GD4_SOURCE_FILE") == "$MVC24GD4_SOURCE_SHA" ]] || return 1
-    mvc24gd3_keyfile_ipv4_source "$MVC24GD4_SOURCE_FILE" || return 1
-    [[ $MVC24GD3_WG_SOURCE_IP == "$MVC24GD4_WG_SOURCE" && ${#MVC24GD2_ALLOWED_IPS[@]} == ${#MVC24GD4_ALLOWED_IPS[@]} ]] || return 1
-    local i
-    for ((i=0; i<${#MVC24GD4_ALLOWED_IPS[@]}; i++)); do
-        [[ ${MVC24GD2_ALLOWED_IPS[i]} == "${MVC24GD4_ALLOWED_IPS[i]}" ]] || return 1
-    done
+    # Teardown authority is the immutable same-boot D4 intent plus the
+    # authenticated public session marker, not the mutable saved source profile.
+    # The operator may edit or delete the saved WG profile while MVC is active;
+    # that is diagnostically interesting but must not strand authenticated MVC
+    # residue. The exact endpoint, temporary UUID/name, underlay binding, WG
+    # source and AllowedIPs required for cleanup were already frozen in D4.
+    MVC24GD4_SOURCE_FILE=
     MVC24GD4_RUNTIME=$d4_runtime
     MVC24GD4_TEMP_FILE=/run/NetworkManager/system-connections/vpnks-wg.nmconnection
     MVC24GD4_HOLD_PROTO=187
@@ -1061,7 +1056,7 @@ mvc24pub_disconnect_admission_witness() {
        ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
        ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]] || return 1
     case ${MVC24PUBD_STAGE:-idle} in
-      reobserving-dual-active|tearing-down-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout|reobserving-openvpn-after-wireguard|reobserving-openvpn-only|stopping-openvpn|releasing-private-holds|completing-session|observing-openvpn-dropout|reconciling-openvpn-dropout-wireguard|adopting-openvpn-absence) ;;
+      reobserving-dual-active|tearing-down-wireguard|reconciling-dual-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout|reobserving-openvpn-after-wireguard|reobserving-openvpn-only|stopping-openvpn|releasing-private-holds|completing-session|observing-openvpn-dropout|reconciling-openvpn-dropout-wireguard|adopting-openvpn-absence) ;;
       *) return 1 ;;
     esac
     mvc24gb2_root_scope && mvc24gb2_lock_valid
@@ -1750,32 +1745,21 @@ mvc24pubd_disconnect_once() {
     MVC24GD4_ATTEMPTED=yes
     MVC24GD4_STAGE=parallel-wireguard-openvpn-protected-running
     MVC24PUBD_STAGE=reobserving-dual-active
-    if mvc24gd4_dual_active_observed && mvc24gd4_private_hold_routes_state absent; then
-        MVC24PUBD_STAGE=tearing-down-wireguard
-        if ! mvc24gd4_stop_once || [[ ${MVC24GD4_STAGE:-} != wireguard-residue-removed-openvpn-protected-private-hold ]]; then
-            MVC24PUBD_STAGE="wireguard-stop-failed-${MVC24GD4_STAGE:-unknown}"
-            mvc24pubd_consume_authority
-            return 1
-        fi
-    else
-        # v2.4.1 C24A Stage 2: the inverse published dropout.  OpenVPN was
-        # already rehydrated and observed healthy above, so admit only the exact
-        # case where the authenticated WG side is now down/absent under the
-        # unchanged parallel guard.  Any other dual-shape mismatch remains a
-        # refusal rather than being generalized into cleanup authority.
-        MVC24PUBD_STAGE=observing-published-wireguard-dropout
-        if ! mvc24pubr_published_wg_absent_observed; then
-            MVC24PUBD_STAGE=dual-active-reobservation-refused
-            mvc24pubd_consume_authority
-            mvc24gb2_close
-            return 1
-        fi
-        MVC24PUBD_STAGE=reconciling-published-wireguard-dropout
-        if ! mvc24pubr_reconcile_published_wg_absent_to_openvpn_hold; then
-            MVC24PUBD_STAGE=published-wireguard-dropout-reconciliation-refused
-            mvc24pubd_consume_authority
-            return 1
-        fi
+    if ! mvc24gd4_dual_active_observed || ! mvc24gd4_private_hold_routes_state absent; then
+        mvc24pubd_warn 'authenticated dual WireGuard state differs from the nominal running shape; converging observed MVC-owned residue' || :
+    fi
+
+    # Once the immutable D4 intent and same-boot public session are
+    # authenticated, teardown is a convergence operation. Reuse the existing
+    # exact-inventory reconciler for active, already-down, already-absent or
+    # partially retired WG state instead of requiring one enumerated historical
+    # shape before cleanup may begin. Foreign/ambiguous route, profile, guard or
+    # keyfile observations still fail inside the reconciler.
+    MVC24PUBD_STAGE=reconciling-dual-wireguard
+    if ! mvc24pubr_reconcile_partial_d4_to_openvpn_hold; then
+        MVC24PUBD_STAGE=dual-wireguard-convergence-refused
+        mvc24pubd_consume_authority
+        return 1
     fi
 
     MVC24PUBD_STAGE=reobserving-openvpn-after-wireguard

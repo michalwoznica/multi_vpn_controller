@@ -42,7 +42,7 @@ mvc24pubr_context_witness() {
     fi
     [[ ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]] || return 1
     case ${MVC24PUBD_STAGE:-} in
-      reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout) ;;
+      reconciling-dual-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout) ;;
       *) return 1 ;;
     esac
     mvc24pub_disconnect_admission_witness
@@ -378,7 +378,10 @@ mvc24pubr_reconcile_partial_d4_to_openvpn_hold() {
     # Re-observe guard/route after any NM down before changing firewall state.
     mvc24pubr_route_inventory && mvc24pubr_guard_inventory || return 1
     if [[ $MVC24PUBR_GUARD_STATUS == parallel ]]; then
-        [[ $MVC24PUBR_ROUTE_STATUS == owned ]] || return 1
+        # Underlay churn may already have removed the exact owned proto-186
+        # route. Absence is already a safe post-state; only a foreign/ambiguous
+        # route inventory is refused.
+        [[ $MVC24PUBR_ROUTE_STATUS == owned || $MVC24PUBR_ROUTE_STATUS == absent ]] || return 1
         MVC24GD4_STAGE=wireguard-down-parallel-guard-retained-private-hold
         MVC24PUBR_STAGE=restoring-openvpn-guard
         mvc24gd4_restore_openvpn_guard || return 1

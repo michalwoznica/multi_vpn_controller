@@ -60,8 +60,9 @@ mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 0; }
 mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
 mvc24gd4_dual_active_observed(){ LOG+=(dual-observe); return 1; }
 mvc24gd4_private_hold_routes_state(){ [[ $1 == absent ]]; }
-mvc24pubr_published_wg_absent_observed(){ LOG+=(wg-absent); return 0; }
-mvc24pubr_reconcile_published_wg_absent_to_openvpn_hold(){ LOG+=(wg-reconcile); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_warn(){ LOG+=(warning); return 0; }
+mvc24pubr_published_wg_absent_observed(){ LOG+=(legacy-wg-absent); return 1; }
+mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
 mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
 mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
@@ -69,7 +70,7 @@ mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-ar
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 mvc24gb2_close(){ LOG+=(close); return 0; }
 mvc24pubd_disconnect_once
-[[ ${LOG[*]} == 'marker lock ovpn-live wg-id dual-observe wg-absent wg-reconcile ovpn-reobserve ovpn-stop hold-release complete marker-finalize' ]]
+[[ ${LOG[*]} == 'marker lock ovpn-live wg-id dual-observe warning wg-converge ovpn-reobserve ovpn-stop hold-release complete marker-finalize' ]]
 [[ $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready && $MVC24PUBD_AUTHORITY == none ]]
 WG_DROP
 
