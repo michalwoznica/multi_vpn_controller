@@ -17,6 +17,7 @@ TESTS=(
   test-partial-wireguard-reconciliation.sh
   test-incomplete-openvpn-reconciliation.sh
   test-openvpn-dropout-disconnect.sh
+  test-openvpn-disconnect-convergence.sh
   test-wireguard-dropout-disconnect.sh
   test-generated-dropout-disconnect.sh
   test-underlay-replacement-convergence-diagnostics.sh

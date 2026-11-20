@@ -65,29 +65,28 @@ mvc24pubr_reconcile_published_wg_absent_to_openvpn_hold &&
   [[ $STATE_NM == absent && $STATE_ROUTE == absent && $STATE_KEY == absent && $STATE_GUARD == c11 && $STATE_HOLD == full ]] &&
   pass down-wg-profile-and-owned-route-are-retired || fail inverse-reconcile-owned
 
-# 5. Public coordinator falls back only after exact dual-active reobservation
-# fails, then completes through the existing OpenVPN stop/finalization path.
+# 5. Public coordinator now treats the exact owned active OpenVPN clone as the
+# teardown authority and converges the WG side before stopping that clone. It
+# no longer requires a healthy dual-active/OpenVPN route-DNS reobservation.
 source lib/combined-operational-public-disconnect.sh
 LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_b4_all_absent(){ return 1; }
-mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 0; }
+mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
+mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent-probe); return 1; }
+mvc24pubd_openvpn_owned_active_observed(){ LOG+=(ovpn-owned); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-nominal); return 0; }
 mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
-mvc24gd4_dual_active_observed(){ LOG+=(dual-observe); return 1; }
-mvc24gd4_private_hold_routes_state(){ [[ $1 == absent ]]; }
-mvc24pubd_warn(){ LOG+=(warning); return 0; }
-mvc24pubr_published_wg_absent_observed(){ LOG+=(legacy-wg-absent); return 1; }
-mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
-mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
-mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_stop_openvpn_convergent(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
-mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
+mvc24gco_complete_once(){ LOG+=(complete); MVC24GCO_STAGE=completed-session-archived-sameboot-ready; MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 mvc24gb2_close(){ LOG+=(close); return 0; }
 mvc24pubd_disconnect_once || fail inverse-coordinator-success
-[[ ${LOG[*]} == 'marker lock ovpn-live wg-id dual-observe warning wg-converge ovpn-reobserve ovpn-stop hold-release complete marker-finalize' &&
+[[ ${LOG[*]} == 'marker lock ovpn-id ovpn-absent-probe ovpn-owned ovpn-nominal wg-id wg-converge ovpn-stop hold-release complete marker-finalize' &&
    $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready &&
    $MVC24PUBD_AUTHORITY == none && $MVC24PUBD_APPROVAL == consumed ]] &&
   pass coordinator-completes-wg-dropout-to-normal-sameboot-ready-state || fail inverse-coordinator-order

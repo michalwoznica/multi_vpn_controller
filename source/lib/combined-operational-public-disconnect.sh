@@ -6,9 +6,10 @@
 # enable the public dispatcher.  A durable public-session marker is only an
 # index/binding: every fresh process reacquires the existing B2 lock, validates
 # same-boot/namespace identity, recomputes immutable journal hashes, reconstructs
-# nonsecret OpenVPN/WireGuard state from the authoritative journals/current
-# saved WG profile, and re-observes the exact protected dual state before any
-# teardown authority exists.
+# nonsecret OpenVPN/WireGuard identity from authoritative same-boot journals.
+# Once that ownership is authenticated, disconnect converges observed MVC-owned
+# residue rather than requiring the historical protected tunnel shape to remain
+# byte-for-byte healthy. Foreign or ambiguous state remains fail-closed.
 
 mvc24pubd_reset() {
     MVC24PUBD_ATTEMPTED=no
@@ -564,6 +565,112 @@ mvc24pubd_rehydrate_openvpn_locked() {
 # OpenVPN/tun carrier may remain. A combined session may still have only its
 # exact authenticated WG connection active; every other managed VPN shape is
 # refused. This function is read-only.
+
+# Observe an authenticated MVC-owned OpenVPN clone that is still active without
+# requiring its historical tunnel route/DNS/carrier shape to remain healthy.
+# This is deliberately weaker than connect-time C6/C16 readiness and stronger
+# than merely seeing an active VPN: the immutable clone identity must already
+# have been reconstructed, exactly one matching NM VPN may be active, and no
+# foreign managed VPN/tun/tap/ppp/WireGuard connection may coexist.  The exact
+# MVC WireGuard connection is permitted only while a combined session is still
+# being reconciled before OpenVPN stop.
+#
+# Unmanaged residual tunnel/process state is not treated as owned here.  If it
+# survives the exact clone stop, C19's final no-active-VPN witness will refuse
+# B4 release and preserve fail-closed safety.
+mvc24pubd_openvpn_owned_active_observed() {
+    (( $# == 0 )) || return 1
+    mvc24pub_disconnect_admission_witness || return 1
+    case ${MVC24PUBD_STAGE:-idle} in
+      observing-openvpn-owned|stopping-openvpn-convergent) ;;
+      *) return 1 ;;
+    esac
+    local rows line uuid type name dev clone_seen=0 wg_seen=0
+    MVC24GC23T_SOURCE_UUID=$MVC24GC7_SOURCE_UUID
+    MVC24GC23T_CLONE_UUID=$MVC24GC7_CLONE_UUID
+    MVC24GC23T_NM_OWNER=$MVC24GC7_NM_OWNER
+    mvc24gc23t_clone_present "$MVC24GC7_CLONE_UUID" || return 1
+    rows=$(nmcli --wait 10 --colors no -t -f UUID,TYPE,NAME,DEVICE connection show --active 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        [[ -n $line ]] || continue
+        IFS=: read -r uuid type name dev <<< "$line"
+        case ${type,,} in
+          vpn)
+            [[ $uuid == "$MVC24GC7_CLONE_UUID" && $name == vpnks-ovpn ]] || return 1
+            clone_seen=$((clone_seen+1))
+            ;;
+          tun)
+            [[ $name == tun-vpnks && $dev == tun-vpnks ]] || return 1
+            ;;
+          tap|ppp) return 1 ;;
+          wireguard)
+            if [[ ${MVC24PUBD_SESSION_MODE:-none} == combined &&
+                  $uuid == "$MVC24PUBD_WG_TEMP_UUID" && $name == vpnks-wg && $dev == vpnks-wg ]]; then
+                wg_seen=$((wg_seen+1))
+            else
+                return 1
+            fi
+            ;;
+        esac
+    done <<< "$rows"
+    (( clone_seen == 1 && wg_seen <= 1 ))
+}
+
+# Public disconnect convergence variant of C19.  The normal C19 entrypoint
+# requires a fully healthy C17/C16 OpenVPN observation because historically it
+# was both a stop operation and a proof that the protected tunnel remained
+# nominal.  Disconnect no longer needs that latter property.  Once public
+# same-boot ownership is authenticated and the exact clone is observed active,
+# this path journals the same C19 intent, proves exact C11/foreign nftables,
+# commits C1, stops only the authenticated clone once, then judges success from
+# the authoritative no-VPN + exact-C1 post-state.
+mvc24pubd_stop_openvpn_convergent() {
+    (( $# == 0 )) || return 1
+    [[ ${MVC24PUBD_STAGE:-} == stopping-openvpn-convergent ]] || return 1
+    mvc24pub_disconnect_admission_witness || return 1
+    [[ ! -e /run/mvc-disconnect && ! -L /run/mvc-disconnect &&
+       ! -e /run/mvc-completion && ! -L /run/mvc-completion &&
+       $(stat -f -c %T /dev/shm) == tmpfs ]] || return 1
+    mvc24pubd_openvpn_owned_active_observed || return 1
+    local scratch batch a b success=1 nm_stop_rc
+    scratch=$(umask 077; mktemp -d /dev/shm/mvc-c19-converge.XXXXXXXX) || return 1
+    [[ -d $scratch && ! -L $scratch && -O $scratch && $(stat -c %a -- "$scratch") == 700 ]] || return 1
+    batch=$scratch/handback.nft a=$scratch/first.json b=$scratch/second.json
+    if ! (umask 077; set -C; : > "$batch") ||
+       ! mvc24gc19_write_c1_handback "$MVC24GC3_IFACE" "$MVC24GC3_SOURCE" "$MVC24GC3_REMOTE" "$MVC24GC3_PORT" "$batch" ||
+       ! nft --check --file "$batch" >/dev/null 2>&1; then success=0; fi
+    if (( success == 1 )); then
+        mvc24gb1_capture_nft "$a" && mvc24gb1_capture_nft "$b" &&
+          mvc24gc19_kernel_witness c11 "$a" "$b" || success=0
+    fi
+    if (( success == 1 )); then
+        mvc24gc19_publish_intent "$batch" && mvc24gc19_candidate_matches_intent "$batch" || success=0
+    fi
+    if (( success == 1 )); then
+        MVC24GC19_ATTEMPTED=yes
+        MVC24GC19_STAGE=handback-commit-attempted-uncertain
+        nft --file "$batch" >/dev/null 2>&1 || success=0
+    fi
+    if (( success == 1 )); then
+        mvc24gb1_capture_nft "$a" && mvc24gb1_capture_nft "$b" &&
+          mvc24gc19_kernel_witness c1 "$a" "$b" && mvc24gc19_intent_valid || success=0
+    fi
+    if (( success == 1 )); then
+        MVC24GC19_STAGE=c1-quarantine-verified-nm-disconnect-attempted-uncertain
+        if mvc24gc19_nm_stop "$MVC24GC7_CLONE_UUID"; then nm_stop_rc=0; else nm_stop_rc=$?; fi
+        MVC24GC19_NM_STOP_EXIT_STATUS=$nm_stop_rc
+        mvc24gc19_observe_disconnect_poststate "$a" "$b" || success=0
+    fi
+    rm -f -- "$batch" "$a" "$b" || success=0
+    rmdir -- "$scratch" || success=0
+    if (( success == 1 )); then
+        MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority
+        MVC24GC19_AUTHORITY=none
+        MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending
+        return 0
+    fi
+    return 1
+}
 mvc24pubd_openvpn_absent_observed() {
     (( $# == 0 )) || return 1
     mvc24pub_disconnect_admission_witness || return 1
@@ -652,7 +759,7 @@ mvc24pub_disconnect_admission_witness() {
        ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
        ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]] || return 1
     case ${MVC24PUBD_STAGE:-idle} in
-      reobserving-dual-active|tearing-down-wireguard|reconciling-dual-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout|reobserving-openvpn-after-wireguard|reobserving-openvpn-only|stopping-openvpn|releasing-private-holds|completing-session|observing-openvpn-dropout|reconciling-openvpn-dropout-wireguard|adopting-openvpn-absence) ;;
+      reobserving-dual-active|tearing-down-wireguard|reconciling-dual-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout|reobserving-openvpn-after-wireguard|reobserving-openvpn-only|stopping-openvpn|releasing-private-holds|completing-session|observing-openvpn-dropout|observing-openvpn-owned|reconciling-openvpn-dropout-wireguard|reconciling-openvpn-convergence-wireguard|stopping-openvpn-convergent|adopting-openvpn-absence) ;;
       *) return 1 ;;
     esac
     mvc24gb2_root_scope && mvc24gb2_lock_valid
@@ -721,6 +828,12 @@ mvc24gd4_authority_witness() {
             ${MVC24GCO_AUTHORITY:-none} == public-explicit-disconnect &&
             ${MVC24GCO_STAGE:-} == protected-openvpn-absent-reconciliation &&
             ${MVC24PUBD_STAGE:-} == reconciling-openvpn-dropout-wireguard ]]; then
+        mvc24pub_disconnect_admission_witness || return 1
+        admitted=yes
+    elif [[ ${MVC24GCO_MODE:-disabled} == public-live-fresh-disconnect &&
+            ${MVC24GCO_AUTHORITY:-none} == public-explicit-disconnect &&
+            ${MVC24GCO_STAGE:-} == protected-openvpn-convergence &&
+            ${MVC24PUBD_STAGE:-} == reconciling-openvpn-convergence-wireguard ]]; then
         mvc24pub_disconnect_admission_witness || return 1
         admitted=yes
     fi
@@ -1123,69 +1236,64 @@ mvc24pubd_disconnect_once() {
         return 0
     fi
 
-    local openvpn_dropout=no
-    if ! mvc24pubd_rehydrate_openvpn_locked; then
-        # v2.4.1 C24A: full live rehydration can fail legitimately after an
-        # underlay outage has independently removed OpenVPN. Never infer that
-        # from absence alone: reconstruct immutable identity first, establish
-        # explicit public-disconnect authority, then require the exact read-only
-        # OpenVPN-absent observation before any mutation is admitted.
-        if ! mvc24pubd_rehydrate_openvpn_identity_locked; then
-            MVC24PUBD_STAGE=active-session-reconstruction-refused
+    # OpenVPN-bearing published sessions are classified from immutable ownership
+    # first, not from whether the tunnel still matches its historical healthy
+    # route/DNS/carrier shape.  After identity reconstruction there are two
+    # admitted states: exact owned clone already absent, or exact owned clone
+    # still active.  Anything else is ambiguous and remains fail-closed.
+    if ! mvc24pubd_rehydrate_openvpn_identity_locked; then
+        MVC24PUBD_STAGE=active-session-reconstruction-refused
+        mvc24gb2_close
+        return 1
+    fi
+    if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction ]]; then
+        case ${MVC24PUBD_TRANSACTION_STATE:-none} in
+          openvpn-protected|dual-active-observed) ;;
+          *)
+            MVC24PUBD_STAGE=unsupported-openvpn-transaction-state
             mvc24gb2_close
             return 1
-        fi
-        MVC24PUBD_APPROVAL=approved-process-local
-        MVC24PUBD_AUTHORITY=public-explicit-disconnect
-        MVC24GCO_MODE=public-live-fresh-disconnect
-        MVC24GCO_AUTHORITY=public-explicit-disconnect
-        MVC24GCO_ATTEMPTED=yes
-        MVC24GCO_STAGE=protected-openvpn-absent-reconciliation
-        MVC24PUBD_STAGE=observing-openvpn-dropout
-        if ! mvc24pubd_openvpn_absent_observed; then
+            ;;
+        esac
+    else
+        [[ ${MVC24PUBD_MARKER_KIND:-none} == active && ${MVC24PUBD_SESSION_MODE:-none} == combined ]] || {
+            MVC24PUBD_STAGE=unsupported-openvpn-marker
+            mvc24gb2_close
+            return 1
+        }
+    fi
+
+    MVC24PUBD_APPROVAL=approved-process-local
+    MVC24PUBD_AUTHORITY=public-explicit-disconnect
+    MVC24GCO_MODE=public-live-fresh-disconnect
+    MVC24GCO_AUTHORITY=public-explicit-disconnect
+    MVC24GCO_ATTEMPTED=yes
+
+    local openvpn_state=unknown
+    MVC24GCO_STAGE=protected-openvpn-absent-reconciliation
+    MVC24PUBD_STAGE=observing-openvpn-dropout
+    if mvc24pubd_openvpn_absent_observed; then
+        openvpn_state=absent
+    else
+        MVC24GCO_STAGE=protected-openvpn-convergence
+        MVC24PUBD_STAGE=observing-openvpn-owned
+        if mvc24pubd_openvpn_owned_active_observed; then
+            openvpn_state=active
+            if ! mvc24pubd_rehydrate_openvpn_locked; then
+                mvc24pubd_warn 'authenticated OpenVPN clone no longer matches the nominal protected tunnel shape; converging owned state' || :
+            fi
+        else
             MVC24PUBD_STAGE=active-session-reconstruction-refused
             mvc24pubd_consume_authority
             mvc24gb2_close
             return 1
         fi
-        openvpn_dropout=yes
-    else
-        MVC24PUBD_APPROVAL=approved-process-local
-        MVC24PUBD_AUTHORITY=public-explicit-disconnect
-        MVC24GCO_MODE=public-live-fresh-disconnect
-        MVC24GCO_AUTHORITY=public-explicit-disconnect
-        MVC24GCO_ATTEMPTED=yes
-        MVC24GCO_STAGE=protected-openvpn-observed
-        MVC24GC17_STAGE=protected-ovpn-stages-observed-no-operational-authority
-        MVC24GC17_AUTHORITY=none
     fi
 
-    if [[ $openvpn_dropout == yes ]]; then
-        # Only already-published/protected OpenVPN-bearing states are eligible.
-        # Prepared states and standalone WireGuard modes were handled earlier.
-        if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction ]]; then
-            case ${MVC24PUBD_TRANSACTION_STATE:-none} in
-              openvpn-protected|dual-active-observed) ;;
-              *)
-                MVC24PUBD_STAGE=unsupported-openvpn-dropout-transaction-state
-                mvc24pubd_consume_authority
-                mvc24gb2_close
-                return 1
-                ;;
-            esac
-        else
-            [[ ${MVC24PUBD_MARKER_KIND:-none} == active && ${MVC24PUBD_SESSION_MODE:-none} == combined ]] || {
-                MVC24PUBD_STAGE=unsupported-openvpn-dropout-marker
-                mvc24pubd_consume_authority
-                mvc24gb2_close
-                return 1
-            }
-        fi
-
+    if [[ $openvpn_state == absent ]]; then
         # If this session ever acquired D4/WG state, reconcile that exact
         # authenticated survivor to C11 + private holds before adopting the
-        # already-absent OpenVPN into C1. This covers the 2026-11-06 incident,
-        # including the observed case where proto-186 was already absent.
+        # already-absent OpenVPN into C1.
         if [[ ${MVC24PUBD_MARKER_KIND:-none} == active ||
               ${MVC24PUBD_TRANSACTION_STATE:-none} == dual-active-observed ||
               -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]]; then
@@ -1212,73 +1320,35 @@ mvc24pubd_disconnect_once() {
                 return 1
             fi
         fi
-
-        MVC24PUBD_STAGE=completing-session
-        if ! mvc24gco_complete_once; then
-            mvc24pubd_record_completion_failure || MVC24PUBD_STAGE=session-completion-failed-diagnostic-recording-refused
-            mvc24pubd_consume_authority
-            return 1
-        fi
-        if [[ ${MVC24PUBD_MARKER_KIND:-none} == active ]]; then
-            if ! mvc24pubd_finalize_marker; then
-                MVC24PUBD_STAGE=public-session-marker-finalize-failed
-                mvc24pubd_consume_authority
-                return 1
-            fi
-        else
-            if ! mvc24pubd_finalize_transaction; then
-                MVC24PUBD_STAGE=public-transaction-marker-finalize-failed
-                mvc24pubd_consume_authority
-                return 1
-            fi
-        fi
-        if [[ ${MVC24PUBD_SESSION_MODE:-none} == combined ]]; then
-            MVC24PUBD_STAGE=public-dual-session-complete-sameboot-ready
-        else
-            MVC24PUBD_STAGE=public-openvpn-session-complete-sameboot-ready
-        fi
-        mvc24pubd_consume_authority
-        return 0
-    fi
-
-    if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction &&
-          ${MVC24PUBD_TRANSACTION_STATE:-none} == openvpn-protected ]]; then
-        if [[ -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]]; then
-            [[ -d $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || {
-                MVC24PUBD_STAGE=partial-wireguard-runtime-shape-refused
+    else
+        # Converge any authenticated WG side first, without requiring OpenVPN's
+        # old default route/DNS/tun shape to remain healthy.  End at exact C11
+        # plus full private holds, then stop only the authenticated OpenVPN clone.
+        if [[ ${MVC24PUBD_MARKER_KIND:-none} == active ||
+              ${MVC24PUBD_TRANSACTION_STATE:-none} == dual-active-observed ||
+              -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]]; then
+            [[ ! -e $(mvc24pub_wireguard_runtime_root) ||
+               ( -d $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ) ]] || {
+                MVC24PUBD_STAGE=wireguard-runtime-shape-refused
                 mvc24pubd_consume_authority
                 mvc24gb2_close
                 return 1
             }
-            MVC24PUBD_STAGE=reconciling-partial-wireguard
-            if ! mvc24pubd_load_d4_intent || ! mvc24pubr_reconcile_partial_d4_to_openvpn_hold; then
-                MVC24PUBD_STAGE=partial-wireguard-reconciliation-refused
+            MVC24PUBD_STAGE=reconciling-openvpn-convergence-wireguard
+            if ! mvc24pubd_load_d4_intent || ! mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence; then
+                MVC24PUBD_STAGE=openvpn-convergence-wireguard-reconciliation-refused
                 mvc24pubd_consume_authority
-                mvc24gb2_close
-                return 1
-            fi
-            MVC24PUBD_STAGE=reobserving-openvpn-after-wireguard
-            if ! mvc24pubd_reobserve_openvpn_after_wg; then
-                MVC24PUBD_STAGE=openvpn-post-partial-wireguard-reobservation-refused
-                mvc24pubd_consume_authority
-                mvc24gb2_close
-                return 1
-            fi
-        else
-            MVC24PUBD_STAGE=reobserving-openvpn-only
-            if ! mvc24pubd_reobserve_openvpn_only; then
-                MVC24PUBD_STAGE=openvpn-only-reobservation-refused
-                mvc24pubd_consume_authority
-                mvc24gb2_close
                 return 1
             fi
         fi
-        MVC24PUBD_STAGE=stopping-openvpn
-        if ! mvc24gco_stop_once; then
-            MVC24PUBD_STAGE="openvpn-stop-failed-${MVC24GC19_STAGE:-unknown}"
+
+        MVC24PUBD_STAGE=stopping-openvpn-convergent
+        if ! mvc24pubd_stop_openvpn_convergent; then
+            MVC24PUBD_STAGE="openvpn-convergent-stop-failed-${MVC24GC19_STAGE:-unknown}"
             mvc24pubd_consume_authority
             return 1
         fi
+
         if [[ ${MVC24GD4_STAGE:-} == wireguard-residue-removed-openvpn-protected-private-hold ]]; then
             MVC24PUBD_STAGE=releasing-private-holds
             if ! mvc24gd4_release_private_hold_after_openvpn_stop; then
@@ -1287,82 +1357,6 @@ mvc24pubd_disconnect_once() {
                 return 1
             fi
         fi
-        MVC24PUBD_STAGE=completing-session
-        if ! mvc24gco_complete_once; then
-            mvc24pubd_record_completion_failure || MVC24PUBD_STAGE=session-completion-failed-diagnostic-recording-refused
-            mvc24pubd_consume_authority
-            return 1
-        fi
-        if ! mvc24pubd_finalize_transaction; then
-            MVC24PUBD_STAGE=public-transaction-marker-finalize-failed
-            mvc24pubd_consume_authority
-            return 1
-        fi
-        if [[ ${MVC24PUBD_SESSION_MODE:-none} == openvpn-only ]]; then
-            MVC24PUBD_STAGE=public-openvpn-session-complete-sameboot-ready
-        else
-            MVC24PUBD_STAGE=public-openvpn-partial-session-complete-sameboot-ready
-        fi
-        mvc24pubd_consume_authority
-        return 0
-    fi
-
-    # Active marker and dual-active-observed transaction use the same proven
-    # dual teardown. The latter covers failure after D4 succeeded but before
-    # final active-marker publication.
-    if [[ ${MVC24PUBD_MARKER_KIND:-none} == transaction ]]; then
-        [[ ${MVC24PUBD_TRANSACTION_STATE:-none} == dual-active-observed ]] || {
-            MVC24PUBD_STAGE=unsupported-transaction-state
-            mvc24pubd_consume_authority
-            mvc24gb2_close
-            return 1
-        }
-    fi
-    if ! mvc24pubd_load_d4_intent; then
-        MVC24PUBD_STAGE=active-session-wireguard-reconstruction-refused
-        mvc24pubd_consume_authority
-        mvc24gb2_close
-        return 1
-    fi
-    MVC24GD4_ATTEMPTED=yes
-    MVC24GD4_STAGE=parallel-wireguard-openvpn-protected-running
-    MVC24PUBD_STAGE=reobserving-dual-active
-    if ! mvc24gd4_dual_active_observed || ! mvc24gd4_private_hold_routes_state absent; then
-        mvc24pubd_warn 'authenticated dual WireGuard state differs from the nominal running shape; converging observed MVC-owned residue' || :
-    fi
-
-    # Once the immutable D4 intent and same-boot public session are
-    # authenticated, teardown is a convergence operation. Reuse the existing
-    # exact-inventory reconciler for active, already-down, already-absent or
-    # partially retired WG state instead of requiring one enumerated historical
-    # shape before cleanup may begin. Foreign/ambiguous route, profile, guard or
-    # keyfile observations still fail inside the reconciler.
-    MVC24PUBD_STAGE=reconciling-dual-wireguard
-    if ! mvc24pubr_reconcile_partial_d4_to_openvpn_hold; then
-        MVC24PUBD_STAGE=dual-wireguard-convergence-refused
-        mvc24pubd_consume_authority
-        return 1
-    fi
-
-    MVC24PUBD_STAGE=reobserving-openvpn-after-wireguard
-    if ! mvc24pubd_reobserve_openvpn_after_wg; then
-        MVC24PUBD_STAGE=openvpn-post-wireguard-reobservation-refused
-        mvc24pubd_consume_authority
-        return 1
-    fi
-
-    MVC24PUBD_STAGE=stopping-openvpn
-    if ! mvc24gco_stop_once; then
-        MVC24PUBD_STAGE="openvpn-stop-failed-${MVC24GC19_STAGE:-unknown}"
-        mvc24pubd_consume_authority
-        return 1
-    fi
-
-    MVC24PUBD_STAGE=releasing-private-holds
-    if ! mvc24gd4_release_private_hold_after_openvpn_stop; then
-        MVC24PUBD_STAGE="private-hold-release-failed-${MVC24GD4_STAGE:-unknown}"
-        mvc24pubd_consume_authority
-        return 1
     fi
 
     MVC24PUBD_STAGE=completing-session
@@ -1384,8 +1378,17 @@ mvc24pubd_disconnect_once() {
             return 1
         fi
     fi
-    MVC24PUBD_STAGE=public-dual-session-complete-sameboot-ready
+    if [[ ${MVC24PUBD_SESSION_MODE:-none} == combined &&
+          ${MVC24PUBD_MARKER_KIND:-none} == transaction &&
+          ${MVC24PUBD_TRANSACTION_STATE:-none} == openvpn-protected ]]; then
+        MVC24PUBD_STAGE=public-openvpn-partial-session-complete-sameboot-ready
+    elif [[ ${MVC24PUBD_SESSION_MODE:-none} == combined ]]; then
+        MVC24PUBD_STAGE=public-dual-session-complete-sameboot-ready
+    else
+        MVC24PUBD_STAGE=public-openvpn-session-complete-sameboot-ready
+    fi
     mvc24pubd_consume_authority
+
     return 0
 }
 

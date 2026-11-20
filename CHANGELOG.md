@@ -1,4 +1,12 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 6
+- Make authenticated OpenVPN teardown convergence-driven when the exact MVC-owned temporary clone is still active but its historical tun/default-route/DNS shape has degraded. The immutable public-session/clone identity remains the ownership authority; degraded routing or DNS is diagnostic rather than a reason to strand cleanup.
+- Add an exact owned-active OpenVPN observation that accepts only the authenticated `vpnks-ovpn` clone, optional MVC tun state, and—in combined mode—the authenticated MVC WireGuard survivor. Foreign managed VPN/tap/ppp/WireGuard state remains a hard refusal before mutation.
+- For an authenticated active clone, publish the existing C19 normal-stop intent, perform the C11→C1 firewall handback, issue one bounded NetworkManager stop for that exact clone, then judge success from the observed no-active-VPN/C1 post-state rather than from the command exit status alone.
+- Generalize combined WireGuard-first reconciliation for degraded OpenVPN sessions: authenticated WG residue is converged to C11 plus private proto-187 holds without requiring the old OpenVPN default-route/DNS shape to remain healthy before the owned OpenVPN clone is stopped.
+- Preserve the truthful already-absent OpenVPN path, early OpenVPN-start reconciliation, final C23T safety checks, foreign nftables protection, and the R7 emergency-recovery boundary. Ambiguous clone identity or foreign VPN state remains fail-closed.
+- Add focused degraded-OpenVPN regression coverage and update existing dropout/convergence orchestration tests to the new convergence coordinator order.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 5
 - Make authenticated standalone WireGuard partial-start states normally disconnectable instead of immediately forcing the recovery tools. The public prepared transaction remains the same-boot ownership root; cleanup authority is granted only where retained journals and live observations prove the exact MVC-owned state.
 - For split WireGuard, once the immutable D4 intent exists, reuse the existing convergence-aware split stop path for partial profile/endpoint-route/activation outcomes. A missing or malformed D4 intent remains fail-closed.

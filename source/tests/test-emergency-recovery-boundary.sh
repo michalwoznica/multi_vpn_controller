@@ -88,14 +88,15 @@ LOG=()
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_emergency_disarm_boundary_observed(){ LOG+=(boundary-check); return 1; }
-mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn); return 0; }
+mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
+mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent-probe); return 1; }
+mvc24pubd_openvpn_owned_active_observed(){ LOG+=(ovpn-owned); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-nominal); return 0; }
 mvc24pubd_load_d4_intent(){ LOG+=(wg); return 0; }
-mvc24gd4_dual_active_observed(){ return 0; }
-mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-clean); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
-mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
-mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence(){ LOG+=(wg-clean); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_stop_openvpn_convergent(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
-mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
+mvc24gco_complete_once(){ LOG+=(complete); MVC24GCO_STAGE=completed-session-archived-sameboot-ready; MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 if mvc24pubd_disconnect_once && [[ $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready ]]; then
     pass 'ordinary authenticated disconnect convergence remains active'

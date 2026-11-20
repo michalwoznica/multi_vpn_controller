@@ -81,53 +81,52 @@ mvc24pubr_ensure_hold_routes(){ LOG+=(unexpected-mutation); return 0; }
   [[ ${LOG[*]} == 'inventory' ]] &&
   pass ambiguous-guard-remains-fatal-before-mutation || fail ambiguous-guard-refusal
 
-# 5. Published dual teardown now uses the general authenticated reconciler when
-# nominal running-shape reobservation fails. It must not require the old exact
-# "published WG absent" classifier.
+# 5. Published dual teardown now authenticates the OpenVPN clone by immutable
+# identity, then converges WG state and stops that clone without requiring the
+# historical healthy tunnel shape.
 source lib/combined-operational-public-disconnect.sh
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
 LOG=()
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_b4_all_absent(){ return 1; }
-mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 0; }
-mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
-mvc24gd4_dual_active_observed(){ LOG+=(dual-observe); return 1; }
-mvc24gd4_private_hold_routes_state(){ [[ $1 == absent ]]; }
+mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
+mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent-probe); return 1; }
+mvc24pubd_openvpn_owned_active_observed(){ LOG+=(ovpn-owned); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-nominal-probe); return 1; }
 mvc24pubd_warn(){ LOG+=(warning); return 0; }
-mvc24pubr_published_wg_absent_observed(){ LOG+=(legacy-classifier); return 1; }
-mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
-mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
-mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
+mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_stop_openvpn_convergent(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
-mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
+mvc24gco_complete_once(){ LOG+=(complete); MVC24GCO_STAGE=completed-session-archived-sameboot-ready; MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 mvc24gb2_close(){ LOG+=(close); return 0; }
 mvc24pubd_disconnect_once || fail coordinator-general-convergence-success
-[[ ${LOG[*]} == 'marker lock ovpn-live wg-id dual-observe warning wg-converge ovpn-reobserve ovpn-stop hold-release complete marker-finalize' ]] &&
+[[ ${LOG[*]} == 'marker lock ovpn-id ovpn-absent-probe ovpn-owned ovpn-nominal-probe warning wg-id wg-converge ovpn-stop hold-release complete marker-finalize' ]] &&
   [[ $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready ]] &&
   pass coordinator-converges-authenticated-dual-drift-without-shape-classifier || fail coordinator-general-convergence-order
 
-# 6. A nominal healthy dual session also uses the same convergence engine,
-# keeping one cleanup model instead of two historical-shape paths.
+# 6. A nominal healthy dual session uses the same ownership/convergence path.
+# The nominal probe may succeed, but it no longer grants or gates teardown.
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
 LOG=()
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_b4_all_absent(){ return 1; }
-mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 0; }
-mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
-mvc24gd4_dual_active_observed(){ LOG+=(dual-observe); return 0; }
-mvc24gd4_private_hold_routes_state(){ [[ $1 == absent ]]; }
+mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
+mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent-probe); return 1; }
+mvc24pubd_openvpn_owned_active_observed(){ LOG+=(ovpn-owned); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-nominal-probe); return 0; }
 mvc24pubd_warn(){ LOG+=(unexpected-warning); return 0; }
-mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
-mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(ovpn-reobserve); return 0; }
-mvc24gco_stop_once(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; return 0; }
+mvc24pubd_load_d4_intent(){ LOG+=(wg-id); return 0; }
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence(){ LOG+=(wg-converge); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_stop_openvpn_convergent(){ LOG+=(ovpn-stop); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(hold-release); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
-mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
+mvc24gco_complete_once(){ LOG+=(complete); MVC24GCO_STAGE=completed-session-archived-sameboot-ready; MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; return 0; }
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 mvc24pubd_disconnect_once || fail coordinator-nominal-convergence-success
-[[ ${LOG[*]} == 'marker lock ovpn-live wg-id dual-observe wg-converge ovpn-reobserve ovpn-stop hold-release complete marker-finalize' ]] &&
+[[ ${LOG[*]} == 'marker lock ovpn-id ovpn-absent-probe ovpn-owned ovpn-nominal-probe wg-id wg-converge ovpn-stop hold-release complete marker-finalize' ]] &&
   pass nominal-and-drifted-dual-state-share-one-cleanup-path || fail nominal-convergence-order
 
 printf 'Results: %d passed, 0 failed\n' "$P"

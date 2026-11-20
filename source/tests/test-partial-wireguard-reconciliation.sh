@@ -77,20 +77,22 @@ rm -rf -- "$TEST_D4_RUNTIME"
 mkdir -p "$TEST_D4_RUNTIME"
 LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset
-mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=transaction; MVC24PUBD_TRANSACTION_STATE=openvpn-protected; MVC24PUBD_OVPN_SOURCE_UUID=11111111-1111-4111-8111-111111111111; MVC24PUBD_OVPN_CLONE_UUID=22222222-2222-4222-8222-222222222222; MVC24PUBD_WG_SOURCE_UUID=33333333-3333-4333-8333-333333333333; MVC24PUBD_WG_TEMP_UUID=44444444-4444-4444-8444-444444444444; MVC24PUBD_UNDERLAY=f15ra; return 0; }
+mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=transaction; MVC24PUBD_TRANSACTION_STATE=openvpn-protected; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_OVPN_SOURCE_UUID=11111111-1111-4111-8111-111111111111; MVC24PUBD_OVPN_CLONE_UUID=22222222-2222-4222-8222-222222222222; MVC24PUBD_WG_SOURCE_UUID=33333333-3333-4333-8333-333333333333; MVC24PUBD_WG_TEMP_UUID=44444444-4444-4444-8444-444444444444; MVC24PUBD_UNDERLAY=f15ra; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_b4_all_absent(){ return 1; }
-mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(rehydrate-ovpn); return 0; }
+mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(rehydrate-ovpn-id); return 0; }
+mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent-probe); return 1; }
+mvc24pubd_openvpn_owned_active_observed(){ LOG+=(ovpn-owned); return 0; }
+mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(rehydrate-ovpn-nominal); return 0; }
 mvc24pubd_load_d4_intent(){ LOG+=(rehydrate-wg); return 0; }
-mvc24pubr_reconcile_partial_d4_to_openvpn_hold(){ LOG+=(partial-reconcile); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
-mvc24pubd_reobserve_openvpn_after_wg(){ LOG+=(observe-ovpn); return 0; }
-mvc24gco_stop_once(){ LOG+=(stop-ovpn); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence(){ LOG+=(partial-reconcile); MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold; return 0; }
+mvc24pubd_stop_openvpn_convergent(){ LOG+=(stop-ovpn); MVC24GC19_STAGE=openvpn-stopped-c1-guard-retained-no-release-authority; MVC24GCO_STAGE=protected-stopped-c1-held-finalize-pending; return 0; }
 mvc24gd4_release_private_hold_after_openvpn_stop(){ LOG+=(release-holds); MVC24GD4_STAGE=wireguard-teardown-complete-openvpn-stopped-no-private-hold; return 0; }
 mvc24gco_complete_once(){ LOG+=(complete); MVC24GC23T_STAGE=completed-session-archived-sameboot-ready; MVC24GCO_STAGE=completed-session-archived-sameboot-ready; return 0; }
 mvc24pubd_finalize_transaction(){ LOG+=(finalize); return 0; }
 mvc24gb2_close(){ LOG+=(close); return 0; }
 mvc24pubd_disconnect_once && pass fresh-disconnect-partial-d4-succeeds || fail fresh-disconnect-partial-d4-succeeds
-[[ ${LOG[*]} == 'marker lock rehydrate-ovpn rehydrate-wg partial-reconcile observe-ovpn stop-ovpn release-holds complete finalize' ]] && pass fresh-disconnect-partial-d4-order || fail fresh-disconnect-partial-d4-order
+[[ ${LOG[*]} == 'marker lock rehydrate-ovpn-id ovpn-absent-probe ovpn-owned rehydrate-ovpn-nominal rehydrate-wg partial-reconcile stop-ovpn release-holds complete finalize' ]] && pass fresh-disconnect-partial-d4-order || fail fresh-disconnect-partial-d4-order
 [[ $MVC24PUBD_STAGE == public-openvpn-partial-session-complete-sameboot-ready ]] && pass fresh-disconnect-partial-d4-final-state || fail fresh-disconnect-partial-d4-final-state
 
 
