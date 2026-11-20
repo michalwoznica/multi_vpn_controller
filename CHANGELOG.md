@@ -1,4 +1,11 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 4
+- Complete the R6 current-final-safety policy for standalone WireGuard split teardown. Split runtime retirement no longer requires traffic to `1.1.1.1` to resolve through the originally admitted interface/source/gateway after authenticated MVC-owned WG residue is removed.
+- Add `mvc24gws_final_safety_witness()` and reuse the shared post-session safety witness already used by combined teardown, protected standalone WireGuard, and early OpenVPN reconciliation. Changed interface/gateway/address, multiple ordinary IPv4 defaults, or no IPv4 default therefore remain warning/diagnostic conditions during split teardown rather than cleanup blockers.
+- Preserve split connect-time admission and active-state observation unchanged: a running split session must still prove the originally admitted ordinary Internet route while being established/observed.
+- Preserve hard teardown blockers for unexpected B4 state, IPv6 default routing, MVC-reserved proto-186/proto-187 residue, and authenticated ownership/profile/kernel conflicts.
+- Add focused regression coverage proving split retirement has no hidden dependency on the original Internet route while connect-time active-state verification remains strict.
+
 ## MVC 2.4.4 emergency recovery boundary
 - Remove the provisional R3 post-emergency lifecycle-finalization subsystem from normal `mvc disconnect`; B4 absence no longer grants authority to archive failed-session journals, delete an inactive OpenVPN clone, retire the public-session marker, or claim same-boot reuse.
 - Restore `/root/mvc-emergency-rollback` as a narrow independent catastrophic B4 disarm. After a successful emergency disarm, failed-session evidence is intentionally retained and the operator must reboot before starting another MVC session.

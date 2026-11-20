@@ -228,13 +228,26 @@ mvc24gws_prepared_clean_observed() {
     mvc24gws_no_b4_tables
 }
 
+# Split standalone WireGuard teardown uses the same post-session safety policy
+# as the other protected modes.  The original underlay route remains part of
+# connect-time admission/active-state observation, but after authenticated
+# owned-state cleanup it is diagnostic only: networking may have moved to a
+# different interface/gateway, may expose multiple ordinary IPv4 defaults, or
+# may currently be offline.
+mvc24gws_final_safety_witness() {
+    (( $# == 0 )) || return 1
+    local dir
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gc23t_post_session_safety_witness_dir "$dir" no
+}
+
 mvc24gws_network_clean_retirement_pending_observed() {
     (( $# == 0 )) || return 1
     mvc24gwg_temp_profile_inventory_absent || return 1
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
     ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    mvc24gws_no_b4_tables && mvc24gws_internet_route_observed
+    mvc24gws_no_b4_tables && mvc24gws_final_safety_witness
 }
 
 mvc24gws_retire_prepared_once() {
@@ -271,7 +284,7 @@ mvc24gws_stop_once() {
     (( $# == 0 )) || return 1
     mvc24gws_authority_witness || return 1
     mvc24gws_no_b4_tables || return 1
-    MVC24GWS_STAGE=converging-wireguard-owned-state-split-internet-retained
+    MVC24GWS_STAGE=converging-wireguard-owned-state-split-final-safety
     mvc24gwg_converge_owned_network_once || return 1
     MVC24GWS_STAGE=wireguard-residue-removed-runtime-retirement-pending
     mvc24gws_retire_runtime_once || return 1
