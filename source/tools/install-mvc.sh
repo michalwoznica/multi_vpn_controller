@@ -90,6 +90,7 @@ readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
     'e7b57753b7bb11f144e4686647f5a0cba387d18166df93d6559ced5515d5ea9c'
     '70fcc4f01e85f5d07db130a0dfe5a8b2b039d5fb7f4e7c98ef6707335924f2b8'
     '41a1e75248a5cc2cfee7854b82ba4ca0f14df538997d10c4a3db3d46ce7766fc'
+    'c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db'
 )
 
 # Recovery tools are independently authenticated package files.  When one is
@@ -99,6 +100,7 @@ readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
 readonly -a MVC24I_APPROVED_UPDATE_EMERGENCY_SHA256=(
     'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'
     'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'
+    'cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897'
 )
 
 mvc24i_is_approved_update_emergency_sha256() {

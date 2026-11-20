@@ -1,3 +1,15 @@
+## MVC 2.4.5 emergency recovery same-boot reuse — R1 read-only finalization classifier
+
+- Begin the 2.4.5 development line from the exact physically validated and released MVC 2.4.4 runtime baseline.
+- Extend the independent emergency recovery tool with a new read-only `--finalization-inspect` mode; the existing B4 `--rollback` mutation remains unchanged and independent of normal controller journals.
+- Authenticate retained same-boot recovery state across mature combined, OpenVPN-only, protected-WireGuard and split-WireGuard sessions using the public marker plus the mode-appropriate immutable journal hashes.
+- Allow a combined-session marker to retain historical D4 hash evidence after authenticated WireGuard teardown has already retired the live D4 journal; WireGuard-only recovery continues to require live hash-authenticated D4 evidence.
+- Classify finalization eligibility only when B4 is absent, no MVC or foreign VPN/tunnel remains active, proto-186/proto-187 routes are absent, no IPv6 default route exists, live runtime roots are safe/unbusy, WireGuard temporary residue is gone, and any surviving OpenVPN temporary clone is the exact authenticated inactive MVC clone.
+- Treat an exact inactive authenticated OpenVPN clone as future finalizer cleanup work rather than an eligibility failure; ambiguous clone identity remains blocked.
+- Explicitly defer pre-mutation/partial-start finalization in R1 rather than inferring new cleanup authority from incomplete ownership evidence.
+- Keep R1 read-only: it does not archive journals, delete profiles, retire live MVC authority, or permit same-boot reuse after emergency rollback yet. Reboot remains required after rollback until a later checkpoint implements authenticated finalization.
+- Authorize the exact released MVC 2.4.4 controller and emergency-recovery hashes as authenticated update predecessors for the 2.4.5 package.
+
 # Changelog
 ## MVC 2.4.4 release-candidate physical validation
 - Physically validate the exact integrated 2.4.4 candidate executable SHA-256 `c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db` on the development host after authenticated update from the earlier 2.4.4 diagnostic candidate. Installation verification and the pre-session baseline were clean.

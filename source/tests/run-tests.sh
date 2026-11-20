@@ -25,6 +25,7 @@ TESTS=(
   test-current-underlay-final-safety-convergence.sh
   test-split-wireguard-final-safety-convergence.sh
   test-emergency-recovery-boundary.sh
+  test-emergency-finalization-eligibility.sh
   test-disconnect-convergence-core.sh
   test-standalone-wireguard-disconnect-convergence.sh
   test-standalone-wireguard-partial-start-disconnect.sh

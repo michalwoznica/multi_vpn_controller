@@ -62,7 +62,7 @@ sudo /root/mvc-emergency-rollback --inspect
 
 Use a recovery mutation only when its inspector authenticates the corresponding owned residue. The independent recovery tools deliberately have narrower authority than the main controller.
 
-`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. In MVC 2.4.4 it does **not** perform full lifecycle retirement: failed-session journals are intentionally retained for evidence, normal `mvc disconnect` must not be used as a post-rollback finalizer, and the host must be rebooted before starting another MVC session. Same-boot reuse after a successful catastrophic recovery is deferred to a later release.
+`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. The 2.4.5 development line adds a separate read-only `--finalization-inspect` classifier that can determine whether retained same-boot MVC state is authenticated and clean enough for future lifecycle retirement. R1 does **not** yet perform that retirement: failed-session journals remain live evidence, normal `mvc disconnect` must not be used as a post-rollback finalizer, and the host must still be rebooted before starting another MVC session.
 
 ## NetworkManager route refresh
 

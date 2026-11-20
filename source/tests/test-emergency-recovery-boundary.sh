@@ -34,13 +34,15 @@ else
     fail 'controller post-emergency success removal'
 fi
 
-# 3. Emergency rollback remains narrow and tells the operator the actual current-release
-# boundary: retained evidence, reboot before another MVC session.
-if grep -Fq 'failed-session journals are intentionally retained; reboot before starting another MVC session' "$REC" &&
+# 3. Emergency rollback remains mutation-narrow in this R1 checkpoint. The new
+# finalization classifier is read-only; rollback still requires reboot before
+# reuse because lifecycle retirement has not been implemented yet.
+if grep -Fq -- '--finalization-inspect' "$REC" &&
+   grep -Fq 'recovery finalization is read-only in this development checkpoint' "$REC" &&
    ! grep -Fq 'run sudo mvc disconnect once to authenticate and finalize recovery' "$REC"; then
-    pass 'emergency rollback guidance requires reboot and no follow-up disconnect'
+    pass 'emergency rollback remains terminal while exposing read-only finalization classification'
 else
-    fail 'emergency rollback terminal guidance'
+    fail 'emergency rollback R1 read-only finalization boundary'
 fi
 
 # 4. B4 absence without a normal release intent is the emergency-disarm
@@ -104,13 +106,13 @@ else
     fail 'ordinary disconnect preserved after recovery-boundary cleanup'
 fi
 
-# 8. Installer must accept both the released emergency tool and the exact R6
-# development predecessor when promoting to the new recovery-tool bytes.
-if grep -Fq "'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'" "$INST" &&
-   grep -Fq "'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'" "$INST"; then
-    pass 'installer authenticates released and R6 emergency recovery predecessors'
+# 8. The current package must authenticate the exact released 2.4.4 controller
+# and emergency-recovery bytes as direct update predecessors.
+if grep -Fq "'c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db'" "$INST" &&
+   grep -Fq "'cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897'" "$INST"; then
+    pass 'installer authenticates exact released 2.4.4 controller and emergency recovery predecessors'
 else
-    fail 'installer emergency predecessor authorization'
+    fail 'installer 2.4.4 predecessor authorization'
 fi
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
