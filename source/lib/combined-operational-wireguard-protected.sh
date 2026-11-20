@@ -327,7 +327,7 @@ mvc24gwg_authority_witness() {
           ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
           ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
         case ${MVC24PUBD_STAGE:-idle} in
-          reobserving-wireguard-protected|stopping-wireguard-protected) ;;
+          reobserving-wireguard-protected|stopping-wireguard-protected|stopping-wireguard-protected-partial-start|reconciling-wireguard-protected-pre-d4-partial-start) ;;
           *) return 1 ;;
         esac
         mvc24gb2_root_scope && mvc24gb2_lock_valid
@@ -384,9 +384,108 @@ mvc24gwg_temp_profile_inventory_absent() {
     ! awk -F: -v u="$MVC24GD4_TEMP_UUID" -v n="$MVC24GD4_TEMP_NAME" '$1==u || $3==n {found=1} END{exit(found?0:1)}' <<< "$rows"
 }
 
+# Converge the authenticated temporary WireGuard side toward absence without
+# requiring the historical "fully active" shape. The immutable D4 intent
+# identifies the only profile/link/endpoint route this helper may touch. Missing
+# owned resources are already-clean post-state; conflicting/foreign resources
+# remain fatal.
+mvc24gwg_converge_owned_network_once() {
+    (( $# == 0 )) || return 1
+    local rows line name uuid type n=0 active_rows active_count=0 iface
+    local link_present=no wg_present=no route_json route_count exact rc
+
+    MVC24GWG_PROFILE_STATE=unknown
+    rows=$(nmcli --wait 10 --colors no -t -f NAME,UUID,TYPE connection show 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        [[ -n $line ]] || continue
+        IFS=: read -r name uuid type <<< "$line"
+        [[ -n ${name:-} && -n ${uuid:-} && -n ${type:-} ]] || return 1
+        if [[ $name == "$MVC24GD4_TEMP_NAME" || $uuid == "$MVC24GD4_TEMP_UUID" ]]; then
+            [[ $name == "$MVC24GD4_TEMP_NAME" && $uuid == "$MVC24GD4_TEMP_UUID" && $type == wireguard ]] || return 1
+            ((n+=1))
+        fi
+    done <<< "$rows"
+    (( n <= 1 )) || return 1
+
+    active_rows=$(nmcli --wait 10 --colors no -t -f UUID,TYPE,NAME,DEVICE connection show --active 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        [[ -n $line ]] || continue
+        IFS=: read -r uuid type name iface <<< "$line"
+        if [[ $uuid == "$MVC24GD4_TEMP_UUID" || $name == "$MVC24GD4_TEMP_NAME" ]]; then
+            [[ $uuid == "$MVC24GD4_TEMP_UUID" && $type == wireguard && $name == "$MVC24GD4_TEMP_NAME" && $iface == "$MVC24GD4_TEMP_NAME" ]] || return 1
+            ((active_count+=1))
+        fi
+    done <<< "$active_rows"
+    (( active_count <= 1 && active_count <= n )) || return 1
+    if (( n == 0 )); then
+        MVC24GWG_PROFILE_STATE=absent
+    elif (( active_count == 1 )); then
+        MVC24GWG_PROFILE_STATE=active
+    else
+        iface=$(nmcli --wait 10 --colors no -g connection.interface-name connection show uuid "$MVC24GD4_TEMP_UUID" 2>/dev/null) || return 1
+        [[ $iface == "$MVC24GD4_TEMP_NAME" ]] || return 1
+        MVC24GWG_PROFILE_STATE=down
+    fi
+
+    ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 && link_present=yes
+    wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 && wg_present=yes
+    [[ $link_present == "$wg_present" ]] || return 1
+    if [[ $link_present == yes ]]; then
+        mvc24gd4_wg_kernel_endpoint || return 1
+    fi
+
+    if [[ $MVC24GWG_PROFILE_STATE == active ]]; then
+        set +e
+        nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1
+        rc=$?
+        set -e
+        MVC24GD4_NM_DOWN_EXIT_STATUS=$rc
+        mvc24gd4_wg_down_observed || return 1
+        MVC24GWG_PROFILE_STATE=down
+        link_present=no
+        wg_present=no
+    elif [[ $link_present == yes ]]; then
+        # A down/absent NetworkManager profile with the exact authenticated WG
+        # kernel object is recoverable residue. Remove only that proven-owned
+        # interface and require authoritative absence afterwards.
+        set +e
+        ip link delete dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1
+        rc=$?
+        set -e
+        : "$rc"
+        ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+        ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    fi
+
+    route_json=$(ip -j -N -4 route show table all proto 186) || return 1
+    jq -e 'type=="array" and length<=1' <<< "$route_json" >/dev/null 2>&1 || return 1
+    route_count=$(jq -r 'length' <<< "$route_json") || return 1
+    if (( route_count == 1 )); then
+        mvc24gd4_endpoint_route_observed || return 1
+        mvc24gwg_delete_route_once || return 1
+    else
+        exact=$(ip -j -N -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
+        jq -e 'type=="array" and length==0' <<< "$exact" >/dev/null 2>&1 || return 1
+    fi
+
+    mvc24gwg_delete_profile_once || return 1
+    mvc24gwg_temp_profile_inventory_absent || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    [[ -z $(ip -4 route show table all proto 186) ]] || return 1
+}
+
 mvc24gwg_delete_route_once() {
     local -a argv
-    local shown rc
+    local shown rc all count exact
+    all=$(ip -j -N -4 route show table all proto 186) || return 1
+    jq -e 'type=="array" and length<=1' <<< "$all" >/dev/null 2>&1 || return 1
+    count=$(jq -r 'length' <<< "$all") || return 1
+    if (( count == 0 )); then
+        exact=$(ip -j -N -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
+        jq -e 'type=="array" and length==0' <<< "$exact" >/dev/null 2>&1
+        return
+    fi
     mvc24gd4_endpoint_route_observed || return 1
     argv=(-4 route del "$MVC24GD4_ENDPOINT_IP/32")
     [[ $MVC24GD4_UNDERLAY_GATEWAY == - ]] || argv+=(via "$MVC24GD4_UNDERLAY_GATEWAY")
@@ -396,7 +495,6 @@ mvc24gwg_delete_route_once() {
     shown=$(ip -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
     [[ -z $shown ]]
 }
-
 mvc24gwg_delete_profile_once() {
     local rc
     if ! mvc24gwg_temp_profile_inventory_absent; then
@@ -414,6 +512,148 @@ mvc24gwg_delete_profile_once() {
     [[ ! -e ${MVC24GD4_TEMP_FILE:-} && ! -L ${MVC24GD4_TEMP_FILE:-} ]]
 }
 
+# A protected-WG start installs B2 before D4 exists.  If start fails in
+# that narrow interval, the public prepared transaction plus the authenticated
+# B2 journal still identify the only MVC-owned host mutation.  Observe the raw
+# B2 guard without requiring the original physical/IPv4 topology to remain
+# byte-identical; current topology is teardown-diagnostic only.
+mvc24gwg_b2_guard_exact_now() {
+    (( $# == 0 )) || return 1
+    local dir scratch a b iface before after good=1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gb2_records_valid || return 1
+    iface=$(mvc24gb2_derive_iface) || return 1
+    [[ $iface == "${MVC24PUBD_UNDERLAY:-}" ]] || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-wg-pre-d4-b2.XXXXXXXX) || return 1
+    a=$scratch/a.json; b=$scratch/b.json
+    if ! mvc24gb1_capture_nft "$a" || ! mvc24gb1_capture_nft "$b" || ! cmp -s -- "$a" "$b" ||
+       ! mvc24gb2_poststate_valid "$a" "$iface" || ! mvc24gb2_poststate_valid "$b" "$iface"; then
+        good=0
+    else
+        before=$(mvc24gb2_foreign_projection "$dir/prestate.json") || good=0
+        after=$(mvc24gb2_foreign_projection "$a") || good=0
+        [[ $before == "$after" ]] || good=0
+    fi
+    rm -f -- "$a" "$b" >/dev/null 2>&1 || good=0
+    rmdir -- "$scratch" >/dev/null 2>&1 || good=0
+    (( good == 1 ))
+}
+
+mvc24gwg_pre_d4_release_batch_path() {
+    printf '%s/wg-pre-d4-release.nft\n' "$(mvc24pub_session_runtime_root)"
+}
+
+mvc24gwg_pre_d4_release_intent_path() {
+    printf '%s/wg-pre-d4-release-intent\n' "$(mvc24pub_session_runtime_root)"
+}
+
+mvc24gwg_pre_d4_release_intent_valid() {
+    (( $# == 0 )) || return 1
+    local batch intent tx prepare boot
+    local -a rows=()
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    prepare=/run/mvc-controller/prepare-intent
+    [[ -f $batch && ! -L $batch && $(stat -c '%u:%a:%h' -- "$batch") == '0:400:1' &&
+       -f $intent && ! -L $intent && $(stat -c '%u:%a:%h' -- "$intent") == '0:400:1' &&
+       -f $tx && ! -L $tx && -f $prepare && ! -L $prepare ]] || return 1
+    mapfile -t rows < "$intent" || return 1
+    (( ${#rows[@]} == 6 )) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    [[ ${rows[0]} == mvc-wireguard-protected-pre-d4-release-v1 &&
+       ${rows[1]} == state=owned-b2-delete-observation-driven &&
+       ${rows[2]} == "boot=$boot" &&
+       ${rows[3]} == "transaction=$(mvc24gd4_hash_file "$tx")" &&
+       ${rows[4]} == "controller_prepare=$(mvc24gd4_hash_file "$prepare")" &&
+       ${rows[5]} == "batch=$(mvc24gd4_hash_file "$batch")" ]]
+}
+
+mvc24gwg_pre_d4_publish_release_intent() {
+    (( $# == 0 )) || return 1
+    local batch intent tx prepare tmp boot
+    mvc24gwg_authority_witness && mvc24gwg_b2_guard_exact_now || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    prepare=/run/mvc-controller/prepare-intent
+    [[ ! -e $batch && ! -L $batch && ! -e $intent && ! -L $intent ]] || return 1
+    : > "$batch" || return 1
+    chmod 600 -- "$batch" || return 1
+    mvc24gwg_write_release_batch "$batch" || return 1
+    nft --check --file "$batch" >/dev/null 2>&1 || return 1
+    chmod 400 -- "$batch" || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    tmp="$(mvc24pub_session_runtime_root)/.wg-pre-d4-release-intent.tmp"
+    : > "$tmp" || return 1
+    chmod 400 -- "$tmp" || return 1
+    printf '%s\n' mvc-wireguard-protected-pre-d4-release-v1 \
+      state=owned-b2-delete-observation-driven "boot=$boot" \
+      "transaction=$(mvc24gd4_hash_file "$tx")" \
+      "controller_prepare=$(mvc24gd4_hash_file "$prepare")" \
+      "batch=$(mvc24gd4_hash_file "$batch")" > "$tmp" || return 1
+    mv -T -- "$tmp" "$intent" || return 1
+    mvc24gwg_pre_d4_release_intent_valid
+}
+
+mvc24gwg_pre_d4_release_guard_once() {
+    (( $# == 0 )) || return 1
+    local intent batch rc
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    if [[ ! -e $intent && ! -L $intent ]]; then
+        # Absence without our normal-disconnect intent is deliberately not
+        # adopted: it may be the result of emergency rollback, which remains a
+        # terminal recovery boundary for this release.
+        mvc24gwg_b2_guard_exact_now || return 1
+        mvc24gwg_pre_d4_publish_release_intent || return 1
+    fi
+    mvc24gwg_pre_d4_release_intent_valid || return 1
+    if mvc24gwg_owned_tables_absent_now; then return 0; fi
+    mvc24gwg_b2_guard_exact_now || return 1
+    set +e
+    nft --file "$batch" >/dev/null 2>&1
+    rc=$?
+    set -e
+    : "$rc"
+    mvc24gwg_owned_tables_absent_now
+}
+
+mvc24gwg_pre_d4_retire_once() {
+    (( $# == 0 )) || return 1
+    local controller public batch intent tx
+    controller=$(mvc24gb2_runtime) || return 1
+    public=$(mvc24pub_session_runtime_root) || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    mvc24gwg_pre_d4_release_intent_valid && mvc24gwg_owned_tables_absent_now || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    mvc24gwg_temp_profile_inventory_absent || return 1
+    [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    mvc24gwg_final_safety_witness || return 1
+    mvc24gb2_close
+    rm -rf -- "$controller" || return 1
+    [[ ! -e $controller && ! -L $controller ]] || return 1
+    rm -f -- "$batch" "$intent" "$tx" || return 1
+    rmdir -- "$public" || return 1
+    [[ ! -e $public && ! -L $public ]]
+}
+
+mvc24gwg_reconcile_pre_d4_partial_start_once() {
+    (( $# == 0 )) || return 1
+    mvc24gwg_authority_witness || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    MVC24GWG_STAGE=releasing-authenticated-pre-d4-b2-guard
+    mvc24gwg_pre_d4_release_guard_once || return 1
+    MVC24GWG_STAGE=pre-d4-b2-released-runtime-retirement-pending
+    mvc24gwg_pre_d4_retire_once || return 1
+    MVC24GWG_STAGE=wireguard-protected-pre-d4-partial-start-complete-sameboot-ready
+}
+
 mvc24gwg_release_guard_once() {
     (( $# == 0 )) || return 1
     local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} rc
@@ -427,32 +667,16 @@ mvc24gwg_release_guard_once() {
     mvc24gwg_owned_tables_absent_now
 }
 
-mvc24gwg_controller_topology_restored() {
+# Protected standalone WireGuard teardown uses the same post-session safety
+# policy as combined teardown: the authenticated B2 snapshots are retained as
+# admission/forensic evidence, but current physical-link and IPv4 topology are
+# diagnostic only.  IPv6 default routing and MVC-reserved managed routes remain
+# release blockers.
+mvc24gwg_final_safety_witness() {
     (( $# == 0 )) || return 1
-    local dir scratch links r4 r6 ok=1
+    local dir
     dir=$(mvc24gb2_runtime) || return 1
-    scratch=$(umask 077; mktemp -d /dev/shm/mvc-wg-topology.XXXXXXXX) || return 1
-    links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
-    if ! mvc24gb1_capture_links "$links" || ! mvc24gb1_capture_routes4 "$r4" || ! mvc24gb1_capture_routes6 "$r6"; then
-        ok=0
-    elif ! cmp -s -- "$links" "$dir/links.json"; then
-        ok=0
-    elif ! cmp -s -- "$r4" "$dir/routes4.json"; then
-        # C23BK: reuse C23T's physically proven narrow NetworkManager
-        # connectivity-penalty equivalence. The only accepted difference is
-        # exactly one saved underlay default route whose current metric is the
-        # saved integer metric + 20000; every other route field/order/member
-        # remains byte-semantically identical.
-        if ! mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$dir/routes4.json" "$r4"; then
-            ok=0
-        fi
-    fi
-    if (( ok == 1 )) && ! cmp -s -- "$r6" "$dir/routes6.json"; then
-        ok=0
-    fi
-    rm -f -- "$links" "$r4" "$r6" >/dev/null 2>&1 || ok=0
-    rmdir -- "$scratch" >/dev/null 2>&1 || ok=0
-    (( ok == 1 ))
+    mvc24gc23t_post_session_safety_witness_dir "$dir" no
 }
 
 mvc24gwg_network_clean_retirement_pending_observed() {
@@ -462,7 +686,7 @@ mvc24gwg_network_clean_retirement_pending_observed() {
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
     ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    mvc24gwg_controller_topology_restored
+    mvc24gwg_final_safety_witness
 }
 
 mvc24gwg_retire_runtime_once() {
@@ -474,7 +698,7 @@ mvc24gwg_retire_runtime_once() {
     [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
     ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
     ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
-    mvc24gwg_controller_topology_restored || return 1
+    mvc24gwg_final_safety_witness || return 1
     rm -rf -- "$runtime" || return 1
     [[ ! -e $runtime && ! -L $runtime ]] || return 1
     mvc24gb2_close
@@ -488,16 +712,18 @@ mvc24gwg_retire_runtime_once() {
 
 mvc24gwg_stop_once() {
     (( $# == 0 )) || return 1
-    local rc
-    mvc24gwg_active_observed || return 1
-    MVC24GWG_STAGE=wireguard-disconnect-outcome-uncertain
-    set +e; nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
-    : "$rc"
-    mvc24gd4_wg_down_observed || return 1
-    mvc24gwg_guard_exact_now || return 1
-    MVC24GWG_STAGE=wireguard-down-protected-guard-retained
-    mvc24gwg_delete_route_once || return 1
-    mvc24gwg_delete_profile_once || return 1
+    mvc24gwg_authority_witness || return 1
+    if mvc24gwg_guard_exact_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-protected-guard-retained
+    elif mvc24gwg_b2_guard_exact_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-b2-guard-retained
+    elif mvc24gwg_owned_tables_absent_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-guard-already-absent
+    else
+        MVC24GWG_STAGE=wireguard-protected-guard-ambiguous
+        return 1
+    fi
+    mvc24gwg_converge_owned_network_once || return 1
     MVC24GWG_STAGE=wireguard-residue-removed-protected-guard-retained
     mvc24gwg_release_guard_once || return 1
     MVC24GWG_STAGE=guard-released-runtime-retirement-pending

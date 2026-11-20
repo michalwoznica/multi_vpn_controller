@@ -39,13 +39,17 @@ Use `preflight` with the same arguments before a connection when you want a read
 sudo mvc disconnect
 ```
 
-Disconnect authenticates exact same-boot ownership from MVC runtime records under `/run/mvc-*` before mutation.
+Disconnect authenticates exact same-boot ownership from MVC runtime records under `/run/mvc-*` before mutation. Once ownership is established, teardown is convergence-driven: already-missing or degraded MVC-owned tunnel/profile/route state is treated as cleanup input rather than as a reason to demand the historical fully-active shape.
 
-In 2.4.1, a published combined session can also be reconciled when one tunnel has already disappeared. The intended operator workflow is:
+The current physical/IPv4 topology is not a restoration target during disconnect. A different interface, address, gateway or route metric, multiple ordinary IPv4 defaults, or no IPv4 default may all be accepted after MVC-owned state is removed. Teardown still fails closed when MVC cannot authenticate ownership, foreign/ambiguous managed state would need mutation, an IPv6 default route is present, MVC-reserved routes remain, nftables safety cannot be proven, or an owned cleanup/finalization result cannot be classified safely.
+
+A successful disconnect means MVC-owned live state and authority have been retired. It does **not** guarantee that the host's current topology will pass a new `connect`; a fresh same-boot connection attempt runs the normal strict admission checks again.
+
+The intended operator workflow is:
 
 1. run `disconnect` once;
-2. if it succeeds, run `verify` and start a fresh session if desired;
-3. if it refuses or fails, do not repeatedly retry or start another session—inspect the recovery tools first.
+2. if it succeeds, run `verify` if desired and make a fresh connection attempt when needed;
+3. if it refuses or fails, treat that as an exceptional convergence failure: do not repeatedly retry or start another session, and inspect the packaged recovery tools first.
 
 No automatic reconnect or watchdog is provided.
 
@@ -57,6 +61,8 @@ sudo /root/mvc-emergency-rollback --inspect
 ```
 
 Use a recovery mutation only when its inspector authenticates the corresponding owned residue. The independent recovery tools deliberately have narrower authority than the main controller.
+
+`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. In MVC 2.4.4 it does **not** perform full lifecycle retirement: failed-session journals are intentionally retained for evidence, normal `mvc disconnect` must not be used as a post-rollback finalizer, and the host must be rebooted before starting another MVC session. Same-boot reuse after a successful catastrophic recovery is deferred to a later release.
 
 ## NetworkManager route refresh
 

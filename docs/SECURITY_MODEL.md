@@ -13,6 +13,6 @@ Key properties include:
 - independent recovery tools with narrower authority than the main controller;
 - no automatic reconnect/watchdog behavior.
 
-A partial tunnel loss does not grant authority by itself. MVC first authenticates the owned same-boot session from its durable runtime evidence, then reconciles only tightly recognized states. Unknown or ambiguous state remains fail-closed.
+A partial tunnel loss or host-underlay change does not grant authority by itself. MVC first authenticates the owned same-boot session from durable runtime evidence, then converges only state it can prove belongs to MVC. During teardown the saved pre-connect physical/IPv4 topology is forensic/admission evidence rather than a restoration target; final safety still requires MVC-owned residue to be gone, foreign policy to remain untouched, and no IPv6 default route. Unknown ownership, foreign managed state, or an unprovable mutation outcome remains fail-closed.
 
 MVC same-boot ownership records live under `/run/mvc-*`. Protected-session B4 tables use the `mvc_preclone_*` nftables namespace. Both are ephemeral runtime state rather than persistent configuration.

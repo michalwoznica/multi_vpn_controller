@@ -87,7 +87,28 @@ readonly -a MVC24I_APPROVED_UPDATE_CONTROLLER_SHA256=(
     'd1b3fb664a5873458a12fbb5a278a3e686c1d2b258ef15789187910b73512208'
     'a334261fd892adea75d9d0ee7680e8215666d2f379334dbe96eb69e7fdad9001'
     'a83aeb10a5cda9e055fe4aedee69c5797a7dc7a06470e085647b2d77554f9eeb'
+    'e7b57753b7bb11f144e4686647f5a0cba387d18166df93d6559ced5515d5ea9c'
+    '70fcc4f01e85f5d07db130a0dfe5a8b2b039d5fb7f4e7c98ef6707335924f2b8'
+    '41a1e75248a5cc2cfee7854b82ba4ca0f14df538997d10c4a3db3d46ce7766fc'
 )
+
+# Recovery tools are independently authenticated package files.  When one is
+# intentionally updated, `update` may replace only exact known predecessor
+# bytes; `install` remains conservative and unknown recovery content is never
+# overwritten.
+readonly -a MVC24I_APPROVED_UPDATE_EMERGENCY_SHA256=(
+    'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'
+    'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'
+)
+
+mvc24i_is_approved_update_emergency_sha256() {
+    (( $# == 1 )) || return 1
+    local candidate=$1 approved
+    for approved in "${MVC24I_APPROVED_UPDATE_EMERGENCY_SHA256[@]}"; do
+        [[ $candidate == "$approved" ]] && return 0
+    done
+    return 1
+}
 
 mvc24i_is_approved_update_controller_sha256() {
     (( $# == 1 )) || return 1
@@ -161,8 +182,16 @@ mvc24i_assert_existing_identity() {
         fi
     fi
     if [[ -f $emergency_dst && ! -L $emergency_dst ]]; then
-        [[ $(mvc24i_hash "$emergency_dst") == "$emergency_sha" ]] || \
+        local existing_emergency_sha
+        existing_emergency_sha=$(mvc24i_hash "$emergency_dst")
+        if [[ $existing_emergency_sha == "$emergency_sha" ]]; then
+            :
+        elif mvc24i_is_approved_update_emergency_sha256 "$existing_emergency_sha"; then
+            [[ $action == update ]] || \
+                mvc24i_die 'existing MVC emergency recovery tool is an approved prior identity; use update instead of install'
+        else
             mvc24i_die 'refusing to replace unrecognized MVC emergency recovery tool'
+        fi
     fi
     if [[ -f $dual_dst && ! -L $dual_dst ]]; then
         [[ $(mvc24i_hash "$dual_dst") == "$dual_sha" ]] || \

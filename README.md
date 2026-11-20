@@ -53,7 +53,7 @@ Among its security measures are:
 - fail-closed handling of interrupted or partially lost combined sessions;
 - recovery tools kept separately from the normal controller for exceptional failure cases.
 
-MVC also deliberately does **not** implement an automatic VPN watchdog or automatic reconnection policy. If part of a published combined session disappears, the normal `mvc disconnect` path is designed to authenticate the remaining MVC-owned state, clean it up safely, restore baseline networking, and allow a fresh connection in the same boot.
+MVC also deliberately does **not** implement an automatic VPN watchdog or automatic reconnection policy. `mvc disconnect` is a convergence operation: after authenticating the same-boot MVC session, it removes whatever authenticated MVC-owned state remains and judges success from the final safety state rather than requiring the host to reproduce the pre-connect physical/IPv4 topology. A successful disconnect retires MVC's live same-boot authority so a fresh connection can be attempted without stale MVC state blocking it; that new attempt must still pass the normal admission checks.
 
 ## Scope and operating model
 
@@ -63,7 +63,7 @@ Starting a protected session is a deliberate user action. After a reboot there i
 
 The project is built as a readable Bash codebase with a deterministic build process that produces a single `mvc` executable for installation. It uses standard Linux networking tools including NetworkManager, nftables, iproute2, WireGuard, OpenVPN, jq, and AWK.
 
-The current release has been developed and physically validated on Linux with real OpenVPN and WireGuard connections, including simultaneous dual-tunnel operation, kill-switch behavior, tunnel-loss cleanup, same-boot reconnection, deterministic local builds, and restoration of the original network state after disconnect.
+The MVC 2.4.x release line has been developed and physically validated on Linux with real OpenVPN and WireGuard connections, including simultaneous dual-tunnel operation, kill-switch behavior, tunnel-loss cleanup, same-boot reconnection, deterministic local builds, and clean retirement of MVC-owned networking state after disconnect.
 
 ## Platform support
 

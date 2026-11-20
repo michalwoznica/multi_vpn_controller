@@ -1,4 +1,96 @@
 # Changelog
+## MVC 2.4.4 release-candidate physical validation
+- Physically validate the exact integrated 2.4.4 candidate executable SHA-256 `c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db` on the development host after authenticated update from the earlier 2.4.4 diagnostic candidate. Installation verification and the pre-session baseline were clean.
+- Prove a normal protected parallel OpenVPN + split-WireGuard session end-to-end: ordinary Internet and DNS used OpenVPN while configured private destinations remained reachable through WireGuard.
+- Reproduce the original same-interface Wi-Fi underlay/profile replacement incident while the combined session was active. OpenVPN disappeared, WireGuard survived, ordinary Internet became unusable under B4 protection, and the host entered the same degraded class that previously stranded teardown.
+- Prove the 2.4.4 convergence fix physically: ordinary authenticated `mvc disconnect` logged physical/IPv4 topology drift as a warning, converged the degraded session without either recovery tool, removed all MVC-owned temporary profiles, links, routes, B4 tables and live runtime authority, and restored ordinary connectivity.
+- Prove same-boot reuse after successful convergent disconnect: once the host topology again satisfied normal admission, combined preflight passed, a fresh same-boot combined session started successfully, and its ordinary authenticated disconnect returned to a clean MVC-free baseline.
+- Final verification after the campaign showed no managed VPN/WireGuard/tun state, no MVC-reserved routes, B4 `0/3`, no fixed live runtime roots, normal DNS/Internet, and both recovery inspectors clean. The exact physically validated executable hash is unchanged from the R11 integrated candidate.
+- No emergency recovery was required. Same-boot reuse after catastrophic emergency rollback remains intentionally deferred to MVC 2.4.5; in 2.4.4 emergency rollback remains terminal for the boot.
+
+## MVC 2.4.4 final integration and release-facing convergence contract
+- Complete the post-R10 integration audit across OpenVPN-only, protected WireGuard-only, split WireGuard-only and combined teardown. Remaining disconnect hard stops are limited to authenticated ownership/journal failure, foreign or ambiguous managed state, unprovable nftables/final-safety state, or cleanup/finalization outcomes that cannot be safely classified. No additional runtime convergence gap was found.
+- Correct release-facing disconnect semantics after the current-underlay policy change: successful teardown now reports that MVC-owned state has been retired rather than claiming a fresh connection is automatically eligible. A later same-boot `connect` attempt must independently pass normal strict admission.
+- Clarify that authenticated disconnect converges MVC-owned state without requiring the current physical interface, IPv4 address/gateway/default-route set or route metric to match the pre-connect snapshot. The final safety boundary still rejects IPv6 default routing, residual MVC-reserved routes, foreign/ambiguous managed state and unprovable firewall state.
+- Remove the obsolete R3 source comment that described emergency B4 disarm followed by `mvc disconnect`. The MVC 2.4.4 catastrophic-recovery boundary remains: emergency rollback is terminal for the boot and reboot is required before another MVC session.
+- Update README, OPERATIONS, architecture, security and release-validation documentation to distinguish MVC-owned cleanup from host-topology restoration and to describe recovery as exceptional rather than part of normal disconnect.
+- Add a release-facing contract regression preventing future documentation/CLI drift around fresh-connect eligibility, original-topology restoration and post-emergency finalization.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 6
+- Make authenticated OpenVPN teardown convergence-driven when the exact MVC-owned temporary clone is still active but its historical tun/default-route/DNS shape has degraded. The immutable public-session/clone identity remains the ownership authority; degraded routing or DNS is diagnostic rather than a reason to strand cleanup.
+- Add an exact owned-active OpenVPN observation that accepts only the authenticated `vpnks-ovpn` clone, optional MVC tun state, and—in combined mode—the authenticated MVC WireGuard survivor. Foreign managed VPN/tap/ppp/WireGuard state remains a hard refusal before mutation.
+- For an authenticated active clone, publish the existing C19 normal-stop intent, perform the C11→C1 firewall handback, issue one bounded NetworkManager stop for that exact clone, then judge success from the observed no-active-VPN/C1 post-state rather than from the command exit status alone.
+- Generalize combined WireGuard-first reconciliation for degraded OpenVPN sessions: authenticated WG residue is converged to C11 plus private proto-187 holds without requiring the old OpenVPN default-route/DNS shape to remain healthy before the owned OpenVPN clone is stopped.
+- Preserve the truthful already-absent OpenVPN path, early OpenVPN-start reconciliation, final C23T safety checks, foreign nftables protection, and the R7 emergency-recovery boundary. Ambiguous clone identity or foreign VPN state remains fail-closed.
+- Add focused degraded-OpenVPN regression coverage and update existing dropout/convergence orchestration tests to the new convergence coordinator order.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 5
+- Make authenticated standalone WireGuard partial-start states normally disconnectable instead of immediately forcing the recovery tools. The public prepared transaction remains the same-boot ownership root; cleanup authority is granted only where retained journals and live observations prove the exact MVC-owned state.
+- For split WireGuard, once the immutable D4 intent exists, reuse the existing convergence-aware split stop path for partial profile/endpoint-route/activation outcomes. A missing or malformed D4 intent remains fail-closed.
+- For protected WireGuard, admit the raw authenticated B2 guard as a legitimate partial-start teardown state in addition to the full protected guard and already-absent guard. The D4 convergence engine then removes any authenticated temporary WG/profile/proto-186 residue before guard release.
+- Cover the earlier protected-WG interval where B2 exists before D4 publication with a dedicated normal-disconnect release journal. Its release intent is published before B2 deletion and is hash-bound to the public transaction, B2 prepare record, and exact delete batch; current physical-link/IPv4 topology is diagnostic only.
+- Preserve the R7 catastrophic-recovery boundary: B4 absence without an already-published normal-disconnect release intent is not adopted as cleanup authority and still requires reboot. Ambiguous/incomplete B2 journal or guard state also remains fail-closed.
+- Change failed standalone-WG start guidance to direct the operator to normal `mvc disconnect` first. Recovery remains the fallback only when authenticated convergence itself refuses.
+- Add focused partial-start regression coverage and extend persistent-record namespace coverage for the new protected-WG pre-D4 release record.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 4
+- Complete the R6 current-final-safety policy for standalone WireGuard split teardown. Split runtime retirement no longer requires traffic to `1.1.1.1` to resolve through the originally admitted interface/source/gateway after authenticated MVC-owned WG residue is removed.
+- Add `mvc24gws_final_safety_witness()` and reuse the shared post-session safety witness already used by combined teardown, protected standalone WireGuard, and early OpenVPN reconciliation. Changed interface/gateway/address, multiple ordinary IPv4 defaults, or no IPv4 default therefore remain warning/diagnostic conditions during split teardown rather than cleanup blockers.
+- Preserve split connect-time admission and active-state observation unchanged: a running split session must still prove the originally admitted ordinary Internet route while being established/observed.
+- Preserve hard teardown blockers for unexpected B4 state, IPv6 default routing, MVC-reserved proto-186/proto-187 residue, and authenticated ownership/profile/kernel conflicts.
+- Add focused regression coverage proving split retirement has no hidden dependency on the original Internet route while connect-time active-state verification remains strict.
+
+## MVC 2.4.4 emergency recovery boundary
+- Remove the provisional R3 post-emergency lifecycle-finalization subsystem from normal `mvc disconnect`; B4 absence no longer grants authority to archive failed-session journals, delete an inactive OpenVPN clone, retire the public-session marker, or claim same-boot reuse.
+- Restore `/root/mvc-emergency-rollback` as a narrow independent catastrophic B4 disarm. After a successful emergency disarm, failed-session evidence is intentionally retained and the operator must reboot before starting another MVC session.
+- Preserve normal crash-resume semantics: if an authenticated normal teardown had already published its own guard-release intent before interruption, subsequent `mvc disconnect` may continue that normal teardown even when B4 is already absent.
+- Add an explicit emergency-boundary classifier so an authenticated protected session with B4 absent and no normal guard-release intent refuses before OpenVPN/WireGuard/profile mutation with `emergency-disarm-reboot-required`.
+- Remove the provisional `mvc-c24b-breakglass-*` record namespace and the public CLI success result that advertised post-emergency same-boot readiness.
+- Keep the released 2.4.3 emergency tool and the exact R6 emergency-tool bytes as authenticated installer update predecessors.
+- Same-boot MVC reuse after successful catastrophic recovery remains an explicit design goal, deferred to 2.4.5 where recovery success can be defined as complete lifecycle recovery rather than B4 disarm alone.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 3
+- Replace post-session byte-for-byte physical-link/IPv4 restoration with the owner-approved final-safety convergence policy. Once the same-boot MVC session is authenticated, saved B2 link/IPv4 snapshots remain admission/forensic evidence rather than teardown restoration targets.
+- Accept changed physical interface, address, gateway, route metric, multiple ordinary IPv4 defaults, or no IPv4 default at all during authenticated teardown. These conditions are diagnostic topology drift and no longer block cleanup or B4 release by themselves.
+- Preserve strict connect/preflight admission unchanged: starting a fresh protected session still requires the narrow supported baseline, including exactly one IPv4 default and no IPv6 default. Disconnect success therefore does not imply the current host is immediately eligible for a new connect.
+- Introduce a shared post-session safety witness used by combined finalization, protected standalone WireGuard teardown, and early OpenVPN/preclone reconciliation. It takes two live observations, requires both to have no IPv6 default route, requires MVC-reserved proto-186/proto-187 routes absent, and preserves transition-journal integrity where applicable.
+- Emit a one-time warning when current physical-link/IPv4 topology differs from the pre-connect snapshot, but continue cleanup. Remove the obsolete teardown-only NetworkManager `+20000` route-metric equivalence exception because IPv4 restoration is no longer a release prerequisite.
+- Keep foreign nftables policy, active-VPN absence, session/lock authentication, owned-resource cleanup, and no-IPv6-default safety checks fail-closed.
+- Add regression coverage for changed interface/gateway/address, no IPv4 default, multiple IPv4 defaults, IPv6-default refusal, managed-route residue refusal, journal-integrity refusal, and unchanged strict connect admission.
+- This stage intentionally does not yet redesign the provisional R3 emergency-recovery workflow.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 2
+- Extend authenticated observed-state convergence to standalone WireGuard protected and split teardown. Published standalone sessions no longer require the historical fully-active WG shape before cleanup begins.
+- Add one shared standalone WG cleanup primitive that authenticates the temporary profile identity, kernel WireGuard endpoint, and proto-186 endpoint route before touching them; already-absent owned resources are treated as clean post-state.
+- If NetworkManager reports the authenticated temporary profile active, disconnect it and judge the observed result rather than the command exit alone. If the profile is already down/absent but the exact authenticated WG kernel object remains, remove only that proven-owned interface and require absence afterwards.
+- Make proto-186 deletion absence-tolerant while refusing conflicting/foreign endpoint or proto-186 state; temporary profile/keyfile cleanup remains identity-bound.
+- Route both standalone protected and split public disconnect paths directly through the convergence-aware stop routines instead of enumerating active-versus-clean transitional shapes in the coordinator.
+- Preserve protected guard authentication, split no-B4 policy, existing final topology checks, and all foreign-state refusal semantics. This stage intentionally does not yet relax the old physical-link/IPv4 baseline restoration requirement or redesign provisional break-glass recovery.
+
+## MVC 2.4.4 disconnect convergence refactor — stage 1
+- Begin refactoring authenticated `mvc disconnect` from historical-shape verification toward observed-state convergence; ownership/session authentication remains unchanged and fail-closed.
+- Reconstruct combined-session WireGuard teardown identity from the immutable same-boot D4 intent and authenticated public marker rather than requiring the mutable saved WireGuard source profile to remain present and byte-identical.
+- Route published combined-session WireGuard teardown through one exact-inventory reconciler for nominal, already-down, already-absent and partially retired MVC-owned state instead of separate enumerated running/dropout coordinator paths.
+- Treat an already-absent owned proto-186 endpoint route as an acceptable cleanup post-state when the authenticated parallel guard is still exact; foreign/ambiguous route or guard state remains fatal before mutation.
+- Emit a public warning when the authenticated dual WireGuard state differs from the nominal running shape, while continuing bounded cleanup of proven MVC-owned residue.
+- Preserve all existing OpenVPN-loss, WireGuard-loss, partial-D4, break-glass, foreign-policy and final-convergence safety checks. This stage does not yet relax exact post-session physical-link/IPv4 topology restoration or refactor standalone WireGuard teardown.
+
+## MVC 2.4.4 underlay-replacement reconciliation
+- Add authenticated break-glass recovery finalization to normal `mvc disconnect`: after the independent emergency tool has already disarmed B4, an exact same-boot recovered OpenVPN-bearing session can be retired without reboot only when its public marker/journals authenticate and all managed VPN, WireGuard, route and guard residue is proven absent.
+- Publish a dedicated recovery-finalization intent before any recovered-session mutation, then a separate clone-delete intent before removing the authenticated inactive temporary OpenVPN clone; ambiguous outcomes remain resumable rather than blindly retried.
+- Archive the failed session under the existing root-only `/run/mvc-completed/<clone-uuid>` historical namespace with an explicit break-glass archive chain, then retire the live public-session authority so ordinary fresh admission can run again in the same boot.
+- Keep `/root/mvc-emergency-rollback` independent and B4-only; change only its successful-disarm guidance to direct the operator to one authenticated `mvc disconnect` finalization before starting a new session.
+- Keep ambiguous B4-absent states blocked: B4 absence alone grants no lifecycle authority, and nftables inventory failure cannot be mistaken for table absence.
+- Extend authenticated installer update to accept the exact prior emergency-recovery tool identity and the exact R1/R2 2.4.4 development controller predecessors while continuing to refuse unknown content.
+- Begin the 2.4.4 maintenance line from the exact released 2.4.3 baseline and authorize that exact controller as an authenticated update predecessor.
+- Surface C23T's fixed post-stop convergence category in public `disconnect` failures so physical reproduction can distinguish link, IPv4-route and IPv6-safety failures without weakening teardown authentication.
+- Preserve exact IPv6 snapshot stability during B1/B2 admission, B2 attestation, and protected transition establishment.
+- Change only post-session IPv6 convergence to enforce MVC's actual IPv6 safety invariant: the live host must have no IPv6 default route, but incidental link-local address/route regeneration no longer prevents authenticated teardown.
+- Apply that post-session invariant consistently to normal combined finalization, protected WireGuard teardown, and early OpenVPN reconciliation.
+- Keep the existing exact physical-link/IPv4 restoration contract, including only the narrowly proven NetworkManager `+20000` default-route metric equivalence.
+- Add regression coverage proving changed no-default IPv6 topology is accepted after session stop, an IPv6 default route remains fail-closed, and exact IPv6 snapshot checks remain intact during protected-state establishment.
+- Do not add automatic reconnection, watchdog behavior, or a general replacement-underlay trust shortcut.
+
 ## MVC 2.4.3 CI, release infrastructure and identity centralization
 - Add GitHub Actions CI and contributor/release documentation for the public regression workflow.
 - Remove retired predecessor-era public source/install/test artifacts and scope identity/module audits to the authoritative production surface.

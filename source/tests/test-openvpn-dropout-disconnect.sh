@@ -107,6 +107,7 @@ LOG=()
 mvc24pubd_reset; mvc24gco_reset; mvc24gd4_reset; mvc24gc19_reset
 mvc24pubd_parse_session_marker(){ LOG+=(marker); MVC24PUBD_MARKER_KIND=active; MVC24PUBD_SESSION_MODE=combined; MVC24PUBD_TRANSACTION_STATE=none; return 0; }
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
+mvc24pubd_b4_all_absent(){ return 1; }
 mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(ovpn-live); return 1; }
 mvc24pubd_rehydrate_openvpn_identity_locked(){ LOG+=(ovpn-id); return 0; }
 mvc24pubd_openvpn_absent_observed(){ LOG+=(ovpn-absent); return 0; }
@@ -118,7 +119,7 @@ mvc24gco_complete_once(){ LOG+=(complete); MVC24GCO_STAGE=completed-session-arch
 mvc24pubd_finalize_marker(){ LOG+=(marker-finalize); return 0; }
 mvc24gb2_close(){ LOG+=(close); return 0; }
 mvc24pubd_disconnect_once || fail coordinator-dropout-success
-[[ ${LOG[*]} == 'marker lock ovpn-live ovpn-id ovpn-absent wg-id wg-reconcile ovpn-adopt hold-release complete marker-finalize' &&
+[[ ${LOG[*]} == 'marker lock ovpn-id ovpn-absent wg-id wg-reconcile ovpn-adopt hold-release complete marker-finalize' &&
    $MVC24PUBD_STAGE == public-dual-session-complete-sameboot-ready &&
    $MVC24PUBD_AUTHORITY == none && $MVC24PUBD_APPROVAL == consumed ]] &&
   pass coordinator-completes-dropout-to-normal-sameboot-ready-state || fail coordinator-order

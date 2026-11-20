@@ -17,8 +17,18 @@ TESTS=(
   test-partial-wireguard-reconciliation.sh
   test-incomplete-openvpn-reconciliation.sh
   test-openvpn-dropout-disconnect.sh
+  test-openvpn-disconnect-convergence.sh
   test-wireguard-dropout-disconnect.sh
   test-generated-dropout-disconnect.sh
+  test-underlay-replacement-convergence-diagnostics.sh
+  test-post-session-ipv6-safety-convergence.sh
+  test-current-underlay-final-safety-convergence.sh
+  test-split-wireguard-final-safety-convergence.sh
+  test-emergency-recovery-boundary.sh
+  test-disconnect-convergence-core.sh
+  test-standalone-wireguard-disconnect-convergence.sh
+  test-standalone-wireguard-partial-start-disconnect.sh
+  test-release-facing-convergence-contract.sh
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh

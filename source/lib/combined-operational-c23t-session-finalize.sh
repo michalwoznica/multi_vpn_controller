@@ -24,7 +24,8 @@ mvc24gc23t_reset() {
     MVC24GC23T_NM_OWNER=
     MVC24GC23T_ARCHIVE=
     MVC24GC23T_CONVERGENCE_DETAIL=unverified
-    MVC24GC23T_ROUTE4_EQUIVALENCE=unverified
+    MVC24GC23T_TOPOLOGY_DRIFT=unverified
+    MVC24GC23T_TOPOLOGY_DRIFT_WARNED=no
     MVC24GC23T_RECOVERY_DETAIL=unverified
 }
 mvc24gc23t_admission_witness() { return 1; }
@@ -144,99 +145,84 @@ mvc24gc23t_c1_firewall_witness() {
     (( good == 1 ))
 }
 
-# Accept only the physically observed NetworkManager connectivity-penalty
-# transformation on the saved physical default route. This is deliberately
-# narrower than ignoring route metrics: array length/order must match, exactly
-# one route object may differ, that route must be the B2 underlay default route,
-# every field except metric must be identical, and current metric must equal the
-# saved integer metric plus exactly 20000. jq bindings MUST remain before the
-# parenthesised boolean expression: jq 1.8 changed binding precedence, and
-# interleaving `and` with `as $diffs` makes this positive case fail on the
-# production Arch host even though jq 1.7 accepts it.
-mvc24gc23t_routes4_nm_connectivity_penalty_equivalent() {
-    (( $# == 2 )) || return 1
-    local saved=$1 current=$2 underlay
-    [[ -f $saved && ! -L $saved && -f $current && ! -L $current ]] || return 1
-    underlay=$(mvc24gb2_derive_iface) || return 1
-    jq -e -n --arg underlay "$underlay" \
-      --slurpfile saved "$saved" --slurpfile current "$current" '
-        [range(0; ($saved[0]|length)) as $i |
-          select($saved[0][$i] != $current[0][$i]) |
-          {i:$i, saved:$saved[0][$i], current:$current[0][$i]}
-        ] as $diffs |
-        (
-          ($saved|length)==1 and ($current|length)==1 and
-          ($saved[0]|type)=="array" and ($current[0]|type)=="array" and
-          ($saved[0]|length)==($current[0]|length) and
-          ($diffs|length)==1 and
-          ($diffs[0].saved|type)=="object" and
-          ($diffs[0].current|type)=="object" and
-          ($diffs[0].saved.dst // "") == "default" and
-          ($diffs[0].saved.dev // "") == $underlay and
-          ($diffs[0].current.dev // "") == $underlay and
-          ($diffs[0].saved.metric|type)=="number" and
-          ($diffs[0].current.metric|type)=="number" and
-          ($diffs[0].saved.metric == ($diffs[0].saved.metric|floor)) and
-          ($diffs[0].current.metric == ($diffs[0].current.metric|floor)) and
-          ($diffs[0].current.metric == ($diffs[0].saved.metric + 20000)) and
-          (($diffs[0].current + {metric:$diffs[0].saved.metric}) == $diffs[0].saved)
-        )
-      ' >/dev/null 2>&1
+# After the same-boot MVC session has been authenticated, teardown no longer
+# requires the current physical-link or IPv4 route topology to reproduce the
+# B2 snapshot.  Those snapshots remain authoritative admission/forensic
+# evidence, but disconnect is a convergence operation and must also succeed if
+# the user changed underlay, has multiple ordinary IPv4 defaults, or currently
+# has no IPv4 default at all.
+#
+# The post-session network safety invariant is deliberately narrower:
+#   * live link/IPv4 capture must remain observable (for diagnostics only),
+#   * MVC-reserved proto-186/proto-187 routes must be absent,
+#   * IPv6 must still have no default route (policy A), and
+#   * the authenticated transition journals must remain unchanged when the
+#     caller requests that check.
+#
+# Link/IPv4 drift is reported once as a warning but never grants or denies
+# teardown authority by itself.  Two independent live observations must both
+# satisfy the IPv6 safety invariant before the witness succeeds.
+mvc24gc23t_managed_routes_absent() {
+    (( $# == 0 )) || return 1
+    local r186 r187
+    r186=$(ip -j -N -4 route show table all proto 186) || return 1
+    r187=$(ip -j -N -4 route show table all proto 187) || return 1
+    jq -e 'type=="array" and length==0' <<< "$r186" >/dev/null 2>&1 &&
+      jq -e 'type=="array" and length==0' <<< "$r187" >/dev/null 2>&1
 }
 
-# Preserve the exact B2 byte-for-byte topology contract but expose which part
-# has not yet returned. A capture/parsing/journal failure is NOT convergence.
-mvc24gc23t_b2_topology_witness() {
-    (( $# == 0 )) || return 1
-    local dir scratch links r4 r6 good=1
-    dir=$(mvc24gb2_runtime) || {
-        MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-unavailable
-        return 1
-    }
-    [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || {
+mvc24gc23t_post_session_safety_witness_dir() {
+    (( $# == 2 )) || return 1
+    local dir=$1 require_transition=$2 scratch links_a links_b r4_a r4_b r6_a r6_b good=1 drift=no
+    [[ $require_transition == yes || $require_transition == no ]] || return 1
+    [[ -d $dir && ! -L $dir && -f $dir/links.json && ! -L $dir/links.json &&
+       -f $dir/routes4.json && ! -L $dir/routes4.json && -f $dir/routes6.json && ! -L $dir/routes6.json ]] || {
         MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-invalid
         return 1
     }
-    scratch=$(umask 077; mktemp -d /run/mvc-c23t-topology.XXXXXXXX) || {
+    scratch=$(umask 077; mktemp -d /run/mvc-c23t-safety.XXXXXXXX) || {
         MVC24GC23T_CONVERGENCE_DETAIL=topology-scratch-create-failed
         return 1
     }
-    links=$scratch/links.json
-    r4=$scratch/routes4.json
-    r6=$scratch/routes6.json
-    if ! mvc24gb1_capture_links "$links" ||
-       ! mvc24gb1_capture_routes4 "$r4" ||
-       ! mvc24gb1_capture_routes6 "$r6"; then
+    links_a=$scratch/links-a.json
+    links_b=$scratch/links-b.json
+    r4_a=$scratch/routes4-a.json
+    r4_b=$scratch/routes4-b.json
+    r6_a=$scratch/routes6-a.json
+    r6_b=$scratch/routes6-b.json
+    if ! mvc24gb1_capture_links "$links_a" || ! mvc24gb1_capture_routes4 "$r4_a" || ! mvc24gb1_capture_routes6 "$r6_a" ||
+       ! mvc24gb1_capture_links "$links_b" || ! mvc24gb1_capture_routes4 "$r4_b" || ! mvc24gb1_capture_routes6 "$r6_b"; then
         MVC24GC23T_CONVERGENCE_DETAIL=topology-capture-failed
         good=0
-    elif ! cmp -s -- "$links" "$dir/links.json"; then
-        MVC24GC23T_CONVERGENCE_DETAIL=links-not-restored
+    elif ! jq -e -s 'length==6 and all(.[]; type=="array")' "$links_a" "$links_b" "$r4_a" "$r4_b" "$r6_a" "$r6_b" >/dev/null 2>&1; then
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-capture-invalid
         good=0
-    elif ! cmp -s -- "$r4" "$dir/routes4.json"; then
-        if mvc24gc23t_routes4_nm_connectivity_penalty_equivalent "$dir/routes4.json" "$r4"; then
-            MVC24GC23T_ROUTE4_EQUIVALENCE=nm-connectivity-penalty-plus-20000
-        else
-            MVC24GC23T_ROUTE4_EQUIVALENCE=not-equivalent
-            MVC24GC23T_CONVERGENCE_DETAIL=routes4-not-restored
-            good=0
-        fi
-    else
-        MVC24GC23T_ROUTE4_EQUIVALENCE=exact
+    elif ! mvc24gb1_routes6_no_default "$r6_a" || ! mvc24gb1_routes6_no_default "$r6_b"; then
+        MVC24GC23T_CONVERGENCE_DETAIL=ipv6-safe-baseline-not-proven
+        good=0
+    elif ! mvc24gc23t_managed_routes_absent; then
+        MVC24GC23T_CONVERGENCE_DETAIL=mvc-managed-routes-remain
+        good=0
     fi
     if (( good == 1 )); then
-        if ! cmp -s -- "$r6" "$dir/routes6.json"; then
-            MVC24GC23T_CONVERGENCE_DETAIL=routes6-not-restored
-            good=0
-        elif ! mvc24gc3_transition_records_valid; then
+        if ! cmp -s -- "$links_b" "$dir/links.json" || ! cmp -s -- "$r4_b" "$dir/routes4.json"; then
+            drift=yes
+        fi
+        MVC24GC23T_TOPOLOGY_DRIFT=$drift
+        if [[ $require_transition == yes ]] && ! mvc24gc3_transition_records_valid; then
             MVC24GC23T_CONVERGENCE_DETAIL=topology-session-journal-changed
             good=0
-        elif [[ $MVC24GC23T_ROUTE4_EQUIVALENCE == nm-connectivity-penalty-plus-20000 ]]; then
-            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored-nm-connectivity-penalty-equivalent
+        elif [[ $drift == yes ]]; then
+            MVC24GC23T_CONVERGENCE_DETAIL=safe-current-topology-drift
+            if [[ ${MVC24GC23T_TOPOLOGY_DRIFT_WARNED:-no} != yes ]]; then
+                printf '%s\n' 'Multi VPN Controller: WARNING: disconnect cleanup observed physical-link/IPv4 topology drift from the pre-connect snapshot; current ordinary IPv4 topology is diagnostic only.' >&2
+                MVC24GC23T_TOPOLOGY_DRIFT_WARNED=yes
+            fi
         else
-            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored
+            MVC24GC23T_CONVERGENCE_DETAIL=safe-current-topology
         fi
     fi
-    rm -f -- "$links" "$r4" "$r6" || {
+    rm -f -- "$links_a" "$links_b" "$r4_a" "$r4_b" "$r6_a" "$r6_b" || {
         MVC24GC23T_CONVERGENCE_DETAIL=topology-scratch-cleanup-failed
         good=0
     }
@@ -245,6 +231,20 @@ mvc24gc23t_b2_topology_witness() {
         good=0
     }
     (( good == 1 ))
+}
+
+mvc24gc23t_final_safety_witness() {
+    (( $# == 0 )) || return 1
+    local dir
+    dir=$(mvc24gb2_runtime) || {
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-unavailable
+        return 1
+    }
+    [[ $dir == /run/mvc-controller && -d $dir && ! -L $dir ]] || {
+        MVC24GC23T_CONVERGENCE_DETAIL=topology-runtime-invalid
+        return 1
+    }
+    mvc24gc23t_post_session_safety_witness_dir "$dir" yes
 }
 
 mvc24gc23t_c1_witness_once() {
@@ -264,7 +264,7 @@ mvc24gc23t_c1_witness_once() {
         MVC24GC23T_STAGE=post-stop-c1-firewall-or-foreign-policy-unverified
         return 1
     fi
-    if ! mvc24gc23t_b2_topology_witness; then
+    if ! mvc24gc23t_final_safety_witness; then
         return 1
     fi
     MVC24GC23T_CONVERGENCE_DETAIL=no-active-vpn-after-topology
@@ -294,18 +294,18 @@ mvc24gc23t_c1_witness() {
             return 0
         fi
         case ${MVC24GC23T_CONVERGENCE_DETAIL:-} in
-            links-not-restored|routes4-not-restored|routes6-not-restored) ;;
+            ipv6-safe-baseline-not-proven|mvc-managed-routes-remain) ;;
             *) return 1 ;;
         esac
         if (( attempt < max_attempts )); then
-            MVC24GC23T_STAGE=waiting-post-stop-b2-topology-convergence
+            MVC24GC23T_STAGE=waiting-post-stop-safety-convergence
             mvc24gc23t_convergence_pause || {
                 MVC24GC23T_STAGE=post-stop-convergence-pause-failed
                 return 1
             }
         fi
     done
-    MVC24GC23T_STAGE=post-stop-b2-topology-not-converged
+    MVC24GC23T_STAGE=post-stop-safety-not-converged
     return 1
 }
 

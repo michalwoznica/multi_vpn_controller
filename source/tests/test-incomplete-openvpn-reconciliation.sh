@@ -112,7 +112,7 @@ mvc24pube_publish_simple_intent(){ LOG+=(publish-stop); : > "$2"; return 0; }
 mvc24pube_simple_intent_valid(){ LOG+=(validate-stop); return 0; }
 mvc24pube_active_clone_state(){ printf '%s\n' active; }
 nmcli(){ LOG+=(nm-down); return 1; }
-mvc24pube_converged_no_vpn_topology(){ LOG+=(converged); return 0; }
+mvc24pube_converged_no_vpn_safety(){ LOG+=(converged); return 0; }
 MVC24PUBE_CLONE_UUID=44444444-4444-4444-8444-444444444444
 mvc24pube_stop_clone_if_needed && pass stop-intent-before-nm-down-succeeds || fail stop-intent-before-nm-down-succeeds
 [[ ${LOG[*]} == 'publish-stop validate-stop nm-down converged' ]] && pass stop-intent-before-nm-down-order || fail stop-intent-before-nm-down-order
@@ -121,7 +121,7 @@ mvc24pube_stop_clone_if_needed && pass stop-intent-before-nm-down-succeeds || fa
 # authoritative even if the delete command's reply is lost.
 source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); del_intent=$T/delete-intent; clone_absent_calls=0
-mvc24pube_converged_no_vpn_topology(){ LOG+=(converged); return 0; }
+mvc24pube_converged_no_vpn_safety(){ LOG+=(converged); return 0; }
 mvc24gc23t_clone_absent(){ ((++clone_absent_calls)); (( clone_absent_calls >= 2 )); }
 mvc24gc23t_clone_present(){ return 0; }
 mvc24pube_clone_exact_or_absent(){ LOG+=(clone-exact); return 0; }
@@ -144,11 +144,11 @@ mvc24pube_publish_release_intent(){ LOG+=(publish-release); : > "$rel_intent"; :
 mvc24pube_release_intent_valid(){ LOG+=(validate-release); return 0; }
 mvc24pube_owned_tables_absent_now(){ return 1; }
 mvc24pube_guard_state_now(){ printf '%s\n' c1; }
-mvc24pube_converged_no_vpn_topology(){ return 0; }
+mvc24pube_converged_no_vpn_safety(){ return 0; }
 mvc24gc23t_clone_absent(){ return 0; }
 nft(){ LOG+=(nft-release); return 0; }
 mvc24gc23t_release_post_witness(){ LOG+=(release-post); return 0; }
-mvc24gc23t_b2_topology_witness(){ LOG+=(topology-post); return 0; }
+mvc24gc23t_final_safety_witness(){ LOG+=(topology-post); return 0; }
 mvc24pube_release_guard && pass release-intent-before-nft-delete-succeeds || fail release-intent-before-nft-delete-succeeds
 [[ ${LOG[*]} == 'publish-release validate-release nft-release release-post topology-post' ]] && pass release-intent-before-nft-delete-order || fail release-intent-before-nft-delete-order
 
@@ -158,7 +158,7 @@ source lib/combined-operational-public-openvpn-early-reconcile.sh
 LOG=(); retire_intent=$T/retire-intent
 mvc24pube_release_intent_valid(){ LOG+=(release-valid); return 0; }
 mvc24gc23t_release_post_witness(){ LOG+=(release-post); return 0; }
-mvc24gc23t_b2_topology_witness(){ LOG+=(topology); return 0; }
+mvc24gc23t_final_safety_witness(){ LOG+=(topology); return 0; }
 mvc24gc23t_clone_absent(){ LOG+=(clone-absent); return 0; }
 mvc24pube_owned_tables_absent_now(){ LOG+=(tables-absent); return 0; }
 mvc24pube_retire_intent_path(){ printf '%s\n' "$retire_intent"; }

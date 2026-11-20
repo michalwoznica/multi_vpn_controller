@@ -27,11 +27,17 @@ mvc24pubr_reset() {
 mvc24pubr_context_witness() {
     (( $# == 0 )) || return 1
     mvc24gb2_root_scope && mvc24gb2_lock_valid || return 1
-    if [[ ${MVC24GCO_STAGE:-} == protected-openvpn-absent-reconciliation &&
-          ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect &&
-          ${MVC24PUBD_STAGE:-} == reconciling-openvpn-dropout-wireguard ]]; then
-        mvc24pub_disconnect_admission_witness
-        return
+    if [[ ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
+        if [[ ${MVC24GCO_STAGE:-} == protected-openvpn-absent-reconciliation &&
+              ${MVC24PUBD_STAGE:-} == reconciling-openvpn-dropout-wireguard ]]; then
+            mvc24pub_disconnect_admission_witness
+            return
+        fi
+        if [[ ${MVC24GCO_STAGE:-} == protected-openvpn-convergence &&
+              ${MVC24PUBD_STAGE:-} == reconciling-openvpn-convergence-wireguard ]]; then
+            mvc24pub_disconnect_admission_witness
+            return
+        fi
     fi
     [[ ${MVC24GCO_STAGE:-} == protected-openvpn-observed &&
        ${MVC24GC17_STAGE:-} == protected-ovpn-stages-observed-no-operational-authority ]] || return 1
@@ -42,7 +48,7 @@ mvc24pubr_context_witness() {
     fi
     [[ ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]] || return 1
     case ${MVC24PUBD_STAGE:-} in
-      reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout) ;;
+      reconciling-dual-wireguard|reconciling-partial-wireguard|observing-published-wireguard-dropout|reconciling-published-wireguard-dropout) ;;
       *) return 1 ;;
     esac
     mvc24pub_disconnect_admission_witness
@@ -214,6 +220,58 @@ mvc24pubr_inventory_all() {
       mvc24pubr_keyfile_inventory && mvc24pubr_hold_inventory && mvc24pubr_guard_inventory
 }
 
+
+# Public-disconnect OpenVPN convergence variant.  Unlike the older partial-D4
+# helper, this does not require OpenVPN's historical default route to remain
+# healthy.  It only converges authenticated WG residue to exact C11 + full
+# private holds so the separately authenticated OpenVPN clone can be stopped.
+mvc24pubr_reconcile_d4_to_c11_hold_openvpn_convergence() {
+    (( $# == 0 )) || return 1
+    MVC24PUBR_STAGE=inventory-openvpn-convergence-wireguard
+    mvc24pubr_inventory_all || return 1
+
+    [[ $MVC24PUBR_HOLD_STATUS != partial ]] || return 1
+    if [[ $MVC24PUBR_NM_STATUS == active ]]; then
+        [[ $MVC24PUBR_GUARD_STATUS == parallel &&
+           ( $MVC24PUBR_ROUTE_STATUS == owned || $MVC24PUBR_ROUTE_STATUS == absent ) ]] || return 1
+    fi
+    case $MVC24PUBR_GUARD_STATUS in parallel|c11) ;; *) return 1 ;; esac
+
+    MVC24PUBR_STAGE=establishing-private-holds-openvpn-convergence
+    mvc24pubr_ensure_hold_routes || return 1
+
+    MVC24PUBR_STAGE=stopping-wireguard-openvpn-convergence
+    mvc24pubr_disconnect_wg_dropout_if_active || return 1
+
+    mvc24pubr_route_inventory && mvc24pubr_guard_inventory || return 1
+    if [[ $MVC24PUBR_GUARD_STATUS == parallel ]]; then
+        MVC24GD4_STAGE=wireguard-down-parallel-guard-retained-private-hold
+        MVC24PUBR_STAGE=restoring-c11-openvpn-convergence
+        mvc24gd4_restore_openvpn_guard || return 1
+        MVC24PUBR_GUARD_STATUS=c11
+    else
+        [[ $MVC24PUBR_GUARD_STATUS == c11 ]] || return 1
+    fi
+
+    MVC24PUBR_STAGE=removing-endpoint-route-openvpn-convergence
+    mvc24pubr_remove_endpoint_route_if_owned || return 1
+    MVC24GD4_STAGE=owned-endpoint-route-absent-profile-remains-private-hold
+
+    MVC24PUBR_STAGE=removing-temporary-profile-openvpn-convergence
+    mvc24pubr_remove_profile_if_owned || return 1
+
+    MVC24PUBR_STAGE=verifying-c11-hold-openvpn-convergence
+    mvc24pubr_inventory_all || return 1
+    [[ $MVC24PUBR_NM_STATUS == absent &&
+       $MVC24PUBR_KERNEL_STATUS == absent &&
+       $MVC24PUBR_ROUTE_STATUS == absent &&
+       $MVC24PUBR_KEYFILE_STATUS == absent &&
+       $MVC24PUBR_HOLD_STATUS == full &&
+       $MVC24PUBR_GUARD_STATUS == c11 ]] || return 1
+    MVC24GD4_STAGE=wireguard-residue-removed-openvpn-protected-private-hold
+    MVC24PUBR_STAGE=openvpn-convergence-wireguard-reconciled-c11-private-hold
+}
+
 # v2.4.1 C24A Stage 2: classify only the inverse post-publication dropout
 # where OpenVPN has already been rehydrated as healthy by the public disconnect
 # coordinator but the exact authenticated WG side is no longer active.  Do not
@@ -378,7 +436,10 @@ mvc24pubr_reconcile_partial_d4_to_openvpn_hold() {
     # Re-observe guard/route after any NM down before changing firewall state.
     mvc24pubr_route_inventory && mvc24pubr_guard_inventory || return 1
     if [[ $MVC24PUBR_GUARD_STATUS == parallel ]]; then
-        [[ $MVC24PUBR_ROUTE_STATUS == owned ]] || return 1
+        # Underlay churn may already have removed the exact owned proto-186
+        # route. Absence is already a safe post-state; only a foreign/ambiguous
+        # route inventory is refused.
+        [[ $MVC24PUBR_ROUTE_STATUS == owned || $MVC24PUBR_ROUTE_STATUS == absent ]] || return 1
         MVC24GD4_STAGE=wireguard-down-parallel-guard-retained-private-hold
         MVC24PUBR_STAGE=restoring-openvpn-guard
         mvc24gd4_restore_openvpn_guard || return 1
