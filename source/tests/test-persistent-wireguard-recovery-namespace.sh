@@ -36,6 +36,22 @@ else
   fail 'protected-WG release remains hash-bound to D4 ownership intent'
 fi
 
+# Protected-WG pre-D4 partial-start recovery has its own normal-disconnect-only
+# release record because B2 can exist before the D4 ownership journal does.
+if [[ $(rg -F 'mvc-wireguard-protected-pre-d4-release-v1' "$PROT" | wc -l) -eq 2 ]]; then
+  pass 'protected-WG pre-D4 release producer and validator use MVC magic'
+else
+  fail 'protected-WG pre-D4 release producer and validator use MVC magic'
+fi
+
+if rg -Fq 'transaction=$(mvc24gd4_hash_file "$tx")' "$PROT" &&
+   rg -Fq 'controller_prepare=$(mvc24gd4_hash_file "$prepare")' "$PROT" &&
+   rg -Fq 'batch=$(mvc24gd4_hash_file "$batch")' "$PROT"; then
+  pass 'protected-WG pre-D4 release binds transaction, B2 prepare, and delete batch'
+else
+  fail 'protected-WG pre-D4 release binds transaction, B2 prepare, and delete batch'
+fi
+
 # The independent recovery source identity is a manifest/provenance boundary.
 rec_sha=$(sha256sum "$REC" | awk '{print $1}')
 man_sha=$(awk -F'|' '$1=="EXTERNAL_RECOVERY" && $2=="dual" {print $3}' "$MAN")

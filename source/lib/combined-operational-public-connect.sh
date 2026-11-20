@@ -750,7 +750,7 @@ mvc24pubc_connect_wireguard_protected_once() {
     MVC24PUBC_STAGE=starting-wireguard
     if ! mvc24gwg_start_once; then
         original_failure="wireguard-protected-start-failed-${MVC24GWG_STAGE:-unknown}"
-        MVC24PUBC_STAGE="${original_failure}-guard-may-remain-use-recovery"
+        MVC24PUBC_STAGE="${original_failure}-use-disconnect"
         mvc24pubc_consume_authority
         return 1
     fi

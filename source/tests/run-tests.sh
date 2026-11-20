@@ -26,6 +26,7 @@ TESTS=(
   test-emergency-recovery-boundary.sh
   test-disconnect-convergence-core.sh
   test-standalone-wireguard-disconnect-convergence.sh
+  test-standalone-wireguard-partial-start-disconnect.sh
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh

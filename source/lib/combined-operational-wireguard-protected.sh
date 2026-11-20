@@ -327,7 +327,7 @@ mvc24gwg_authority_witness() {
           ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
           ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
         case ${MVC24PUBD_STAGE:-idle} in
-          reobserving-wireguard-protected|stopping-wireguard-protected) ;;
+          reobserving-wireguard-protected|stopping-wireguard-protected|stopping-wireguard-protected-partial-start|reconciling-wireguard-protected-pre-d4-partial-start) ;;
           *) return 1 ;;
         esac
         mvc24gb2_root_scope && mvc24gb2_lock_valid
@@ -512,6 +512,148 @@ mvc24gwg_delete_profile_once() {
     [[ ! -e ${MVC24GD4_TEMP_FILE:-} && ! -L ${MVC24GD4_TEMP_FILE:-} ]]
 }
 
+# A protected-WG start installs B2 before D4 exists.  If start fails in
+# that narrow interval, the public prepared transaction plus the authenticated
+# B2 journal still identify the only MVC-owned host mutation.  Observe the raw
+# B2 guard without requiring the original physical/IPv4 topology to remain
+# byte-identical; current topology is teardown-diagnostic only.
+mvc24gwg_b2_guard_exact_now() {
+    (( $# == 0 )) || return 1
+    local dir scratch a b iface before after good=1
+    dir=$(mvc24gb2_runtime) || return 1
+    mvc24gb2_records_valid || return 1
+    iface=$(mvc24gb2_derive_iface) || return 1
+    [[ $iface == "${MVC24PUBD_UNDERLAY:-}" ]] || return 1
+    scratch=$(umask 077; mktemp -d /run/mvc-wg-pre-d4-b2.XXXXXXXX) || return 1
+    a=$scratch/a.json; b=$scratch/b.json
+    if ! mvc24gb1_capture_nft "$a" || ! mvc24gb1_capture_nft "$b" || ! cmp -s -- "$a" "$b" ||
+       ! mvc24gb2_poststate_valid "$a" "$iface" || ! mvc24gb2_poststate_valid "$b" "$iface"; then
+        good=0
+    else
+        before=$(mvc24gb2_foreign_projection "$dir/prestate.json") || good=0
+        after=$(mvc24gb2_foreign_projection "$a") || good=0
+        [[ $before == "$after" ]] || good=0
+    fi
+    rm -f -- "$a" "$b" >/dev/null 2>&1 || good=0
+    rmdir -- "$scratch" >/dev/null 2>&1 || good=0
+    (( good == 1 ))
+}
+
+mvc24gwg_pre_d4_release_batch_path() {
+    printf '%s/wg-pre-d4-release.nft\n' "$(mvc24pub_session_runtime_root)"
+}
+
+mvc24gwg_pre_d4_release_intent_path() {
+    printf '%s/wg-pre-d4-release-intent\n' "$(mvc24pub_session_runtime_root)"
+}
+
+mvc24gwg_pre_d4_release_intent_valid() {
+    (( $# == 0 )) || return 1
+    local batch intent tx prepare boot
+    local -a rows=()
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    prepare=/run/mvc-controller/prepare-intent
+    [[ -f $batch && ! -L $batch && $(stat -c '%u:%a:%h' -- "$batch") == '0:400:1' &&
+       -f $intent && ! -L $intent && $(stat -c '%u:%a:%h' -- "$intent") == '0:400:1' &&
+       -f $tx && ! -L $tx && -f $prepare && ! -L $prepare ]] || return 1
+    mapfile -t rows < "$intent" || return 1
+    (( ${#rows[@]} == 6 )) || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    [[ ${rows[0]} == mvc-wireguard-protected-pre-d4-release-v1 &&
+       ${rows[1]} == state=owned-b2-delete-observation-driven &&
+       ${rows[2]} == "boot=$boot" &&
+       ${rows[3]} == "transaction=$(mvc24gd4_hash_file "$tx")" &&
+       ${rows[4]} == "controller_prepare=$(mvc24gd4_hash_file "$prepare")" &&
+       ${rows[5]} == "batch=$(mvc24gd4_hash_file "$batch")" ]]
+}
+
+mvc24gwg_pre_d4_publish_release_intent() {
+    (( $# == 0 )) || return 1
+    local batch intent tx prepare tmp boot
+    mvc24gwg_authority_witness && mvc24gwg_b2_guard_exact_now || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    prepare=/run/mvc-controller/prepare-intent
+    [[ ! -e $batch && ! -L $batch && ! -e $intent && ! -L $intent ]] || return 1
+    : > "$batch" || return 1
+    chmod 600 -- "$batch" || return 1
+    mvc24gwg_write_release_batch "$batch" || return 1
+    nft --check --file "$batch" >/dev/null 2>&1 || return 1
+    chmod 400 -- "$batch" || return 1
+    boot=$(cat /proc/sys/kernel/random/boot_id) || return 1
+    tmp="$(mvc24pub_session_runtime_root)/.wg-pre-d4-release-intent.tmp"
+    : > "$tmp" || return 1
+    chmod 400 -- "$tmp" || return 1
+    printf '%s\n' mvc-wireguard-protected-pre-d4-release-v1 \
+      state=owned-b2-delete-observation-driven "boot=$boot" \
+      "transaction=$(mvc24gd4_hash_file "$tx")" \
+      "controller_prepare=$(mvc24gd4_hash_file "$prepare")" \
+      "batch=$(mvc24gd4_hash_file "$batch")" > "$tmp" || return 1
+    mv -T -- "$tmp" "$intent" || return 1
+    mvc24gwg_pre_d4_release_intent_valid
+}
+
+mvc24gwg_pre_d4_release_guard_once() {
+    (( $# == 0 )) || return 1
+    local intent batch rc
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    if [[ ! -e $intent && ! -L $intent ]]; then
+        # Absence without our normal-disconnect intent is deliberately not
+        # adopted: it may be the result of emergency rollback, which remains a
+        # terminal recovery boundary for this release.
+        mvc24gwg_b2_guard_exact_now || return 1
+        mvc24gwg_pre_d4_publish_release_intent || return 1
+    fi
+    mvc24gwg_pre_d4_release_intent_valid || return 1
+    if mvc24gwg_owned_tables_absent_now; then return 0; fi
+    mvc24gwg_b2_guard_exact_now || return 1
+    set +e
+    nft --file "$batch" >/dev/null 2>&1
+    rc=$?
+    set -e
+    : "$rc"
+    mvc24gwg_owned_tables_absent_now
+}
+
+mvc24gwg_pre_d4_retire_once() {
+    (( $# == 0 )) || return 1
+    local controller public batch intent tx
+    controller=$(mvc24gb2_runtime) || return 1
+    public=$(mvc24pub_session_runtime_root) || return 1
+    batch=$(mvc24gwg_pre_d4_release_batch_path) || return 1
+    intent=$(mvc24gwg_pre_d4_release_intent_path) || return 1
+    tx=$(mvc24pubc_transaction_path) || return 1
+    mvc24gwg_pre_d4_release_intent_valid && mvc24gwg_owned_tables_absent_now || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    mvc24gwg_temp_profile_inventory_absent || return 1
+    [[ -z $(ip -4 route show table all proto 186) && -z $(ip -4 route show table all proto 187) ]] || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    mvc24gwg_final_safety_witness || return 1
+    mvc24gb2_close
+    rm -rf -- "$controller" || return 1
+    [[ ! -e $controller && ! -L $controller ]] || return 1
+    rm -f -- "$batch" "$intent" "$tx" || return 1
+    rmdir -- "$public" || return 1
+    [[ ! -e $public && ! -L $public ]]
+}
+
+mvc24gwg_reconcile_pre_d4_partial_start_once() {
+    (( $# == 0 )) || return 1
+    mvc24gwg_authority_witness || return 1
+    [[ ! -e $(mvc24pub_wireguard_runtime_root) && ! -L $(mvc24pub_wireguard_runtime_root) ]] || return 1
+    MVC24GWG_STAGE=releasing-authenticated-pre-d4-b2-guard
+    mvc24gwg_pre_d4_release_guard_once || return 1
+    MVC24GWG_STAGE=pre-d4-b2-released-runtime-retirement-pending
+    mvc24gwg_pre_d4_retire_once || return 1
+    MVC24GWG_STAGE=wireguard-protected-pre-d4-partial-start-complete-sameboot-ready
+}
+
 mvc24gwg_release_guard_once() {
     (( $# == 0 )) || return 1
     local runtime=${MVC24GD4_RUNTIME:-/run/mvc-wireguard} rc
@@ -573,6 +715,8 @@ mvc24gwg_stop_once() {
     mvc24gwg_authority_witness || return 1
     if mvc24gwg_guard_exact_now; then
         MVC24GWG_STAGE=converging-wireguard-owned-state-protected-guard-retained
+    elif mvc24gwg_b2_guard_exact_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-b2-guard-retained
     elif mvc24gwg_owned_tables_absent_now; then
         MVC24GWG_STAGE=converging-wireguard-owned-state-guard-already-absent
     else

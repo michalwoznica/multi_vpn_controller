@@ -101,11 +101,11 @@ mvc24pubd_parse_transaction_marker() {
            $(stat -c '%u:%a:%h' -- "$runtime/split.lock") == '0:600:1' ]] || return 1
     elif [[ $state == prepared-before-mutation ]]; then
         local entry base
-        (( ${#entries[@]} >= 1 && ${#entries[@]} <= 15 )) || return 1
+        (( ${#entries[@]} >= 1 && ${#entries[@]} <= 17 )) || return 1
         for entry in "${entries[@]}"; do
             base=${entry##*/}
             case $base in
-              transaction|preclone-intent|preclone-binding|preclone-delete-intent|preclone-release.nft|preclone-release-intent|preclone-retire-intent|early-plan|early-handback.nft|early-handback-intent|early-stop-intent|early-clone-delete-intent|early-guard-release.nft|early-guard-release-intent|early-retire-intent) ;;
+              transaction|preclone-intent|preclone-binding|preclone-delete-intent|preclone-release.nft|preclone-release-intent|preclone-retire-intent|early-plan|early-handback.nft|early-handback-intent|early-stop-intent|early-clone-delete-intent|early-guard-release.nft|early-guard-release-intent|early-retire-intent|wg-pre-d4-release.nft|wg-pre-d4-release-intent) ;;
               *) return 1 ;;
             esac
         done
@@ -403,8 +403,10 @@ mvc24pubd_normal_guard_release_intent_present() {
     (( $# == 0 )) || return 1
     case ${MVC24PUBD_SESSION_MODE:-none} in
         wireguard-protected)
-            [[ -f /run/mvc-wireguard/protected-release-intent &&
-               ! -L /run/mvc-wireguard/protected-release-intent ]]
+            [[ ( -f /run/mvc-wireguard/protected-release-intent &&
+                 ! -L /run/mvc-wireguard/protected-release-intent ) ||
+               ( -f "$(mvc24pub_session_runtime_root)/wg-pre-d4-release-intent" &&
+                 ! -L "$(mvc24pub_session_runtime_root)/wg-pre-d4-release-intent" ) ]]
             ;;
         openvpn-only|combined)
             [[ -f /run/mvc-completion/release-intent &&
@@ -881,11 +883,48 @@ mvc24pubd_disconnect_once() {
                 MVC24PUBD_STAGE=public-wireguard-protected-prepared-clean-no-mutation
                 return 0
             fi
-            # Stage 2 deliberately keeps ambiguous/partial standalone-WG start
-            # recovery in the packaged recovery tools. The prepared marker is
-            # still useful ownership evidence, but this public disconnect does
-            # not infer destructive authority from it.
-            MVC24PUBD_STAGE=wireguard-protected-partial-start-recovery-required
+            if ! mvc24pubd_acquire_existing_lock; then
+                MVC24PUBD_STAGE=wireguard-protected-partial-start-lock-refused
+                return 1
+            fi
+            if mvc24pubd_emergency_disarm_boundary_observed; then
+                MVC24PUBD_STAGE=emergency-disarm-reboot-required
+                mvc24gb2_close >/dev/null 2>&1 || true
+                return 1
+            fi
+            MVC24PUBD_APPROVAL=approved-process-local
+            MVC24PUBD_AUTHORITY=public-explicit-disconnect
+            MVC24GD4_TEMP_NAME=vpnks-wg
+            MVC24GD4_TEMP_UUID=$MVC24PUBD_WG_TEMP_UUID
+            MVC24GD4_TEMP_FILE=/run/NetworkManager/system-connections/vpnks-wg.nmconnection
+            if [[ -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]]; then
+                MVC24PUBD_STAGE=reconstructing-wireguard-protected-partial-start
+                if ! mvc24pubd_load_d4_intent; then
+                    MVC24PUBD_STAGE=wireguard-protected-partial-start-d4-reconstruction-refused
+                    mvc24pubd_consume_authority
+                    mvc24gb2_close
+                    return 1
+                fi
+                MVC24GD4_ATTEMPTED=yes
+                MVC24GWG_ATTEMPTED=yes
+                MVC24PUBD_STAGE=stopping-wireguard-protected-partial-start
+                if mvc24gwg_stop_once; then
+                    MVC24PUBD_STAGE=public-wireguard-protected-partial-start-clean-baseline-restored
+                    mvc24pubd_consume_authority
+                    return 0
+                fi
+                MVC24PUBD_STAGE="wireguard-protected-partial-start-stop-failed-${MVC24GWG_STAGE:-unknown}"
+            else
+                MVC24PUBD_STAGE=reconciling-wireguard-protected-pre-d4-partial-start
+                if mvc24gwg_reconcile_pre_d4_partial_start_once; then
+                    MVC24PUBD_STAGE=public-wireguard-protected-pre-d4-partial-start-clean-baseline-restored
+                    mvc24pubd_consume_authority
+                    return 0
+                fi
+                MVC24PUBD_STAGE="wireguard-protected-pre-d4-partial-start-reconciliation-refused-${MVC24GWG_STAGE:-unknown}"
+            fi
+            mvc24pubd_consume_authority
+            mvc24gb2_close
             return 1
         fi
         if [[ -f $(mvc24pube_preclone_retire_intent_path) && ! -L $(mvc24pube_preclone_retire_intent_path) ]]; then
@@ -974,15 +1013,34 @@ mvc24pubd_disconnect_once() {
             mvc24pubd_consume_authority
             return 0
         fi
-        if [[ -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]] &&
-           mvc24pubd_load_d4_intent && mvc24gws_network_clean_retirement_pending_observed; then
-            MVC24PUBD_STAGE=resuming-wireguard-split-runtime-retirement
-            if mvc24gws_retire_runtime_once; then
-                MVC24PUBD_STAGE=public-wireguard-split-session-complete-sameboot-ready
+        if [[ -e $(mvc24pub_wireguard_runtime_root) || -L $(mvc24pub_wireguard_runtime_root) ]]; then
+            if ! mvc24pubd_load_d4_intent; then
+                MVC24PUBD_STAGE=wireguard-split-partial-start-d4-reconstruction-refused
+                mvc24pubd_consume_authority
+                mvc24gws_lock_close
+                return 1
+            fi
+            if mvc24gws_network_clean_retirement_pending_observed; then
+                MVC24PUBD_STAGE=resuming-wireguard-split-runtime-retirement
+                if mvc24gws_retire_runtime_once; then
+                    MVC24PUBD_STAGE=public-wireguard-split-session-complete-sameboot-ready
+                    mvc24pubd_consume_authority
+                    return 0
+                fi
+                MVC24PUBD_STAGE=wireguard-split-runtime-retirement-resume-refused
+                mvc24pubd_consume_authority
+                mvc24gws_lock_close
+                return 1
+            fi
+            MVC24GD4_ATTEMPTED=yes
+            MVC24GWS_ATTEMPTED=yes
+            MVC24PUBD_STAGE=stopping-wireguard-split-partial-start
+            if mvc24gws_stop_once; then
+                MVC24PUBD_STAGE=public-wireguard-split-partial-start-clean-baseline-restored
                 mvc24pubd_consume_authority
                 return 0
             fi
-            MVC24PUBD_STAGE=wireguard-split-runtime-retirement-resume-refused
+            MVC24PUBD_STAGE="wireguard-split-partial-start-stop-failed-${MVC24GWS_STAGE:-unknown}"
             mvc24pubd_consume_authority
             mvc24gws_lock_close
             return 1

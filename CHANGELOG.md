@@ -1,4 +1,13 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 5
+- Make authenticated standalone WireGuard partial-start states normally disconnectable instead of immediately forcing the recovery tools. The public prepared transaction remains the same-boot ownership root; cleanup authority is granted only where retained journals and live observations prove the exact MVC-owned state.
+- For split WireGuard, once the immutable D4 intent exists, reuse the existing convergence-aware split stop path for partial profile/endpoint-route/activation outcomes. A missing or malformed D4 intent remains fail-closed.
+- For protected WireGuard, admit the raw authenticated B2 guard as a legitimate partial-start teardown state in addition to the full protected guard and already-absent guard. The D4 convergence engine then removes any authenticated temporary WG/profile/proto-186 residue before guard release.
+- Cover the earlier protected-WG interval where B2 exists before D4 publication with a dedicated normal-disconnect release journal. Its release intent is published before B2 deletion and is hash-bound to the public transaction, B2 prepare record, and exact delete batch; current physical-link/IPv4 topology is diagnostic only.
+- Preserve the R7 catastrophic-recovery boundary: B4 absence without an already-published normal-disconnect release intent is not adopted as cleanup authority and still requires reboot. Ambiguous/incomplete B2 journal or guard state also remains fail-closed.
+- Change failed standalone-WG start guidance to direct the operator to normal `mvc disconnect` first. Recovery remains the fallback only when authenticated convergence itself refuses.
+- Add focused partial-start regression coverage and extend persistent-record namespace coverage for the new protected-WG pre-D4 release record.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 4
 - Complete the R6 current-final-safety policy for standalone WireGuard split teardown. Split runtime retirement no longer requires traffic to `1.1.1.1` to resolve through the originally admitted interface/source/gateway after authenticated MVC-owned WG residue is removed.
 - Add `mvc24gws_final_safety_witness()` and reuse the shared post-session safety witness already used by combined teardown, protected standalone WireGuard, and early OpenVPN reconciliation. Changed interface/gateway/address, multiple ordinary IPv4 defaults, or no IPv4 default therefore remain warning/diagnostic conditions during split teardown rather than cleanup blockers.

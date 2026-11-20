@@ -167,7 +167,7 @@ mvc24gws_authority_witness() {
           ${MVC24PUBD_OPERATION:-none} == disconnect &&
           ${MVC24PUBD_APPROVAL:-none} == approved-process-local &&
           ${MVC24PUBD_AUTHORITY:-none} == public-explicit-disconnect ]]; then
-        case ${MVC24PUBD_STAGE:-idle} in reobserving-wireguard-split|stopping-wireguard-split|resuming-wireguard-split-runtime-retirement) ;; *) return 1 ;; esac
+        case ${MVC24PUBD_STAGE:-idle} in reobserving-wireguard-split|stopping-wireguard-split|stopping-wireguard-split-partial-start|resuming-wireguard-split-runtime-retirement) ;; *) return 1 ;; esac
         mvc24gws_lock_valid && mvc24gb2_root_scope
         return
     fi
@@ -327,7 +327,7 @@ mvc24pubc_connect_wireguard_split_once() {
 
     MVC24PUBC_STAGE=starting-wireguard-split
     if ! mvc24gws_start_once; then
-        MVC24PUBC_STAGE="wireguard-split-start-failed-${MVC24GWS_STAGE:-unknown}-use-dual-recovery"
+        MVC24PUBC_STAGE="wireguard-split-start-failed-${MVC24GWS_STAGE:-unknown}-use-disconnect"
         mvc24gws_lock_close
         mvc24pubc_consume_authority
         return 1
