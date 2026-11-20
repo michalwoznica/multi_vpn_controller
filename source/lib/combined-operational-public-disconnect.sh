@@ -35,8 +35,9 @@ mvc24pubd_record_completion_failure() {
     local detail=${MVC24GC23T_CONVERGENCE_DETAIL:-unverified}
     case $detail in
         unverified|topology-runtime-unavailable|topology-runtime-invalid|topology-scratch-create-failed|\
-        topology-capture-failed|links-not-restored|routes4-not-restored|routes6-not-restored|\
+        topology-capture-failed|links-not-restored|routes4-not-restored|ipv6-safe-baseline-not-proven|\
         topology-session-journal-changed|topology-restored-nm-connectivity-penalty-equivalent|\
+        topology-restored-nm-connectivity-penalty-ipv6-safe|topology-restored-ipv6-safe-baseline|\
         topology-restored|topology-scratch-cleanup-failed|session-reconstruction|\
         no-active-vpn-before-c1|c1-firewall-and-foreign-policy|no-active-vpn-after-topology|\
         final-lock|verified) ;;

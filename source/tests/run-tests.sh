@@ -20,6 +20,7 @@ TESTS=(
   test-wireguard-dropout-disconnect.sh
   test-generated-dropout-disconnect.sh
   test-underlay-replacement-convergence-diagnostics.sh
+  test-post-session-ipv6-safety-convergence.sh
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh

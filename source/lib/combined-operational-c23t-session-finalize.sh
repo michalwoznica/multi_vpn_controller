@@ -25,6 +25,7 @@ mvc24gc23t_reset() {
     MVC24GC23T_ARCHIVE=
     MVC24GC23T_CONVERGENCE_DETAIL=unverified
     MVC24GC23T_ROUTE4_EQUIVALENCE=unverified
+    MVC24GC23T_ROUTE6_EQUIVALENCE=unverified
     MVC24GC23T_RECOVERY_DETAIL=unverified
 }
 mvc24gc23t_admission_witness() { return 1; }
@@ -184,8 +185,13 @@ mvc24gc23t_routes4_nm_connectivity_penalty_equivalent() {
       ' >/dev/null 2>&1
 }
 
-# Preserve the exact B2 byte-for-byte topology contract but expose which part
-# has not yet returned. A capture/parsing/journal failure is NOT convergence.
+# Post-session convergence preserves exact physical-link and IPv4 restoration
+# (including the narrowly proven NetworkManager +20000 metric equivalence), but
+# IPv6 is checked against MVC's admission/security invariant rather than the
+# byte-for-byte B2 snapshot. MVC does not route IPv6; the supported baseline is
+# simply that no IPv6 default route exists. Incidental link-local regeneration
+# must not block teardown, while an IPv6 default route remains fail-closed.
+# A capture/parsing/journal failure is NOT convergence.
 mvc24gc23t_b2_topology_witness() {
     (( $# == 0 )) || return 1
     local dir scratch links r4 r6 good=1
@@ -224,14 +230,27 @@ mvc24gc23t_b2_topology_witness() {
         MVC24GC23T_ROUTE4_EQUIVALENCE=exact
     fi
     if (( good == 1 )); then
-        if ! cmp -s -- "$r6" "$dir/routes6.json"; then
-            MVC24GC23T_CONVERGENCE_DETAIL=routes6-not-restored
+        if ! mvc24gb1_routes6_no_default "$r6"; then
+            MVC24GC23T_ROUTE6_EQUIVALENCE=unsafe
+            MVC24GC23T_CONVERGENCE_DETAIL=ipv6-safe-baseline-not-proven
             good=0
-        elif ! mvc24gc3_transition_records_valid; then
+        elif cmp -s -- "$r6" "$dir/routes6.json"; then
+            MVC24GC23T_ROUTE6_EQUIVALENCE=exact
+        else
+            MVC24GC23T_ROUTE6_EQUIVALENCE=safe-no-default
+        fi
+    fi
+    if (( good == 1 )); then
+        if ! mvc24gc3_transition_records_valid; then
             MVC24GC23T_CONVERGENCE_DETAIL=topology-session-journal-changed
             good=0
+        elif [[ $MVC24GC23T_ROUTE4_EQUIVALENCE == nm-connectivity-penalty-plus-20000 &&
+                $MVC24GC23T_ROUTE6_EQUIVALENCE == safe-no-default ]]; then
+            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored-nm-connectivity-penalty-ipv6-safe
         elif [[ $MVC24GC23T_ROUTE4_EQUIVALENCE == nm-connectivity-penalty-plus-20000 ]]; then
             MVC24GC23T_CONVERGENCE_DETAIL=topology-restored-nm-connectivity-penalty-equivalent
+        elif [[ $MVC24GC23T_ROUTE6_EQUIVALENCE == safe-no-default ]]; then
+            MVC24GC23T_CONVERGENCE_DETAIL=topology-restored-ipv6-safe-baseline
         else
             MVC24GC23T_CONVERGENCE_DETAIL=topology-restored
         fi
@@ -294,7 +313,7 @@ mvc24gc23t_c1_witness() {
             return 0
         fi
         case ${MVC24GC23T_CONVERGENCE_DETAIL:-} in
-            links-not-restored|routes4-not-restored|routes6-not-restored) ;;
+            links-not-restored|routes4-not-restored|ipv6-safe-baseline-not-proven) ;;
             *) return 1 ;;
         esac
         if (( attempt < max_attempts )); then

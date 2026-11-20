@@ -39,12 +39,12 @@ else
 fi
 
 count=0
-mvc24gc23t_c1_witness_once(){ count=$((count+1)); MVC24GC23T_CONVERGENCE_DETAIL=routes6-not-restored; return 1; }
+mvc24gc23t_c1_witness_once(){ count=$((count+1)); MVC24GC23T_CONVERGENCE_DETAIL=ipv6-safe-baseline-not-proven; return 1; }
 mvc24gc23t_convergence_pause(){ return 0; }
 MVC24GC23T_STAGE=unverified
 if ! mvc24gc23t_c1_witness && (( count == 20 )) &&
    [[ $MVC24GC23T_STAGE == post-stop-b2-topology-not-converged &&
-      $MVC24GC23T_CONVERGENCE_DETAIL == routes6-not-restored ]]; then
+      $MVC24GC23T_CONVERGENCE_DETAIL == ipv6-safe-baseline-not-proven ]]; then
   pass 'bounded topology convergence preserves the final mismatch category'
 else
   fail 'bounded topology convergence preserves the final mismatch category'

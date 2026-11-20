@@ -254,7 +254,8 @@ mvc24pube_preclone_topology_witness_dir() {
     scratch=$(umask 077; mktemp -d /run/mvc-pube-preclone-topo.XXXXXXXX) || return 1
     links=$scratch/links.json; r4=$scratch/routes4.json; r6=$scratch/routes6.json
     mvc24gb1_capture_links "$links" && mvc24gb1_capture_routes4 "$r4" && mvc24gb1_capture_routes6 "$r6" &&
-      cmp -s -- "$links" "$dir/links.json" && cmp -s -- "$r4" "$dir/routes4.json" && cmp -s -- "$r6" "$dir/routes6.json" || ok=0
+      cmp -s -- "$links" "$dir/links.json" && cmp -s -- "$r4" "$dir/routes4.json" &&
+      mvc24gb1_routes6_no_default "$r6" || ok=0
     rm -rf -- "$scratch" || ok=0
     (( ok == 1 ))
 }

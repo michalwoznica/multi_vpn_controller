@@ -1,10 +1,13 @@
 # Changelog
-## MVC 2.4.4 underlay-replacement investigation
-- Begin the 2.4.4 maintenance line from the exact released 2.4.3 baseline.
-- Preserve existing fail-closed B2/C23T convergence semantics; no replacement-underlay acceptance rule is added yet.
-- Surface C23T's fixed post-stop convergence category in public `disconnect` failures so a controlled reproduction can distinguish link, IPv4-route and IPv6-route mismatch without weakening teardown authentication.
-- Add regression coverage for the existing exact B2 snapshot contract and its narrow NetworkManager `+20000` default-route metric exception.
-- Authorize the exact physically validated 2.4.3 executable as an authenticated installer update predecessor.
+## MVC 2.4.4 underlay-replacement reconciliation
+- Begin the 2.4.4 maintenance line from the exact released 2.4.3 baseline and authorize that exact controller as an authenticated update predecessor.
+- Surface C23T's fixed post-stop convergence category in public `disconnect` failures so physical reproduction can distinguish link, IPv4-route and IPv6-safety failures without weakening teardown authentication.
+- Preserve exact IPv6 snapshot stability during B1/B2 admission, B2 attestation, and protected transition establishment.
+- Change only post-session IPv6 convergence to enforce MVC's actual IPv6 safety invariant: the live host must have no IPv6 default route, but incidental link-local address/route regeneration no longer prevents authenticated teardown.
+- Apply that post-session invariant consistently to normal combined finalization, protected WireGuard teardown, and early OpenVPN reconciliation.
+- Keep the existing exact physical-link/IPv4 restoration contract, including only the narrowly proven NetworkManager `+20000` default-route metric equivalence.
+- Add regression coverage proving changed no-default IPv6 topology is accepted after session stop, an IPv6 default route remains fail-closed, and exact IPv6 snapshot checks remain intact during protected-state establishment.
+- Do not add automatic reconnection, watchdog behavior, or a general replacement-underlay trust shortcut.
 
 ## MVC 2.4.3 CI, release infrastructure and identity centralization
 - Add GitHub Actions CI and contributor/release documentation for the public regression workflow.

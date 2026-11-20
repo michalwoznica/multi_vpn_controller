@@ -25,6 +25,14 @@ mvc24gb1_scope() {
     [[ $(awk '{print $1 ":" $2 ":" $3}' /proc/self/uid_map) == '0:0:4294967295' ]]
 }
 
+mvc24gb1_routes6_no_default() {
+    (( $# == 1 )) || return 1
+    local routes6=$1
+    [[ -f $routes6 && ! -L $routes6 ]] || return 1
+    jq -e 'type == "array" and all(.[]; .dst != "default")' \
+        "$routes6" >/dev/null 2>&1
+}
+
 mvc24gb1_routes_valid() {
     (( $# == 3 )) || return 1
     local iface=$1 routes4=$2 routes6=$3
@@ -39,8 +47,7 @@ mvc24gb1_routes_valid() {
         .dev == $i and ((.type // "unicast") == "unicast") and
         (has("nexthops") | not) and (has("nhid") | not))
     ' "$routes4" >/dev/null 2>&1 || return 1
-    jq -e 'type == "array" and all(.[]; .dst != "default")' \
-        "$routes6" >/dev/null 2>&1
+    mvc24gb1_routes6_no_default "$routes6"
 }
 
 mvc24gb1_links_valid() {

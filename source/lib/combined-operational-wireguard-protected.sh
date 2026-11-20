@@ -447,7 +447,10 @@ mvc24gwg_controller_topology_restored() {
             ok=0
         fi
     fi
-    if (( ok == 1 )) && ! cmp -s -- "$r6" "$dir/routes6.json"; then
+    # Post-session IPv6 convergence mirrors B1 admission policy: MVC does not
+    # route IPv6, so incidental IPv6 topology changes are acceptable only while
+    # the live host still has no IPv6 default route.
+    if (( ok == 1 )) && ! mvc24gb1_routes6_no_default "$r6"; then
         ok=0
     fi
     rm -f -- "$links" "$r4" "$r6" >/dev/null 2>&1 || ok=0
