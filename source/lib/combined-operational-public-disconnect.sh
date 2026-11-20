@@ -1427,27 +1427,9 @@ mvc24pubd_disconnect_once() {
         fi
         MVC24GD4_ATTEMPTED=yes
         MVC24GWS_ATTEMPTED=yes
-        MVC24PUBD_STAGE=reobserving-wireguard-split
-        if mvc24gws_active_observed; then
-            MVC24GWS_STAGE=wireguard-only-split-running
-            MVC24PUBD_STAGE=stopping-wireguard-split
-            if ! mvc24gws_stop_once; then
-                MVC24PUBD_STAGE="wireguard-split-stop-failed-${MVC24GWS_STAGE:-unknown}"
-                mvc24pubd_consume_authority
-                mvc24gws_lock_close
-                return 1
-            fi
-        elif mvc24gws_network_clean_retirement_pending_observed; then
-            MVC24GWS_STAGE=wireguard-residue-removed-runtime-retirement-pending
-            MVC24PUBD_STAGE=resuming-wireguard-split-runtime-retirement
-            if ! mvc24gws_retire_runtime_once; then
-                MVC24PUBD_STAGE=wireguard-split-runtime-retirement-resume-refused
-                mvc24pubd_consume_authority
-                mvc24gws_lock_close
-                return 1
-            fi
-        else
-            MVC24PUBD_STAGE=wireguard-split-reobservation-refused
+        MVC24PUBD_STAGE=stopping-wireguard-split
+        if ! mvc24gws_stop_once; then
+            MVC24PUBD_STAGE="wireguard-split-stop-failed-${MVC24GWS_STAGE:-unknown}"
             mvc24pubd_consume_authority
             mvc24gws_lock_close
             return 1
@@ -1508,32 +1490,10 @@ mvc24pubd_disconnect_once() {
         fi
         MVC24GD4_ATTEMPTED=yes
         MVC24GWG_ATTEMPTED=yes
-        MVC24PUBD_STAGE=reobserving-wireguard-protected
-        if mvc24gwg_active_observed; then
-            MVC24GWG_STAGE=wireguard-only-protected-running
-            MVC24PUBD_STAGE=stopping-wireguard-protected
-            if ! mvc24gwg_stop_once; then
-                MVC24PUBD_STAGE="wireguard-protected-stop-failed-${MVC24GWG_STAGE:-unknown}"
-                mvc24pubd_consume_authority
-                return 1
-            fi
-        elif mvc24gwg_network_clean_retirement_pending_observed; then
-            # C23BK: a prior disconnect may already have removed WG, its
-            # endpoint route/profile and the standalone guard, then failed only
-            # while retiring authenticated same-boot runtime state. Resume only
-            # from that exact network-clean observation; never infer cleanup
-            # authority from missing WG alone.
-            MVC24GWG_STAGE=guard-released-runtime-retirement-pending
-            MVC24PUBD_STAGE=resuming-wireguard-protected-runtime-retirement
-            if ! mvc24gwg_retire_runtime_once; then
-                MVC24PUBD_STAGE=wireguard-protected-runtime-retirement-resume-refused
-                mvc24pubd_consume_authority
-                return 1
-            fi
-        else
-            MVC24PUBD_STAGE=wireguard-protected-reobservation-refused
+        MVC24PUBD_STAGE=stopping-wireguard-protected
+        if ! mvc24gwg_stop_once; then
+            MVC24PUBD_STAGE="wireguard-protected-stop-failed-${MVC24GWG_STAGE:-unknown}"
             mvc24pubd_consume_authority
-            mvc24gb2_close
             return 1
         fi
         MVC24PUBD_STAGE=public-wireguard-protected-session-complete-sameboot-ready

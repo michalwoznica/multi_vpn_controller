@@ -23,6 +23,7 @@ TESTS=(
   test-post-session-ipv6-safety-convergence.sh
   test-breakglass-recovery-finalization.sh
   test-disconnect-convergence-core.sh
+  test-standalone-wireguard-disconnect-convergence.sh
   test-installer.sh
   test-public-tree-sanitization.sh
   test-public-identity.sh

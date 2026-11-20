@@ -1,4 +1,12 @@
 # Changelog
+## MVC 2.4.4 disconnect convergence refactor — stage 2
+- Extend authenticated observed-state convergence to standalone WireGuard protected and split teardown. Published standalone sessions no longer require the historical fully-active WG shape before cleanup begins.
+- Add one shared standalone WG cleanup primitive that authenticates the temporary profile identity, kernel WireGuard endpoint, and proto-186 endpoint route before touching them; already-absent owned resources are treated as clean post-state.
+- If NetworkManager reports the authenticated temporary profile active, disconnect it and judge the observed result rather than the command exit alone. If the profile is already down/absent but the exact authenticated WG kernel object remains, remove only that proven-owned interface and require absence afterwards.
+- Make proto-186 deletion absence-tolerant while refusing conflicting/foreign endpoint or proto-186 state; temporary profile/keyfile cleanup remains identity-bound.
+- Route both standalone protected and split public disconnect paths directly through the convergence-aware stop routines instead of enumerating active-versus-clean transitional shapes in the coordinator.
+- Preserve protected guard authentication, split no-B4 policy, existing final topology checks, and all foreign-state refusal semantics. This stage intentionally does not yet relax the old physical-link/IPv4 baseline restoration requirement or redesign provisional break-glass recovery.
+
 ## MVC 2.4.4 disconnect convergence refactor — stage 1
 - Begin refactoring authenticated `mvc disconnect` from historical-shape verification toward observed-state convergence; ownership/session authentication remains unchanged and fail-closed.
 - Reconstruct combined-session WireGuard teardown identity from the immutable same-boot D4 intent and authenticated public marker rather than requiring the mutable saved WireGuard source profile to remain present and byte-identical.

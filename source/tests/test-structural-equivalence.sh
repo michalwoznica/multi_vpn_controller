@@ -137,10 +137,10 @@ function_equal=0
 while IFS= read -r fn; do
     cmp -s -- "$TMP/modular-functions/$fn" "$TMP/generated-functions/$fn" && function_equal=$((function_equal+1))
 done < "$COMPARE"
-if [[ $function_total == 770 && $function_equal == 770 ]]; then
-    ok '770 production functions are byte-equivalent after final Bash definition resolution'
+if [[ $function_total == 771 && $function_equal == 771 ]]; then
+    ok '771 production functions are byte-equivalent after final Bash definition resolution'
 else
-    bad "final function parity expected 770/770, observed $function_equal/$function_total"
+    bad "final function parity expected 771/771, observed $function_equal/$function_total"
 fi
 
 # Explicitly verify the 18 intentional override chains terminate at the audited

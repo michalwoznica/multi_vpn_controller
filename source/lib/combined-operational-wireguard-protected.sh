@@ -384,9 +384,108 @@ mvc24gwg_temp_profile_inventory_absent() {
     ! awk -F: -v u="$MVC24GD4_TEMP_UUID" -v n="$MVC24GD4_TEMP_NAME" '$1==u || $3==n {found=1} END{exit(found?0:1)}' <<< "$rows"
 }
 
+# Converge the authenticated temporary WireGuard side toward absence without
+# requiring the historical "fully active" shape. The immutable D4 intent
+# identifies the only profile/link/endpoint route this helper may touch. Missing
+# owned resources are already-clean post-state; conflicting/foreign resources
+# remain fatal.
+mvc24gwg_converge_owned_network_once() {
+    (( $# == 0 )) || return 1
+    local rows line name uuid type n=0 active_rows active_count=0 iface
+    local link_present=no wg_present=no route_json route_count exact rc
+
+    MVC24GWG_PROFILE_STATE=unknown
+    rows=$(nmcli --wait 10 --colors no -t -f NAME,UUID,TYPE connection show 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        [[ -n $line ]] || continue
+        IFS=: read -r name uuid type <<< "$line"
+        [[ -n ${name:-} && -n ${uuid:-} && -n ${type:-} ]] || return 1
+        if [[ $name == "$MVC24GD4_TEMP_NAME" || $uuid == "$MVC24GD4_TEMP_UUID" ]]; then
+            [[ $name == "$MVC24GD4_TEMP_NAME" && $uuid == "$MVC24GD4_TEMP_UUID" && $type == wireguard ]] || return 1
+            ((n+=1))
+        fi
+    done <<< "$rows"
+    (( n <= 1 )) || return 1
+
+    active_rows=$(nmcli --wait 10 --colors no -t -f UUID,TYPE,NAME,DEVICE connection show --active 2>/dev/null) || return 1
+    while IFS= read -r line; do
+        [[ -n $line ]] || continue
+        IFS=: read -r uuid type name iface <<< "$line"
+        if [[ $uuid == "$MVC24GD4_TEMP_UUID" || $name == "$MVC24GD4_TEMP_NAME" ]]; then
+            [[ $uuid == "$MVC24GD4_TEMP_UUID" && $type == wireguard && $name == "$MVC24GD4_TEMP_NAME" && $iface == "$MVC24GD4_TEMP_NAME" ]] || return 1
+            ((active_count+=1))
+        fi
+    done <<< "$active_rows"
+    (( active_count <= 1 && active_count <= n )) || return 1
+    if (( n == 0 )); then
+        MVC24GWG_PROFILE_STATE=absent
+    elif (( active_count == 1 )); then
+        MVC24GWG_PROFILE_STATE=active
+    else
+        iface=$(nmcli --wait 10 --colors no -g connection.interface-name connection show uuid "$MVC24GD4_TEMP_UUID" 2>/dev/null) || return 1
+        [[ $iface == "$MVC24GD4_TEMP_NAME" ]] || return 1
+        MVC24GWG_PROFILE_STATE=down
+    fi
+
+    ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 && link_present=yes
+    wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 && wg_present=yes
+    [[ $link_present == "$wg_present" ]] || return 1
+    if [[ $link_present == yes ]]; then
+        mvc24gd4_wg_kernel_endpoint || return 1
+    fi
+
+    if [[ $MVC24GWG_PROFILE_STATE == active ]]; then
+        set +e
+        nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1
+        rc=$?
+        set -e
+        MVC24GD4_NM_DOWN_EXIT_STATUS=$rc
+        mvc24gd4_wg_down_observed || return 1
+        MVC24GWG_PROFILE_STATE=down
+        link_present=no
+        wg_present=no
+    elif [[ $link_present == yes ]]; then
+        # A down/absent NetworkManager profile with the exact authenticated WG
+        # kernel object is recoverable residue. Remove only that proven-owned
+        # interface and require authoritative absence afterwards.
+        set +e
+        ip link delete dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1
+        rc=$?
+        set -e
+        : "$rc"
+        ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+        ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    fi
+
+    route_json=$(ip -j -N -4 route show table all proto 186) || return 1
+    jq -e 'type=="array" and length<=1' <<< "$route_json" >/dev/null 2>&1 || return 1
+    route_count=$(jq -r 'length' <<< "$route_json") || return 1
+    if (( route_count == 1 )); then
+        mvc24gd4_endpoint_route_observed || return 1
+        mvc24gwg_delete_route_once || return 1
+    else
+        exact=$(ip -j -N -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
+        jq -e 'type=="array" and length==0' <<< "$exact" >/dev/null 2>&1 || return 1
+    fi
+
+    mvc24gwg_delete_profile_once || return 1
+    mvc24gwg_temp_profile_inventory_absent || return 1
+    ! ip link show dev "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    ! wg show "$MVC24GD4_TEMP_NAME" >/dev/null 2>&1 || return 1
+    [[ -z $(ip -4 route show table all proto 186) ]] || return 1
+}
+
 mvc24gwg_delete_route_once() {
     local -a argv
-    local shown rc
+    local shown rc all count exact
+    all=$(ip -j -N -4 route show table all proto 186) || return 1
+    jq -e 'type=="array" and length<=1' <<< "$all" >/dev/null 2>&1 || return 1
+    count=$(jq -r 'length' <<< "$all") || return 1
+    if (( count == 0 )); then
+        exact=$(ip -j -N -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
+        jq -e 'type=="array" and length==0' <<< "$exact" >/dev/null 2>&1
+        return
+    fi
     mvc24gd4_endpoint_route_observed || return 1
     argv=(-4 route del "$MVC24GD4_ENDPOINT_IP/32")
     [[ $MVC24GD4_UNDERLAY_GATEWAY == - ]] || argv+=(via "$MVC24GD4_UNDERLAY_GATEWAY")
@@ -396,7 +495,6 @@ mvc24gwg_delete_route_once() {
     shown=$(ip -4 route show exact "$MVC24GD4_ENDPOINT_IP/32" table main) || return 1
     [[ -z $shown ]]
 }
-
 mvc24gwg_delete_profile_once() {
     local rc
     if ! mvc24gwg_temp_profile_inventory_absent; then
@@ -491,16 +589,16 @@ mvc24gwg_retire_runtime_once() {
 
 mvc24gwg_stop_once() {
     (( $# == 0 )) || return 1
-    local rc
-    mvc24gwg_active_observed || return 1
-    MVC24GWG_STAGE=wireguard-disconnect-outcome-uncertain
-    set +e; nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1; rc=$?; set -e
-    : "$rc"
-    mvc24gd4_wg_down_observed || return 1
-    mvc24gwg_guard_exact_now || return 1
-    MVC24GWG_STAGE=wireguard-down-protected-guard-retained
-    mvc24gwg_delete_route_once || return 1
-    mvc24gwg_delete_profile_once || return 1
+    mvc24gwg_authority_witness || return 1
+    if mvc24gwg_guard_exact_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-protected-guard-retained
+    elif mvc24gwg_owned_tables_absent_now; then
+        MVC24GWG_STAGE=converging-wireguard-owned-state-guard-already-absent
+    else
+        MVC24GWG_STAGE=wireguard-protected-guard-ambiguous
+        return 1
+    fi
+    mvc24gwg_converge_owned_network_once || return 1
     MVC24GWG_STAGE=wireguard-residue-removed-protected-guard-retained
     mvc24gwg_release_guard_once || return 1
     MVC24GWG_STAGE=guard-released-runtime-retirement-pending

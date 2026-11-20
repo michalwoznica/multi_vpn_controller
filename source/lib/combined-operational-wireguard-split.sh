@@ -269,23 +269,14 @@ mvc24gws_retire_runtime_once() {
 
 mvc24gws_stop_once() {
     (( $# == 0 )) || return 1
-    local rc
-    mvc24gws_active_observed || return 1
-    MVC24GWS_STAGE=wireguard-disconnect-outcome-uncertain
-    set +e
-    nmcli --wait 60 connection down uuid "$MVC24GD4_TEMP_UUID" >/dev/null 2>&1
-    rc=$?
-    set -e
-    MVC24GD4_NM_DOWN_EXIT_STATUS=$rc
-    mvc24gd4_wg_down_observed || return 1
-    MVC24GWS_STAGE=wireguard-down-split-internet-retained
-    mvc24gwg_delete_route_once || return 1
-    mvc24gwg_delete_profile_once || return 1
+    mvc24gws_authority_witness || return 1
+    mvc24gws_no_b4_tables || return 1
+    MVC24GWS_STAGE=converging-wireguard-owned-state-split-internet-retained
+    mvc24gwg_converge_owned_network_once || return 1
     MVC24GWS_STAGE=wireguard-residue-removed-runtime-retirement-pending
     mvc24gws_retire_runtime_once || return 1
     MVC24GWS_STAGE=wireguard-only-split-complete-sameboot-ready
 }
-
 mvc24pubc_connect_wireguard_split_once() {
     (( $# == 1 )) || return 1
     local wg_name=$1
