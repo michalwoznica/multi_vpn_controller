@@ -136,6 +136,13 @@ else
     bad 'installer allowlist contains exact R1 emergency recovery predecessor'
 fi
 
+R2_EMERGENCY_SHA=ffe8d421f064053736fd65a73100f2579b5655fc22c54918aed8be4df18658c5
+if grep -Fq "'$R2_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact R2 emergency recovery predecessor'
+else
+    bad 'installer allowlist contains exact R2 emergency recovery predecessor'
+fi
+
 # Exercise emergency-tool predecessor semantics hermetically without bundling
 # historical recovery bytes in the public repository. A private copied package
 # receives one synthetic approved hash, proving install refuses it while update
@@ -224,6 +231,13 @@ if grep -Fq "'$V244_FINAL_SHA'" "$INSTALLER"; then
     ok 'installer allowlist contains exact final v2.4.4 predecessor hash'
 else
     bad 'installer allowlist contains exact final v2.4.4 predecessor hash'
+fi
+
+R2_CONTROLLER_SHA=12f7ef2894392d60ade2f437a33a0a838f71ecfceaa0b45326e25335c143251b
+if grep -Fq "'$R2_CONTROLLER_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact physically validated R2 controller predecessor'
+else
+    bad 'installer allowlist contains exact physically validated R2 controller predecessor'
 fi
 
 # Exercise predecessor semantics hermetically with a synthetic controller whose

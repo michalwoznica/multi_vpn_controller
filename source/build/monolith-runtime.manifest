@@ -56,7 +56,7 @@ ASSET|b4-bootstrap-nft|15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd3
 INTEGRATE|release-version|5d038a6af9998b1157a49314369f525e6ef8dc34201a1b596b175de1df722a7d|source/release-version|release-identity-data
 INTEGRATE|openvpn-source-preview|043bbca72023e13dbe1bf3be5a75ef8104b4520330982b99239977c9b5ff8bd3|source/tools/check-mvc-live-saved-ovpn-readonly.sh|internalize-only-controller-required-preview-derivative-path;do-not-bundle-unused-diagnostic-actions
 INTEGRATE|verify|85366d00291bd462083438e9a538c684a2ec83724cf8db0cfac5926488da4306|source/tools/verify-mvc-state-readonly.sh|integrate-as-main-verify-subcommand;diagnostic-only
-EXTERNAL_RECOVERY|emergency|ffe8d421f064053736fd65a73100f2579b5655fc22c54918aed8be4df18658c5|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
+EXTERNAL_RECOVERY|emergency|7084387e7af49168394dfe0cccf4bc987c3ac7fd54a6c39249c39c049015dc39|source/tools/recover-mvc-host-guard-local.sh|installed=/root/mvc-emergency-rollback;remain-independent;main-help-must-document
 EXTERNAL_RECOVERY|dual|211b68fc610ea8e184ab5ee2f0b8a1b7d79c9389323714dceec2a7ccf05f99cc|source/tools/recover-mvc-dual-local.sh|installed=/root/mvc-dual-recovery;remain-independent;main-help-must-document
 EXCLUDE|loader|fa76a70e49a929b830b1cc6b22298151775a1c68affee20bb8cb72569588e101|source/lib/combined-controller-wiring.sh|loader-only;must-not-appear-in-monolith-body
 EXCLUDE|loader|a1c6a95b668b596972a3197747f9e6b101b2ea5d50d919b514dd19c3846b6c16|source/lib/combined-operational-public-composition.sh|loader-only;must-not-appear-in-monolith-body

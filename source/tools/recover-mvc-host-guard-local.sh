@@ -4,9 +4,11 @@
 # --rollback remains the independent B4 break-glass action: it can disarm the
 # three MVC quarantine tables even when normal lifecycle journals are damaged.
 #
-# --finalization-inspect is READ-ONLY. --rollback keeps the B4 disarm
-# independent, then attempts authenticated lifecycle finalization. --finalize
-# resumes or performs only that post-disarm finalization when B4 is already off.
+# --finalization-inspect is READ-ONLY. It previews whether retained lifecycle
+# state would be finalizable after a successful B4 disarm; it never treats B4
+# presence as mutation authority. --rollback keeps the B4 disarm independent,
+# then attempts strict authenticated lifecycle finalization. --finalize resumes
+# or performs only that post-disarm finalization when B4 is already off.
 # Failed-session evidence is archived before any profile mutation; live public
 # authority is retired last and only after final managed-network safety is proven.
 set -euo pipefail
@@ -462,6 +464,7 @@ mvc_er_reset_classifier() {
     MVC_ER_D4_STATUS=unverified
     MVC_ER_OVPN_CLONE_STATUS=unverified
     MVC_ER_PARSE_DETAIL=unverified
+    MVC_ER_B4_DISARM_REQUIRED=unverified
 }
 
 mvc_er_block() {
@@ -470,12 +473,33 @@ mvc_er_block() {
     return 1
 }
 
-mvc_er_finalization_classify() {
-    (( $# == 0 )) || return 1
-    local runtime rc
+mvc_er_finalization_classify_impl() {
+    (( $# == 1 )) || return 1
+    local b4_mode=$1 runtime rc tables
     mvc_er_reset_classifier
     mvc_er_root_scope || { mvc_er_block root-scope-not-proven; return 1; }
-    mvc_er_b4_all_absent || { mvc_er_block b4-still-present-or-unreadable; return 1; }
+    case $b4_mode in
+        strict)
+            mvc_er_b4_all_absent || { mvc_er_block b4-still-present-or-unreadable; return 1; }
+            MVC_ER_B4_DISARM_REQUIRED=no
+            ;;
+        post-disarm-preview)
+            if tables=$(mvc_er_owned_tables); then
+                if [[ -n $tables ]]; then
+                    MVC_ER_B4_DISARM_REQUIRED=yes
+                else
+                    MVC_ER_B4_DISARM_REQUIRED=no
+                fi
+            else
+                mvc_er_block b4-inventory-unreadable
+                return 1
+            fi
+            ;;
+        *)
+            mvc_er_block internal-classifier-mode-invalid
+            return 1
+            ;;
+    esac
     mvc_er_fixed_roots_safe || { mvc_er_block unsafe-live-runtime-root; return 1; }
     mvc_er_session_not_busy || { mvc_er_block live-session-lock-busy-or-invalid; return 1; }
     mvc_er_no_active_vpn_or_tunnel || { mvc_er_block active-or-foreign-vpn-tunnel-remains; return 1; }
@@ -515,6 +539,16 @@ mvc_er_finalization_classify() {
     return 0
 }
 
+mvc_er_finalization_classify() {
+    (( $# == 0 )) || return 1
+    mvc_er_finalization_classify_impl strict
+}
+
+mvc_er_finalization_preview_classify() {
+    (( $# == 0 )) || return 1
+    mvc_er_finalization_classify_impl post-disarm-preview
+}
+
 mvc_er_print_finalization_result() {
     (( $# == 1 )) || return 1
     local rc=$1
@@ -524,7 +558,12 @@ mvc_er_print_finalization_result() {
           "$MVC_ER_SESSION_MODE" "$MVC_ER_MARKER_KIND" "$MVC_ER_TRANSACTION_STATE"
         printf 'DETAIL: d4_evidence=%s openvpn_clone=%s\n' \
           "$MVC_ER_D4_STATUS" "$MVC_ER_OVPN_CLONE_STATUS"
-        printf 'RESULT: READ-ONLY EMERGENCY FINALIZATION ELIGIBLE — NO CHANGES\n'
+        printf 'DETAIL: b4_disarm_required=%s\n' "$MVC_ER_B4_DISARM_REQUIRED"
+        if [[ $MVC_ER_B4_DISARM_REQUIRED == yes ]]; then
+            printf 'RESULT: READ-ONLY EMERGENCY FINALIZATION ELIGIBLE AFTER B4 DISARM — NO CHANGES\n'
+        else
+            printf 'RESULT: READ-ONLY EMERGENCY FINALIZATION ELIGIBLE — NO CHANGES\n'
+        fi
     else
         printf 'BLOCKED: emergency recovery-finalization eligibility not proven: %s\n' "$MVC_ER_REASON" >&2
         printf 'RESULT: READ-ONLY EMERGENCY FINALIZATION BLOCKED — NO CHANGES\n' >&2
@@ -1224,7 +1263,7 @@ mvc_er_main() {
 
     if [[ $mode == --finalization-inspect ]]; then
         mvc_er_require_finalization_dependencies || return 1
-        if mvc_er_finalization_classify; then
+        if mvc_er_finalization_preview_classify; then
             rc=0
         else
             rc=$?

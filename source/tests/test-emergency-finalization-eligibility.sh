@@ -298,5 +298,47 @@ else
     fail 'already-clean baseline classification'
 fi
 
+# 17. The read-only preview may evaluate retained lifecycle state while B4 is
+# still present. The result is explicitly conditional on a successful disarm;
+# strict finalization authority remains unchanged.
+install_common_classifier_stubs
+mvc_er_owned_tables(){ printf '%s\n' 'inet:mvc_preclone_quarantine' 'bridge:mvc_preclone_bridge' 'netdev:mvc_preclone_underlay'; }
+if mvc_er_finalization_preview_classify && [[ $MVC_ER_REASON == eligible-authenticated-retained-session && $MVC_ER_B4_DISARM_REQUIRED == yes ]]; then
+    preview_out=$(mvc_er_print_finalization_result 0)
+    if grep -Fq 'RESULT: READ-ONLY EMERGENCY FINALIZATION ELIGIBLE AFTER B4 DISARM — NO CHANGES' <<<"$preview_out"; then
+        pass 'pre-disarm inspection reports conditional lifecycle eligibility'
+    else
+        fail 'pre-disarm inspection result wording'
+    fi
+else
+    fail 'pre-disarm lifecycle preview classification'
+fi
+
+# 18. A preview cannot assume a future disarm when nftables inventory itself is
+# unreadable. That uncertainty remains fail-closed.
+install_common_classifier_stubs
+mvc_er_owned_tables(){ return 1; }
+if ! mvc_er_finalization_preview_classify && [[ $MVC_ER_REASON == b4-inventory-unreadable ]]; then
+    pass 'unreadable B4 inventory blocks pre-disarm finalization preview'
+else
+    fail 'unreadable B4 preview refusal'
+fi
+
+# 19. Once B4 is already absent, the preview reports ordinary immediate
+# eligibility rather than the conditional after-disarm result.
+install_common_classifier_stubs
+mvc_er_owned_tables(){ return 0; }
+if mvc_er_finalization_preview_classify && [[ $MVC_ER_B4_DISARM_REQUIRED == no ]]; then
+    preview_out=$(mvc_er_print_finalization_result 0)
+    if grep -Fq 'RESULT: READ-ONLY EMERGENCY FINALIZATION ELIGIBLE — NO CHANGES' <<<"$preview_out" &&
+       ! grep -Fq 'ELIGIBLE AFTER B4 DISARM' <<<"$preview_out"; then
+        pass 'post-disarm inspection retains immediate eligibility semantics'
+    else
+        fail 'post-disarm inspection result wording'
+    fi
+else
+    fail 'post-disarm lifecycle preview classification'
+fi
+
 printf 'Results: %d passed, %d failed\n' "$P" "$F"
 (( F == 0 ))

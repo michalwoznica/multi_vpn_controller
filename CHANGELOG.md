@@ -1,3 +1,14 @@
+## MVC 2.4.5 emergency recovery same-boot reuse — R3 pre-disarm finalization inspection
+
+- Make `mvc-emergency-rollback --finalization-inspect` useful before B4 disarm: it now evaluates the retained lifecycle state read-only and, when all non-B4 requirements pass, reports conditional `ELIGIBLE AFTER B4 DISARM` rather than rejecting solely because the quarantine still exists.
+- Keep actual recovery authority unchanged. `--finalize` and the post-disarm phase of `--rollback` continue to use the strict classifier and require B4 to be observably absent before any profile cleanup, archive retirement or live-authority mutation.
+- Treat unreadable nftables inventory as a hard preview failure; the inspector never assumes that B4 can be removed when its current state cannot be read.
+- Preserve every existing lifecycle blocker during preview: active/foreign VPN or tunnel state, MVC proto-186/proto-187 residue, IPv6 default routing, unsafe/busy runtime roots, failed same-boot marker/journal authentication, WireGuard residue and ambiguous OpenVPN clone identity.
+- Record the successful physical R2 recovery campaign: the real Wi-Fi-switch degradation was reproduced, dual recovery removed surviving WireGuard state, emergency rollback completed authenticated finalization, all live MVC authority was retired, and a fresh combined session was admitted, connected and normally disconnected in the same boot.
+- R3 changes inspection UX only; it does not alter B4 deletion, recovery mutation, normal connect/disconnect networking policy or the mature-session recovery authority defined by R2.
+
+- Offline freeze: finalization eligibility **19/19 PASS**, R2 mutation **12/12 PASS**, emergency boundary **8/8 PASS**, installer/update **30/30 PASS**, release identity **4/4 PASS**, structural equivalence **772 functions / 7/7 PASS**, complete public suite **39/39 PASS**, deterministic double-build PASS, Bash syntax **104/104 PASS**, and public-delta private-identifier scan PASS. Exact R3 generated candidate SHA-256 is `f0b3c334878cf03b08236e95fe7e10064f4f189290cd5c5eb8a30f5d6637a991`; exact emergency recovery source SHA-256 is `7084387e7af49168394dfe0cccf4bc987c3ac7fd54a6c39249c39c049015dc39`.
+
 ## MVC 2.4.5 emergency recovery same-boot reuse — R2 authenticated finalization
 
 - Implement the independent post-disarm recovery finalizer while keeping B4 release itself journal-independent. `--rollback` still performs the atomic B4 break-glass deletion first, then attempts authenticated finalization; `--finalize` can resume only the lifecycle-retirement phase when B4 is already absent.
