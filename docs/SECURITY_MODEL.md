@@ -15,4 +15,6 @@ Key properties include:
 
 A partial tunnel loss or host-underlay change does not grant authority by itself. MVC first authenticates the owned same-boot session from durable runtime evidence, then converges only state it can prove belongs to MVC. During teardown the saved pre-connect physical/IPv4 topology is forensic/admission evidence rather than a restoration target; final safety still requires MVC-owned residue to be gone, foreign policy to remain untouched, and no IPv6 default route. Unknown ownership, foreign managed state, or an unprovable mutation outcome remains fail-closed.
 
+Emergency recovery keeps B4 disarm and lifecycle retirement as separate authorities. The B4 break-glass action can remove only the MVC quarantine tables even when lifecycle journals are unusable. Same-boot reuse is granted only by the independent recovery finalizer after it authenticates a mature retained session, proves managed network residue absent, preserves root-only recovery evidence, and retires live MVC authority with the public-session marker last. A completed recovery does not bypass normal fresh-connect admission.
+
 MVC same-boot ownership records live under `/run/mvc-*`. Protected-session B4 tables use the `mvc_preclone_*` nftables namespace. Both are ephemeral runtime state rather than persistent configuration.

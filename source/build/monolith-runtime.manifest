@@ -49,7 +49,7 @@ MODULE|044|28ff53dbb7b62a0391aeab19a358835c402033c2356d0ee5e22803bd1fe62b3a|sour
 MODULE|045|ffd05fea73754e9475de69154aaa6aebc358382eea552680cfb7e84b66e38782|source/lib/combined-operational-public-openvpn-early-reconcile.sh|ordered-runtime-module
 MODULE|046|5a7828c14a8a851256a38c9dd29d9067a8859eb42d3c40a9caf234f097ba5de1|source/lib/combined-operational-public-readonly.sh|ordered-runtime-module
 MODULE|047|4582996945805a108a01c6a732c59509d0e5743c09b4968aff8689c031e335e2|source/lib/combined-operational-public-connect.sh|ordered-runtime-module
-MODULE|048|7c5d5f09fe6c20ec9b7ea5f3c4d6fd0f0f7a95aadd72283c51b162a9e55cee37|source/lib/combined-operational-public-disconnect.sh|ordered-runtime-module
+MODULE|048|5153b4a7630749d571fe65b8a2c3940a22e3a0bb5f01a4d0c16a5ccee0382677|source/lib/combined-operational-public-disconnect.sh|ordered-runtime-module
 MODULE|049|dc18f4a5c2cd3062326390b801eb47969c508e12fd2caf4895ec871931e69b6c|source/lib/combined-controller-entry.sh|ordered-runtime-module
 ASSET|gvariant-awk|6b454021a543afb9593d9f06bdb8d5e15ee119f4ade30b776af6ad70ed718ac1|source/lib/combined-gvariant-settings-to-json.awk|embed-as-deterministic-runtime-resource
 ASSET|b4-bootstrap-nft|15a274a9127731b3bddb9bb73a9eee1b7978c31a8d0299323db3cbbd31fdbd23|source/nftables/mvc-preclone-quarantine-offline.nft|embed-as-deterministic-runtime-resource

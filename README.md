@@ -115,7 +115,7 @@ See [INSTALL.md](INSTALL.md). The release installer manages:
 /root/mvc-dual-recovery
 ```
 
-The recovery tools remain independent of the main executable.
+The recovery tools remain independent of the main executable. A complete authenticated emergency recovery can retire stale MVC lifecycle authority and permit a fresh same-boot admission attempt; normal connect admission remains strict, and normal `mvc disconnect` never treats emergency B4 absence as cleanup authority.
 
 ## Operations
 

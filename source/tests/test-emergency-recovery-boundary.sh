@@ -79,8 +79,8 @@ mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(MUTATION-PATH-MUST-NOT-RUN); return 
 mvc24gb2_close(){ LOG+=(close); return 0; }
 if ! mvc24pubd_disconnect_once &&
    [[ ${LOG[*]} == 'marker lock emergency-boundary close' &&
-      $MVC24PUBD_STAGE == emergency-disarm-reboot-required ]]; then
-    pass 'disconnect refuses post-emergency lifecycle mutation and requires reboot'
+      $MVC24PUBD_STAGE == emergency-disarm-recovery-required ]]; then
+    pass 'disconnect refuses post-emergency lifecycle mutation and requires recovery'
 else
     fail 'disconnect emergency-boundary coordinator order'
 fi

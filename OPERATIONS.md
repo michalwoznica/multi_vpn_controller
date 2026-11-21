@@ -70,7 +70,7 @@ Full emergency-recovery success requires the retained same-boot session marker/j
 
 `RESULT: EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED` means stale MVC authority no longer blocks a new same-boot attempt. It does **not** bypass normal admission: a later `mvc connect` still starts from the ordinary strict preflight rules. If the tool reports finalization incomplete, the B4 disarm may still have succeeded but retained MVC authority remains blocking. Do not use normal `mvc disconnect` as a post-emergency finalizer; address the reported residue (for example with the independent dual-recovery tool when authenticated WireGuard residue remains), then rerun `--finalize` if appropriate, or reboot as the fallback.
 
-The R2 finalizer intentionally supports only the mature retained-session states classified by R1. Pre-mutation/partial-start emergency finalization remains deferred.
+The emergency finalizer intentionally supports only mature retained-session states with complete authenticated ownership evidence. Pre-mutation/partial-start emergency finalization remains outside its authority.
 
 ## NetworkManager route refresh
 

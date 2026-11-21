@@ -999,7 +999,7 @@ mvc24pubd_disconnect_once() {
                 return 1
             fi
             if mvc24pubd_emergency_disarm_boundary_observed; then
-                MVC24PUBD_STAGE=emergency-disarm-reboot-required
+                MVC24PUBD_STAGE=emergency-disarm-recovery-required
                 mvc24gb2_close >/dev/null 2>&1 || true
                 return 1
             fi
@@ -1203,7 +1203,7 @@ mvc24pubd_disconnect_once() {
     # disconnect exception is an interrupted teardown that already published its
     # authenticated guard-release intent; downstream code validates that intent.
     if mvc24pubd_emergency_disarm_boundary_observed; then
-        MVC24PUBD_STAGE=emergency-disarm-reboot-required
+        MVC24PUBD_STAGE=emergency-disarm-recovery-required
         mvc24gb2_close >/dev/null 2>&1 || true
         return 1
     fi

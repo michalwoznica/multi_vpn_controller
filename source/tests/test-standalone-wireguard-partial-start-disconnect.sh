@@ -70,8 +70,8 @@ mvc24pubd_disconnect_once || fail protected-pre-d4-dispatch
 [[ ${LOG[*]} == 'lock pre-d4-reconcile' && ${MVC24PUBD_STAGE:-} == public-wireguard-protected-pre-d4-partial-start-clean-baseline-restored ]] &&
   pass protected-pre-d4-partial-start-uses-journalled-disconnect || fail protected-pre-d4-stage
 
-# 5. R7 boundary is preserved: B4 absence without a normal disconnect release
-# intent remains terminal for this boot and does not enter the pre-D4 reconciler.
+# 5. Post-emergency boundary is preserved: B4 absence without a normal disconnect release
+# intent remains outside normal disconnect authority and does not enter the pre-D4 reconciler.
 LOG=()
 mvc24pubd_acquire_existing_lock(){ LOG+=(lock); return 0; }
 mvc24pubd_emergency_disarm_boundary_observed(){ LOG+=(emergency-boundary); return 0; }
@@ -79,7 +79,7 @@ mvc24gwg_reconcile_pre_d4_partial_start_once(){ LOG+=(unexpected-reconcile); ret
 mvc24gb2_close(){ LOG+=(close); return 0; }
 MVC24PUBD_ATTEMPTED=no
 ! mvc24pubd_disconnect_once &&
-  [[ ${LOG[*]} == 'lock emergency-boundary close' && ${MVC24PUBD_STAGE:-} == emergency-disarm-reboot-required ]] &&
+  [[ ${LOG[*]} == 'lock emergency-boundary close' && ${MVC24PUBD_STAGE:-} == emergency-disarm-recovery-required ]] &&
   pass protected-partial-start-preserves-emergency-boundary || fail protected-emergency-boundary
 
 # 6. Split prepared+D4 partial start likewise dispatches the existing
