@@ -1,3 +1,13 @@
+## MVC 2.4.5 final-candidate physical validation
+
+- Physically validate the exact release-prep candidate executable SHA-256 `3f3f86c8c347a5021b16c646e9a72efc8dfccee96dc50637eee5ab17502c9566` after authenticated update from the earlier 2.4.5 development candidate. Installation verification and the pre-session MVC baseline were clean.
+- Prove strict combined-mode read-only admission on the exact candidate, then establish a protected parallel OpenVPN + split-WireGuard session successfully.
+- Verify the live session reaches `combined-protected`: OpenVPN owns ordinary Internet routing and protected DNS, WireGuard owns the configured private destinations, the endpoint pin is present, and all three B4 quarantine tables are active.
+- Prove the private destination remains reachable through WireGuard during the smoke test with no packet loss.
+- Prove ordinary authenticated `mvc disconnect` on the exact final candidate completes successfully. A physical/IPv4 topology drift warning was emitted as designed and did not block teardown because final observed safety was proven.
+- Verify the final controller state reports no managed MVC session and B4 off at baseline. No emergency or dual recovery tool was required for this final-hash smoke.
+- This bounded smoke complements the earlier destructive R2 physical campaign, which already proved authenticated emergency recovery finalization and fresh same-boot reuse. No further runtime change or destructive recovery retest is required before PR unless a new defect is found.
+
 ## MVC 2.4.5 release-readiness integration
 
 - Complete the release-facing audit after physical R2 validation and the R3 read-only inspection correction. The primary 2.4.5 goal is physically proven: a mature failed combined session can pass dual recovery, emergency B4 disarm and authenticated recovery finalization, return to a clean baseline, then admit/connect/disconnect a fresh combined session in the same boot.
