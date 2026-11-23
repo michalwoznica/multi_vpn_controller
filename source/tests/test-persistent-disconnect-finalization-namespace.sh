@@ -34,9 +34,9 @@ else
 fi
 
 
-# this MVC release intentionally has no second break-glass lifecycle-finalization
-# namespace. Emergency B4 rollback retains the failed-session journals and
-# requires reboot; same-boot recovery finalization is deferred.
+# Normal disconnect intentionally has no second break-glass lifecycle-finalization
+# namespace. Authenticated post-disarm finalization belongs only to the independent
+# emergency recovery tool; normal disconnect never adopts B4 absence as authority.
 if ! rg -q 'mvc-c24b-breakglass-(finalize|clone-delete|archive-plan)-v1' "$DISC"; then
   pass 'provisional R3 break-glass finalization namespace is absent'
 else

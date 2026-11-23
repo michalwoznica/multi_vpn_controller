@@ -1,3 +1,57 @@
+## MVC 2.4.5 final-candidate physical validation
+
+- Physically validate the exact release-prep candidate executable SHA-256 `3f3f86c8c347a5021b16c646e9a72efc8dfccee96dc50637eee5ab17502c9566` after authenticated update from the earlier 2.4.5 development candidate. Installation verification and the pre-session MVC baseline were clean.
+- Prove strict combined-mode read-only admission on the exact candidate, then establish a protected parallel OpenVPN + split-WireGuard session successfully.
+- Verify the live session reaches `combined-protected`: OpenVPN owns ordinary Internet routing and protected DNS, WireGuard owns the configured private destinations, the endpoint pin is present, and all three B4 quarantine tables are active.
+- Prove the private destination remains reachable through WireGuard during the smoke test with no packet loss.
+- Prove ordinary authenticated `mvc disconnect` on the exact final candidate completes successfully. A physical/IPv4 topology drift warning was emitted as designed and did not block teardown because final observed safety was proven.
+- Verify the final controller state reports no managed MVC session and B4 off at baseline. No emergency or dual recovery tool was required for this final-hash smoke.
+- This bounded smoke complements the earlier destructive R2 physical campaign, which already proved authenticated emergency recovery finalization and fresh same-boot reuse. No further runtime change or destructive recovery retest is required before PR unless a new defect is found.
+
+## MVC 2.4.5 release-readiness integration
+
+- Complete the release-facing audit after physical R2 validation and the R3 read-only inspection correction. The primary 2.4.5 goal is physically proven: a mature failed combined session can pass dual recovery, emergency B4 disarm and authenticated recovery finalization, return to a clean baseline, then admit/connect/disconnect a fresh combined session in the same boot.
+- Rename the normal-disconnect post-emergency refusal stage from `emergency-disarm-reboot-required` to `emergency-disarm-recovery-required`. Behavior is unchanged: normal `mvc disconnect` still refuses to adopt B4 absence as lifecycle authority, but the diagnostic no longer falsely implies reboot is mandatory when the independent emergency finalizer can complete recovery.
+- Align README, operations and architecture wording with the final 2.4.5 contract: emergency B4 disarm remains independent, authenticated mature-session finalization belongs only to the recovery tool, successful finalization may permit same-boot reuse subject to ordinary strict admission, and partial-start emergency finalization remains outside recovery authority.
+- Preserve the historical 2.4.4 changelog statements describing reboot-terminal emergency rollback; they remain accurate for that released version.
+- Offline release-prep freeze: complete public suite **39/39 PASS**, finalization eligibility **19/19 PASS**, finalization mutation **12/12 PASS**, emergency boundary **8/8 PASS**, installer/update **30/30 PASS**, release identity **4/4 PASS**, structural equivalence **772 functions / 7/7 PASS**, deterministic double-build PASS, Bash syntax **105/105 PASS**, stale-current-recovery-wording scan PASS, and public-delta private-identifier scan PASS. Exact generated candidate SHA-256 is `3f3f86c8c347a5021b16c646e9a72efc8dfccee96dc50637eee5ab17502c9566`. Emergency recovery remains byte-identical to physically proven R2/R3 mutation logic at SHA-256 `7084387e7af49168394dfe0cccf4bc987c3ac7fd54a6c39249c39c049015dc39`.
+
+## MVC 2.4.5 emergency recovery same-boot reuse — R3 pre-disarm finalization inspection
+
+- Make `mvc-emergency-rollback --finalization-inspect` useful before B4 disarm: it now evaluates the retained lifecycle state read-only and, when all non-B4 requirements pass, reports conditional `ELIGIBLE AFTER B4 DISARM` rather than rejecting solely because the quarantine still exists.
+- Keep actual recovery authority unchanged. `--finalize` and the post-disarm phase of `--rollback` continue to use the strict classifier and require B4 to be observably absent before any profile cleanup, archive retirement or live-authority mutation.
+- Treat unreadable nftables inventory as a hard preview failure; the inspector never assumes that B4 can be removed when its current state cannot be read.
+- Preserve every existing lifecycle blocker during preview: active/foreign VPN or tunnel state, MVC proto-186/proto-187 residue, IPv6 default routing, unsafe/busy runtime roots, failed same-boot marker/journal authentication, WireGuard residue and ambiguous OpenVPN clone identity.
+- Record the successful physical R2 recovery campaign: the real Wi-Fi-switch degradation was reproduced, dual recovery removed surviving WireGuard state, emergency rollback completed authenticated finalization, all live MVC authority was retired, and a fresh combined session was admitted, connected and normally disconnected in the same boot.
+- R3 changes inspection UX only; it does not alter B4 deletion, recovery mutation, normal connect/disconnect networking policy or the mature-session recovery authority defined by R2.
+
+- Offline freeze: finalization eligibility **19/19 PASS**, R2 mutation **12/12 PASS**, emergency boundary **8/8 PASS**, installer/update **30/30 PASS**, release identity **4/4 PASS**, structural equivalence **772 functions / 7/7 PASS**, complete public suite **39/39 PASS**, deterministic double-build PASS, Bash syntax **104/104 PASS**, and public-delta private-identifier scan PASS. Exact R3 generated candidate SHA-256 is `f0b3c334878cf03b08236e95fe7e10064f4f189290cd5c5eb8a30f5d6637a991`; exact emergency recovery source SHA-256 is `7084387e7af49168394dfe0cccf4bc987c3ac7fd54a6c39249c39c049015dc39`.
+
+## MVC 2.4.5 emergency recovery same-boot reuse — R2 authenticated finalization
+
+- Implement the independent post-disarm recovery finalizer while keeping B4 release itself journal-independent. `--rollback` still performs the atomic B4 break-glass deletion first, then attempts authenticated finalization; `--finalize` can resume only the lifecycle-retirement phase when B4 is already absent.
+- Reuse the R1 mature-session eligibility predicate as the mandatory pre-mutation gate. Active/foreign VPN or tunnel state, WireGuard residue, MVC proto-186/proto-187 routes, an IPv6 default route, ambiguous temporary profile identity, unsafe runtime trees or failed same-boot journal authentication remain hard blockers.
+- Preserve failed-session evidence before profile mutation in a root-only `/run/mvc-recovered/<session-marker-sha256>/` archive. The archive stores the exact fixed-root snapshot, a hash manifest and same-boot recovery metadata; archive tampering or metadata mismatch blocks retirement.
+- Journal the exact authenticated inactive OpenVPN-clone delete attempt before issuing it. A nonzero NetworkManager reply is accepted only when post-state independently proves the clone absent; an ambiguous attempted deletion is never blindly retried.
+- Re-run final managed-network safety after clone cleanup. If safety is no longer proven, retain the evidence archive and live public authority so same-boot reuse stays blocked while a later safe `--finalize` can continue.
+- Publish a recovery retirement plan only after all network mutation is complete and proven. From that point recovery is filesystem-only and crash-resumable from the archived snapshot even if hash-bound live journals have already disappeared.
+- Retire fixed MVC runtime roots with `/run/mvc-public-session` last, then verify all fixed roots are absent and the managed-network safety witness still passes before recording recovery completion.
+- Define full success as `EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED`; a fresh same-boot MVC session may then be attempted, but ordinary strict connect admission still applies.
+- Keep normal `mvc disconnect` outside catastrophic recovery authority and keep pre-mutation/partial-start emergency finalization deferred.
+- Extend installer predecessor authentication to the exact R1 emergency-recovery tool and add focused mutation/crash-resume regressions. The complete public suite now contains 39 tests.
+
+## MVC 2.4.5 emergency recovery same-boot reuse — R1 read-only finalization classifier
+
+- Begin the 2.4.5 development line from the exact physically validated and released MVC 2.4.4 runtime baseline.
+- Extend the independent emergency recovery tool with a new read-only `--finalization-inspect` mode; the existing B4 `--rollback` mutation remains unchanged and independent of normal controller journals.
+- Authenticate retained same-boot recovery state across mature combined, OpenVPN-only, protected-WireGuard and split-WireGuard sessions using the public marker plus the mode-appropriate immutable journal hashes.
+- Allow a combined-session marker to retain historical D4 hash evidence after authenticated WireGuard teardown has already retired the live D4 journal; WireGuard-only recovery continues to require live hash-authenticated D4 evidence.
+- Classify finalization eligibility only when B4 is absent, no MVC or foreign VPN/tunnel remains active, proto-186/proto-187 routes are absent, no IPv6 default route exists, live runtime roots are safe/unbusy, WireGuard temporary residue is gone, and any surviving OpenVPN temporary clone is the exact authenticated inactive MVC clone.
+- Treat an exact inactive authenticated OpenVPN clone as future finalizer cleanup work rather than an eligibility failure; ambiguous clone identity remains blocked.
+- Explicitly defer pre-mutation/partial-start finalization in R1 rather than inferring new cleanup authority from incomplete ownership evidence.
+- Keep R1 read-only: it does not archive journals, delete profiles, retire live MVC authority, or permit same-boot reuse after emergency rollback yet. Reboot remains required after rollback until a later checkpoint implements authenticated finalization.
+- Authorize the exact released MVC 2.4.4 controller and emergency-recovery hashes as authenticated update predecessors for the 2.4.5 package.
+
 # Changelog
 ## MVC 2.4.4 release-candidate physical validation
 - Physically validate the exact integrated 2.4.4 candidate executable SHA-256 `c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db` on the development host after authenticated update from the earlier 2.4.4 diagnostic candidate. Installation verification and the pre-session baseline were clean.

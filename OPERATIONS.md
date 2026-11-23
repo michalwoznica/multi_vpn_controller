@@ -62,7 +62,15 @@ sudo /root/mvc-emergency-rollback --inspect
 
 Use a recovery mutation only when its inspector authenticates the corresponding owned residue. The independent recovery tools deliberately have narrower authority than the main controller.
 
-`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. In MVC 2.4.4 it does **not** perform full lifecycle retirement: failed-session journals are intentionally retained for evidence, normal `mvc disconnect` must not be used as a post-rollback finalizer, and the host must be rebooted before starting another MVC session. Same-boot reuse after a successful catastrophic recovery is deferred to a later release.
+`mvc-emergency-rollback --rollback` is the catastrophic last-resort B4 disarm. In the 2.4.5 development line it remains a two-phase recovery operation: phase 1 independently removes only the three MVC B4 tables, then phase 2 attempts authenticated lifecycle finalization. B4 release never depends on the lifecycle journals being valid.
+
+Use `--finalization-inspect` for a read-only lifecycle eligibility check. When B4 is still present, this mode does **not** authorize or perform its removal; it conditionally reports whether the retained MVC lifecycle would be finalizable **after a successful B4 disarm**. `ELIGIBLE AFTER B4 DISARM` therefore means only that the post-disarm lifecycle checks pass. The mutating finalizer still requires B4 to be actually absent. If B4 is already absent and a prior rollback stopped before lifecycle retirement completed, use `--finalize` to resume only the authenticated post-disarm finalization step.
+
+Full emergency-recovery success requires the retained same-boot session marker/journals to authenticate, all live VPN/WireGuard/tunnel and proto-186/proto-187 residue to be absent, no IPv6 default route, and any surviving `vpnks-ovpn` profile to be the exact authenticated inactive MVC clone. Before that clone can be deleted, the tool copies the failed-session evidence into a root-only same-boot archive under `/run/mvc-recovered/<session-marker-sha256>/`. A clone-delete attempt is journalled before mutation and is never blindly retried after an ambiguous outcome. Once managed network residue is independently proven absent, a retirement plan is published and fixed live MVC roots are removed with `/run/mvc-public-session` retired last.
+
+`RESULT: EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED` means stale MVC authority no longer blocks a new same-boot attempt. It does **not** bypass normal admission: a later `mvc connect` still starts from the ordinary strict preflight rules. If the tool reports finalization incomplete, the B4 disarm may still have succeeded but retained MVC authority remains blocking. Do not use normal `mvc disconnect` as a post-emergency finalizer; address the reported residue (for example with the independent dual-recovery tool when authenticated WireGuard residue remains), then rerun `--finalize` if appropriate, or reboot as the fallback.
+
+The emergency finalizer intentionally supports only mature retained-session states with complete authenticated ownership evidence. Pre-mutation/partial-start emergency finalization remains outside its authority.
 
 ## NetworkManager route refresh
 

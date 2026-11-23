@@ -34,13 +34,17 @@ else
     fail 'controller post-emergency success removal'
 fi
 
-# 3. Emergency rollback remains narrow and tells the operator the actual current-release
-# boundary: retained evidence, reboot before another MVC session.
-if grep -Fq 'failed-session journals are intentionally retained; reboot before starting another MVC session' "$REC" &&
+# 3. Recovery finalization now belongs only to the independent emergency tool.
+# B4 disarm remains phase 1, while --finalize can resume authenticated lifecycle
+# retirement after the kill switch is already off. Normal mvc disconnect remains
+# outside this catastrophic recovery path.
+if grep -Fq -- '--finalization-inspect|--finalize' "$REC" &&
+   grep -Fq 'RESULT: EMERGENCY RECOVERY COMPLETE — MVC OWNED STATE RETIRED' "$REC" &&
+   grep -Fq 'mvc_er_finalize_recovery' "$REC" &&
    ! grep -Fq 'run sudo mvc disconnect once to authenticate and finalize recovery' "$REC"; then
-    pass 'emergency rollback guidance requires reboot and no follow-up disconnect'
+    pass 'independent emergency tool owns authenticated post-disarm finalization'
 else
-    fail 'emergency rollback terminal guidance'
+    fail 'independent emergency finalization boundary'
 fi
 
 # 4. B4 absence without a normal release intent is the emergency-disarm
@@ -75,8 +79,8 @@ mvc24pubd_rehydrate_openvpn_locked(){ LOG+=(MUTATION-PATH-MUST-NOT-RUN); return 
 mvc24gb2_close(){ LOG+=(close); return 0; }
 if ! mvc24pubd_disconnect_once &&
    [[ ${LOG[*]} == 'marker lock emergency-boundary close' &&
-      $MVC24PUBD_STAGE == emergency-disarm-reboot-required ]]; then
-    pass 'disconnect refuses post-emergency lifecycle mutation and requires reboot'
+      $MVC24PUBD_STAGE == emergency-disarm-recovery-required ]]; then
+    pass 'disconnect refuses post-emergency lifecycle mutation and requires recovery'
 else
     fail 'disconnect emergency-boundary coordinator order'
 fi
@@ -104,13 +108,14 @@ else
     fail 'ordinary disconnect preserved after recovery-boundary cleanup'
 fi
 
-# 8. Installer must accept both the released emergency tool and the exact R6
-# development predecessor when promoting to the new recovery-tool bytes.
-if grep -Fq "'b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c'" "$INST" &&
-   grep -Fq "'e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b'" "$INST"; then
-    pass 'installer authenticates released and R6 emergency recovery predecessors'
+# 8. The current package must authenticate the exact released 2.4.4 controller
+# plus both the released 2.4.4 and R1 emergency-recovery bytes as update predecessors.
+if grep -Fq "'c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db'" "$INST" &&
+   grep -Fq "'cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897'" "$INST" &&
+   grep -Fq "'9eca9dc61bb76dee7f4c06579a5609d46e85e514121628f03eab604518462717'" "$INST"; then
+    pass 'installer authenticates released 2.4.4 and R1 emergency recovery predecessors'
 else
-    fail 'installer emergency predecessor authorization'
+    fail 'installer recovery predecessor authorization'
 fi
 
 printf 'Results: %d passed, %d failed\n' "$P" "$F"

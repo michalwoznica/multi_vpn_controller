@@ -120,42 +120,81 @@ else
     bad 'update atomically replaces exact managed release and leaves no staging residue'
 fi
 
-# This checkpoint changes the emergency tool's final operator guidance again:
-# R6 delegated post-disarm retirement to `mvc disconnect`; R7 restores the
-# terminal recovery boundary and requires reboot. Reconstruct exact R6 bytes
-# and prove explicit update promotes them to the current recovery tool.
-R6_EMERGENCY_SHA=e86b5e6fdf58f582180623f79eff78d300242331d0a924ddc8a2ff9afe9d169b
-sed 's/NOTE: failed-session journals are intentionally retained; reboot before starting another MVC session/NOTE: failed-session journals are intentionally retained; run sudo mvc disconnect once to authenticate and finalize recovery before starting a new MVC session/' \
-    "$EMERGENCY" > "$TMP/r6-emergency"
-chmod 700 "$TMP/r6-emergency"
-if [[ $(sha256sum "$TMP/r6-emergency" | awk '{print $1}') == "$R6_EMERGENCY_SHA" ]]; then
-    ok 'test fixture reconstructs exact R6 emergency recovery identity'
+# The exact released 2.4.4 emergency tool is the direct recovery-tool
+# predecessor for the current development line. Keep that trust decision content-hash bound.
+V244_EMERGENCY_SHA=cceded2c13eccb7cec970f213a12631f635cec28ad218ab2105c7a120f771897
+if grep -Fq "'$V244_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact released v2.4.4 emergency recovery predecessor'
 else
-    bad 'test fixture reconstructs exact R6 emergency recovery identity'
-fi
-cp -- "$TMP/r6-emergency" "$E_DST"; chmod 700 "$E_DST"
-set +e
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" install --root "$FAKE" > "$TMP/r6-emergency-install.out" 2>&1
-r6_emergency_install_rc=$?
-set -e
-if (( r6_emergency_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/r6-emergency-install.out"; then
-    ok 'install refuses exact R6 emergency recovery identity and requires update'
-else
-    bad 'install refuses exact R6 emergency recovery identity and requires update'
-fi
-PATH="$TMP/stubbin:$PATH" "$INSTALLER" update --root "$FAKE" > "$TMP/r6-emergency-update.out"
-if cmp -s -- "$E_DST" "$EMERGENCY"; then
-    ok 'update authenticates and promotes exact R6 emergency recovery identity'
-else
-    bad 'update authenticates and promotes exact R6 emergency recovery identity'
+    bad 'installer allowlist contains exact released v2.4.4 emergency recovery predecessor'
 fi
 
-# The final 2.4.3 recovery tool remains an approved direct predecessor as well.
+R1_EMERGENCY_SHA=9eca9dc61bb76dee7f4c06579a5609d46e85e514121628f03eab604518462717
+if grep -Fq "'$R1_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact R1 emergency recovery predecessor'
+else
+    bad 'installer allowlist contains exact R1 emergency recovery predecessor'
+fi
+
+R2_EMERGENCY_SHA=ffe8d421f064053736fd65a73100f2579b5655fc22c54918aed8be4df18658c5
+if grep -Fq "'$R2_EMERGENCY_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact R2 emergency recovery predecessor'
+else
+    bad 'installer allowlist contains exact R2 emergency recovery predecessor'
+fi
+
+# Exercise emergency-tool predecessor semantics hermetically without bundling
+# historical recovery bytes in the public repository. A private copied package
+# receives one synthetic approved hash, proving install refuses it while update
+# atomically promotes it to the current package recovery tool.
+SYNTH_EM_PROJECT=$TMP/synthetic-emergency-project
+cp -a -- "$ROOT" "$SYNTH_EM_PROJECT"
+SYNTH_EM_INSTALLER=$SYNTH_EM_PROJECT/source/tools/install-mvc.sh
+cat > "$TMP/synthetic-prior-emergency" <<'SYNTH_EMERGENCY'
+#!/usr/bin/env bash
+printf '%s\n' 'synthetic emergency predecessor' >/dev/null
+exit 99
+SYNTH_EMERGENCY
+chmod 700 "$TMP/synthetic-prior-emergency"
+SYNTH_EM_SHA=$(sha256sum "$TMP/synthetic-prior-emergency" | awk '{print $1}')
+awk -v sha="$SYNTH_EM_SHA" '
+    $0 == "readonly -a MVC24I_APPROVED_UPDATE_EMERGENCY_SHA256=(" && !inserted {
+        print
+        printf "    %c%s%c\n", 39, sha, 39
+        inserted=1
+        next
+    }
+    { print }
+    END { if (!inserted) exit 7 }
+' "$SYNTH_EM_INSTALLER" > "$TMP/synthetic-emergency-installer.new"
+mv -f -- "$TMP/synthetic-emergency-installer.new" "$SYNTH_EM_INSTALLER"
+chmod 755 "$SYNTH_EM_INSTALLER"
+
+cp -- "$TMP/synthetic-prior-emergency" "$E_DST"
+chmod 700 "$E_DST"
+set +e
+PATH="$TMP/stubbin:$PATH" "$SYNTH_EM_INSTALLER" install --root "$FAKE" > "$TMP/em-prior-install.out" 2>&1
+em_prior_install_rc=$?
+set -e
+if (( em_prior_install_rc != 0 )) && grep -Fq 'approved prior identity; use update instead of install' "$TMP/em-prior-install.out" &&
+   [[ $(sha256sum "$E_DST" | awk '{print $1}') == "$SYNTH_EM_SHA" ]]; then
+    ok 'install refuses an approved emergency predecessor and requires explicit update'
+else
+    bad 'install refuses an approved emergency predecessor and requires explicit update'
+fi
+PATH="$TMP/stubbin:$PATH" "$SYNTH_EM_INSTALLER" update --root "$FAKE" > "$TMP/em-prior-update.out"
+if cmp -s -- "$E_DST" "$EMERGENCY"; then
+    ok 'update accepts an exact allowlisted emergency predecessor and promotes current recovery tool'
+else
+    bad 'update accepts an exact allowlisted emergency predecessor and promotes current recovery tool'
+fi
+
+# Older released recovery bytes remain approved update predecessors as well.
 V243_EMERGENCY_SHA=b521110ab5dabcd43c4d0c903283f50f2e76dc520d20074e0ef49a81c104a02c
 if grep -Fq "'$V243_EMERGENCY_SHA'" "$INSTALLER"; then
-    ok 'installer allowlist retains exact released emergency recovery predecessor'
+    ok 'installer allowlist retains exact older released emergency recovery predecessor'
 else
-    bad 'installer allowlist retains exact released emergency recovery predecessor'
+    bad 'installer allowlist retains exact older released emergency recovery predecessor'
 fi
 
 # The public v2.4.1 release remains a supported predecessor for 2.4.2.
@@ -185,6 +224,20 @@ if grep -Fq "'$V243_FINAL_SHA'" "$INSTALLER"; then
     ok 'installer allowlist contains exact final v2.4.3 predecessor hash'
 else
     bad 'installer allowlist contains exact final v2.4.3 predecessor hash'
+fi
+# The exact final 2.4.4 release is the direct stable predecessor for this line.
+V244_FINAL_SHA=c659143883ddf900ddba4aa4c6cd74edd761b820be5b1d51bb335cdcbf9c31db
+if grep -Fq "'$V244_FINAL_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact final v2.4.4 predecessor hash'
+else
+    bad 'installer allowlist contains exact final v2.4.4 predecessor hash'
+fi
+
+R2_CONTROLLER_SHA=12f7ef2894392d60ade2f437a33a0a838f71ecfceaa0b45326e25335c143251b
+if grep -Fq "'$R2_CONTROLLER_SHA'" "$INSTALLER"; then
+    ok 'installer allowlist contains exact physically validated R2 controller predecessor'
+else
+    bad 'installer allowlist contains exact physically validated R2 controller predecessor'
 fi
 
 # Exercise predecessor semantics hermetically with a synthetic controller whose
